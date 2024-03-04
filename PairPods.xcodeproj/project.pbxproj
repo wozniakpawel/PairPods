@@ -14,6 +14,7 @@
 		E985A9AA2B92F5A0005494FA /* PairPodsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9A92B92F5A0005494FA /* PairPodsTests.swift */; };
 		E985A9B42B92F5A0005494FA /* PairPodsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9B32B92F5A0005494FA /* PairPodsUITests.swift */; };
 		E985A9B62B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */; };
+		E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C32B936984005494FA /* CoreAudio.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +46,7 @@
 		E985A9AF2B92F5A0005494FA /* PairPodsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PairPodsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E985A9B32B92F5A0005494FA /* PairPodsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsUITests.swift; sourceTree = "<group>"; };
 		E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		E985A9C32B936984005494FA /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +54,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +82,7 @@
 				E985A9A82B92F5A0005494FA /* PairPodsTests */,
 				E985A9B22B92F5A0005494FA /* PairPodsUITests */,
 				E985A9952B92F59F005494FA /* Products */,
+				E985A9C22B936984005494FA /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -127,6 +131,14 @@
 				E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */,
 			);
 			path = PairPodsUITests;
+			sourceTree = "<group>";
+		};
+		E985A9C22B936984005494FA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E985A9C32B936984005494FA /* CoreAudio.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -429,6 +441,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PairPods;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -456,6 +470,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PairPods;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
