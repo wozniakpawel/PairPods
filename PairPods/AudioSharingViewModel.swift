@@ -49,7 +49,7 @@ class AudioSharingViewModel: ObservableObject {
 //        setSystemAudioOutputDevice(to: builtInSpeakerID)
     }
 
-    private func listAllAudioDevices() {
+    func listAllAudioDevices() {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -70,54 +70,44 @@ class AudioSharingViewModel: ObservableObject {
             return
         }
 
+        print("\n--- Filtering Output Devices Except Internal Speakers and Special Multi-Output Devices ---\n")
+
         for device in audioDevices {
             var name: Unmanaged<CFString>?
             var uid: Unmanaged<CFString>?
-            
             var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
             propertyAddress.mSelector = kAudioDevicePropertyDeviceNameCFString
-            status = AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &name)
-            if status != noErr { continue }
+            propertyAddress.mScope = kAudioObjectPropertyScopeGlobal
             
+            AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &name)
             propertyAddress.mSelector = kAudioDevicePropertyDeviceUID
-            status = AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &uid)
-            if status != noErr { continue }
+            AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &uid)
 
             let deviceName = name?.takeRetainedValue() as String? ?? "Unknown"
             let deviceUID = uid?.takeRetainedValue() as String? ?? "Unknown"
-            
-            // Print device details. Extend this section to include other details you're interested in.
-            print("Device Name: \(deviceName), UID: \(deviceUID)")
-        }
-        
-        
-        print("\n--- Filtering Output Devices Except Internal Speakers ---\n")
-        
-        // Additional loop to list only output devices except internal speakers
-        for device in audioDevices {
-            var name: Unmanaged<CFString>?
-            var isOutput: UInt32 = 0
-            var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-            propertyAddress.mSelector = kAudioDevicePropertyDeviceNameCFString
-            propertyAddress.mScope = kAudioObjectPropertyScopeGlobal // Reset scope to global for name retrieval
-            
-            AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &name)
-            
-            // Check again if device is an output device
+
+            // Query the size of the stream configuration data
             propertyAddress.mSelector = kAudioDevicePropertyStreamConfiguration
             propertyAddress.mScope = kAudioDevicePropertyScopeOutput
-            var streamConfig: AudioBufferList = AudioBufferList()
-            size = UInt32(MemoryLayout<AudioBufferList>.size)
-            status = AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &streamConfig)
-            if status == noErr && streamConfig.mNumberBuffers > 0 {
-                isOutput = 1
-            }
-            
-            let deviceName = name?.takeRetainedValue() as String? ?? "Unknown"
-            
-            // Filter out internal speakers and non-output devices
-            if isOutput == 1 && !deviceName.contains("Internal Speakers") && !deviceName.contains("MacBook Pro Speakers") {
-                print("Output Device Name: \(deviceName)")
+            var dataSize: UInt32 = 0
+            status = AudioObjectGetPropertyDataSize(device, &propertyAddress, 0, nil, &dataSize)
+            guard status == noErr else { continue }
+
+            // Allocate a buffer of the correct size to hold the stream configuration data
+            let bufferPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: Int(dataSize))
+            defer { bufferPointer.deallocate() }
+
+            // Fetch the stream configuration data
+            status = AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &dataSize, bufferPointer)
+            guard status == noErr else { continue }
+
+            let streamConfig = bufferPointer.pointee
+            if streamConfig.mNumberBuffers > 0,
+               !deviceName.contains("Internal Speakers"),
+               !deviceName.contains("MacBook Pro Speakers"),
+               !deviceUID.contains("AMS2_Aggregate"),
+               !deviceUID.contains("AMS2_StackedOutput") {
+                print("Output Device Name: \(deviceName), UID: \(deviceUID)")
             }
         }
     }
