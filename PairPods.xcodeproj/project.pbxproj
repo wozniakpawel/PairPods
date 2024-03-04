@@ -15,6 +15,7 @@
 		E985A9B42B92F5A0005494FA /* PairPodsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9B32B92F5A0005494FA /* PairPodsUITests.swift */; };
 		E985A9B62B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */; };
 		E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C32B936984005494FA /* CoreAudio.framework */; };
+		E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +48,7 @@
 		E985A9B32B92F5A0005494FA /* PairPodsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsUITests.swift; sourceTree = "<group>"; };
 		E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		E985A9C32B936984005494FA /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSharingViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				E985A9972B92F59F005494FA /* PairPodsApp.swift */,
+				E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */,
 				E985A9992B92F59F005494FA /* ContentView.swift */,
 				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
 				E985A9A02B92F5A0005494FA /* PairPods.entitlements */,
@@ -271,6 +274,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */,
 				E985A99A2B92F59F005494FA /* ContentView.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
 			);

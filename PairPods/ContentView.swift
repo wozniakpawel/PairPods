@@ -8,12 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var viewModel = AudioSharingViewModel()
+
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Toggle("Share Audio", isOn: $viewModel.isSharingAudio)
+                .padding()
+                .onChange(of: viewModel.isSharingAudio) {
+                    viewModel.toggleAudioSharing()
+                }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
         }
         .padding()
     }
