@@ -39,7 +39,8 @@ class AudioSharingViewModel: ObservableObject {
     private func stopSharingAudio() {
         // Set MacBook speakers as the output device and remove the Multi-Output Device
         // setSystemAudioOutputDevice()
-        print("Setting the output device to internal speakers")
+        print("Audio Sharing stopped.")
+//        print("Setting the output device to internal speakers")
 //        guard let builtInSpeakerID = findBuiltInSpeakerDeviceID() else {
 //            print("Failed to find the built-in speaker device ID.")
 //            return
