@@ -28,7 +28,7 @@ class AudioSharingViewModel: ObservableObject {
         let secondDeviceUID: CFString = "EC-73-79-3D-0E-42:output" as CFString
         let multiOutUID: String = "PairPodsOutputDevice"
         // Create the multi-output device
-        let setStatus = createAndSetMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID, multiOutUID: multiOutUID)
+        createAndSetMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID, multiOutUID: multiOutUID)
 //        guard areTwoAirPodsConnected() else {
 //            // Handle the error: Not enough AirPods connected
 //            print("Error: Two pairs of AirPods must be connected.")
@@ -56,7 +56,7 @@ class AudioSharingViewModel: ObservableObject {
 //        setSystemAudioOutputDevice(to: builtInSpeakerID)
     }
 
-    func listAllAudioDevices() {
+    private func fetchAllAudioDeviceIDs() -> [AudioDeviceID]? {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -64,61 +64,89 @@ class AudioSharingViewModel: ObservableObject {
 
         var propertySize: UInt32 = 0
         var status = AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize)
-        guard status == noErr else {
-            print("Error: Unable to get property data size")
-            return
-        }
-
+        guard status == noErr else { return nil }
+        
         let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
-        var audioDevices = [AudioDeviceID](repeating: 0, count: deviceCount)
-        status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &audioDevices)
-        guard status == noErr else {
-            print("Error: Unable to get property data")
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
+        
+        status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &deviceIDs)
+        guard status == noErr else { return nil }
+        
+        return deviceIDs
+    }
+    
+    private func findAudioDeviceID(byUID deviceUID: CFString) -> AudioDeviceID? {
+        guard let deviceIDs = fetchAllAudioDeviceIDs() else { return nil }
+        
+        for deviceID in deviceIDs {
+            var uidSize = UInt32(MemoryLayout<CFString>.size)
+            var uid: CFString? = nil
+            var propertyAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyDeviceUID,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain)
+            
+            let status = withUnsafeMutablePointer(to: &uid) {
+                AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &uidSize, $0)
+            }
+            if status == noErr && uid == deviceUID {
+                return deviceID
+            }
+        }
+        
+        return nil
+    }
+
+    private func fetchDeviceNameAndUID(deviceID: AudioDeviceID) -> (name: String, uid: String)? {
+        var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceNameCFString, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        var name: CFString = "" as CFString
+        var nameSize = UInt32(MemoryLayout<CFString>.size)
+        var status = withUnsafeMutablePointer(to: &name) {
+            AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &nameSize, $0)
+        }
+        guard status == noErr else { return nil }
+
+        propertyAddress.mSelector = kAudioDevicePropertyDeviceUID
+        var uid: CFString = "" as CFString
+        var uidSize = UInt32(MemoryLayout<CFString>.size)
+        status = withUnsafeMutablePointer(to: &uid) {
+            AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &uidSize, $0)
+        }
+        guard status == noErr else { return nil }
+
+        return (name: name as String, uid: uid as String)
+    }
+
+    func listAllAudioDevices() {
+        guard let audioDevices = fetchAllAudioDeviceIDs() else {
+            print("Error: Unable to get audio devices")
             return
         }
 
-        print("\n--- Filtering Output Devices Except Internal Speakers and Special Multi-Output Devices ---\n")
+        print("\n--- Audio Devices ---\n")
 
-        for device in audioDevices {
-            var name: Unmanaged<CFString>?
-            var uid: Unmanaged<CFString>?
-            var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-            propertyAddress.mSelector = kAudioDevicePropertyDeviceNameCFString
-            propertyAddress.mScope = kAudioObjectPropertyScopeGlobal
+        for deviceID in audioDevices {
+            guard let deviceInfo = fetchDeviceNameAndUID(deviceID: deviceID) else { continue }
+            let (deviceName, deviceUID) = deviceInfo
             
-            AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &name)
-            propertyAddress.mSelector = kAudioDevicePropertyDeviceUID
-            AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &uid)
-
-            let deviceName = name?.takeRetainedValue() as String? ?? "Unknown"
-            let deviceUID = uid?.takeRetainedValue() as String? ?? "Unknown"
-
-            // Query the size of the stream configuration data
-            propertyAddress.mSelector = kAudioDevicePropertyStreamConfiguration
-            propertyAddress.mScope = kAudioDevicePropertyScopeOutput
+            // Filter and print device info based on specific criteria, similar to original function
+            var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreamConfiguration, mScope: kAudioDevicePropertyScopeOutput, mElement: kAudioObjectPropertyElementMain)
             var dataSize: UInt32 = 0
-            status = AudioObjectGetPropertyDataSize(device, &propertyAddress, 0, nil, &dataSize)
+            var status = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
             guard status == noErr else { continue }
-
-            // Allocate a buffer of the correct size to hold the stream configuration data
+            
             let bufferPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: Int(dataSize))
             defer { bufferPointer.deallocate() }
-
-            // Fetch the stream configuration data
-            status = AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &dataSize, bufferPointer)
+            
+            status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, bufferPointer)
             guard status == noErr else { continue }
 
             let streamConfig = bufferPointer.pointee
             if streamConfig.mNumberBuffers > 0,
-               deviceName.contains("MacBook Pro Speakers") {
-                print("Output Device Name: \(deviceName), ID: \(device), UID: \(deviceUID)")
-            }
-            if streamConfig.mNumberBuffers > 0,
                !deviceName.contains("Internal Speakers"),
-               !deviceName.contains("MacBook Pro Speakers"),
                !deviceUID.contains("AMS2_Aggregate"),
                !deviceUID.contains("AMS2_StackedOutput") {
-                print("Output Device Name: \(deviceName), ID: \(device), UID: \(deviceUID)")
+                print("Output Device Name: \(deviceName), ID: \(deviceID), UID: \(deviceUID)")
             }
         }
     }
