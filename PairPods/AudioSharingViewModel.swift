@@ -23,6 +23,12 @@ class AudioSharingViewModel: ObservableObject {
         // Check for two pairs of AirPods connected
         print("Sharing audio between two pairs of AirPods")
         listAllAudioDevices()
+        // Placeholder UIDs for demonstration. You'll need to dynamically find these.
+        let masterDeviceUID: CFString = "BuiltInSpeakerDevice" as CFString
+        let secondDeviceUID: CFString = "EC-73-79-3D-0E-42:output" as CFString
+        let multiOutUID: String = "PairPodsOutputDevice"
+        // Create the multi-output device
+        let setStatus = createAndSetMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID, multiOutUID: multiOutUID)
 //        guard areTwoAirPodsConnected() else {
 //            // Handle the error: Not enough AirPods connected
 //            print("Error: Two pairs of AirPods must be connected.")
@@ -104,11 +110,15 @@ class AudioSharingViewModel: ObservableObject {
 
             let streamConfig = bufferPointer.pointee
             if streamConfig.mNumberBuffers > 0,
+               deviceName.contains("MacBook Pro Speakers") {
+                print("Output Device Name: \(deviceName), ID: \(device), UID: \(deviceUID)")
+            }
+            if streamConfig.mNumberBuffers > 0,
                !deviceName.contains("Internal Speakers"),
                !deviceName.contains("MacBook Pro Speakers"),
                !deviceUID.contains("AMS2_Aggregate"),
                !deviceUID.contains("AMS2_StackedOutput") {
-                print("Output Device Name: \(deviceName), UID: \(deviceUID)")
+                print("Output Device Name: \(deviceName), ID: \(device), UID: \(deviceUID)")
             }
         }
     }
@@ -118,62 +128,9 @@ class AudioSharingViewModel: ObservableObject {
         // This part is highly dependent on macOS APIs and the ability to access Bluetooth device status.
         return true // Assuming two pairs are connected for demonstration purposes
     }
-    
-    private func findBuiltInSpeakerDeviceID() -> AudioDeviceID? {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
 
-        var propertySize: UInt32 = 0
-        var status = AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize)
-        guard status == noErr else { return nil }
-
-        let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
-        var audioDevices = [AudioDeviceID](repeating: 0, count: deviceCount)
-        status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &audioDevices)
-        guard status == noErr else { return nil }
-
-        for device in audioDevices {
-            var name: Unmanaged<CFString>?
-            var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-            propertyAddress.mSelector = kAudioDevicePropertyDeviceNameCFString
-
-            status = AudioObjectGetPropertyData(device, &propertyAddress, 0, nil, &size, &name)
-            if status == noErr, let name = name?.takeRetainedValue() as String?, name == "Built-in Speaker" {
-                return device
-            }
-        }
-
-        return nil
-    }
-
-    private func createAndUseMultiOutputDevice() {
-        // Placeholder UIDs for demonstration. You'll need to dynamically find these.
-        let masterDeviceUID: CFString = "MasterDeviceUID" as CFString
-        let secondDeviceUID: CFString = "SecondDeviceUID" as CFString
-        let multiOutUID: String = "com.PairPods.PairPodsMultiOutputDevice"
-
-        // Create the multi-output device
-        let (status, deviceID) = createMultiOutputAudioDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID, multiOutUID: multiOutUID)
-
-        if status == noErr {
-            print("Successfully created multi-output device with ID \(deviceID).")
-            // Set the created multi-output device as the system's audio output
-            setSystemAudioOutputDevice(to: deviceID)
-        } else {
-            print("Failed to create multi-output device. Error code: \(status)")
-        }
-    }
-
-    private func setSystemAudioOutputDevice(to deviceID: AudioDeviceID) {
-        // This is a simplified placeholder. Setting the system's audio output device involves additional CoreAudio API calls.
-        // You would typically use AudioHardwareSetProperty or AudioObjectSetPropertyData to change the default output device.
-        print("Setting the system's audio output device to \(deviceID).")
-    }
-    
-    private func createMultiOutputAudioDevice(masterDeviceUID: CFString, secondDeviceUID: CFString, multiOutUID: String) -> (OSStatus, AudioDeviceID) {
-        let desc: [String : Any] = [
+    private func createAndSetMultiOutputDevice(masterDeviceUID: CFString, secondDeviceUID: CFString, multiOutUID: String) -> OSStatus {
+        let desc: [String: Any] = [
             kAudioAggregateDeviceNameKey: "PairPods Output Device",
             kAudioAggregateDeviceUIDKey: multiOutUID,
             kAudioAggregateDeviceSubDeviceListKey: [[kAudioSubDeviceUIDKey: masterDeviceUID], [kAudioSubDeviceUIDKey: secondDeviceUID]],
@@ -183,6 +140,26 @@ class AudioSharingViewModel: ObservableObject {
 
         var aggregateDevice: AudioDeviceID = 0
         let status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateDevice)
-        return (status, aggregateDevice)
+
+        guard status == noErr else {
+            print("Failed to create the multi-output device. Error: \(status)")
+            return status
+        }
+
+        // Successfully created the multi-output device, now set it as the default output device
+        var defaultOutputPropertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+
+        let setStatus = AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &defaultOutputPropertyAddress, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &aggregateDevice)
+
+        
+        guard setStatus == noErr else {
+            print("Failed to set the multi-output device as the default output device. Error: \(setStatus)")
+            return setStatus
+        }
+
+        return setStatus
     }
 }
