@@ -22,7 +22,7 @@ class AudioSharingViewModel: ObservableObject {
     private func startSharingAudio() {
         // Check for two pairs of AirPods connected
         print("Sharing audio between two pairs of AirPods")
-        listAllAudioDevices()
+        listAllOutputDevices()
         // Placeholder UIDs for demonstration. You'll need to dynamically find these.
         let masterDeviceUID: CFString = "BuiltInSpeakerDevice" as CFString
         let secondDeviceUID: CFString = "EC-73-79-3D-0E-42:output" as CFString
@@ -168,39 +168,50 @@ class AudioSharingViewModel: ObservableObject {
         return nil
     }
 
-    func listAllAudioDevices() {
+    private func listAllOutputDevices() {
         guard let audioDevices = fetchAllAudioDeviceIDs() else {
-            print("Error: Unable to get audio devices")
+            print("Error: Unable to fetch audio device IDs.")
             return
         }
 
-        print("\n--- Audio Devices ---\n")
+        print("\n--- Listing Output Devices ---\n")
 
         for deviceID in audioDevices {
-            guard let deviceInfo = fetchDeviceNameAndUID(deviceID: deviceID) else { continue }
-            let (deviceName, deviceUID) = deviceInfo
+            guard let deviceName = fetchDeviceName(deviceID: deviceID),
+                  let deviceUID = fetchDeviceUID(deviceID: deviceID) else {
+                print("Warning: Could not fetch name or UID for device ID \(deviceID). Skipping...")
+                continue
+            }
             
-            // Filter and print device info based on specific criteria, similar to original function
-            var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreamConfiguration, mScope: kAudioDevicePropertyScopeOutput, mElement: kAudioObjectPropertyElementMain)
+            // Determine if the device has any output channels
+            var propertyAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyStreamConfiguration,
+                mScope: kAudioDevicePropertyScopeOutput,
+                mElement: kAudioObjectPropertyElementMain)
             var dataSize: UInt32 = 0
-            var status = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
-            guard status == noErr else { continue }
+            let statusDataSize = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
             
-            let bufferPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: Int(dataSize))
+            guard statusDataSize == noErr, dataSize > 0 else {
+                continue // Skip this device if unable to get data size or if there are no output channels
+            }
+            
+            let bufferPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
             defer { bufferPointer.deallocate() }
             
-            status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, bufferPointer)
-            guard status == noErr else { continue }
-
+            let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, bufferPointer)
+            
+            guard status == noErr else {
+                print("Error: Failed to get stream configuration for device ID \(deviceID). Status code: \(status). Skipping...")
+                continue
+            }
+            
             let streamConfig = bufferPointer.pointee
-            if streamConfig.mNumberBuffers > 0,
-               !deviceName.contains("Internal Speakers"),
-               !deviceUID.contains("AMS2_Aggregate"),
-               !deviceUID.contains("AMS2_StackedOutput") {
+            if streamConfig.mNumberBuffers > 0 {
                 print("Output Device Name: \(deviceName), ID: \(deviceID), UID: \(deviceUID)")
             }
         }
     }
+
 
     private func areTwoAirPodsConnected() -> Bool {
         // Dummy implementation - replace with actual Bluetooth device checking logic
@@ -242,23 +253,23 @@ class AudioSharingViewModel: ObservableObject {
         return setStatus
     }
     
-    private func removeMultiOutputDevice(byUID deviceUID: String) -> OSStatus {
-        // First, convert the UID to an AudioDeviceID
-        guard let deviceID = UIDtoID(byUID: deviceUID as CFString) else {
-            print("Error: Device with UID \(deviceUID) not found.")
-            return kAudioHardwareBadDeviceError
-        }
-        
-        // Now, attempt to remove the device using its AudioDeviceID
-        let status = AudioHardwareDestroyAggregateDevice(deviceID)
-        
-        if status == noErr {
-            print("Successfully removed the multi-output device with UID \(deviceUID).")
-        } else {
-            print("Failed to remove the multi-output device with UID \(deviceUID). Error: \(status)")
-        }
-        
-        return status
-    }
+//    private func removeMultiOutputDevice(byUID deviceUID: String) -> OSStatus {
+//        // First, convert the UID to an AudioDeviceID
+//        guard let deviceID = UIDtoID(byUID: deviceUID as CFString) else {
+//            print("Error: Device with UID \(deviceUID) not found.")
+//            return kAudioHardwareBadDeviceError
+//        }
+//        
+//        // Now, attempt to remove the device using its AudioDeviceID
+//        let status = AudioHardwareDestroyAggregateDevice(deviceID)
+//        
+//        if status == noErr {
+//            print("Successfully removed the multi-output device with UID \(deviceUID).")
+//        } else {
+//            print("Failed to remove the multi-output device with UID \(deviceUID). Error: \(status)")
+//        }
+//        
+//        return status
+//    }
 
 }
