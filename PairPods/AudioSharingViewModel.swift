@@ -103,26 +103,26 @@ class AudioSharingViewModel: ObservableObject {
     }
     
     private func fetchDeviceName(deviceID: AudioDeviceID) -> String? {
-        var name: CFString?
-        var propertySize = UInt32(MemoryLayout<CFString?>.size)
+        var name: Unmanaged<CFString>?
+        var propertySize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyDeviceNameCFString,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain)
-        
+
         let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &name)
-        
-        guard status == noErr, let deviceName = name else {
+
+        guard status == noErr, let deviceName = name?.takeRetainedValue() else {
             print("Error: Unable to get the name for device ID: \(deviceID). Status code: \(status)")
             return nil
         }
-        
+
         return deviceName as String
     }
     
     private func fetchDeviceUID(deviceID: AudioDeviceID) -> String? {
-        var uid: CFString?
-        var propertySize = UInt32(MemoryLayout<CFString?>.size)
+        var uid: Unmanaged<CFString>?
+        var propertySize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyDeviceUID,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -130,7 +130,7 @@ class AudioSharingViewModel: ObservableObject {
         
         let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &uid)
         
-        guard status == noErr, let deviceUID = uid else {
+        guard status == noErr, let deviceUID = uid?.takeRetainedValue() else {
             print("Error: Unable to get the UID for device ID: \(deviceID). Status code: \(status)")
             return nil
         }
@@ -146,8 +146,8 @@ class AudioSharingViewModel: ObservableObject {
         }
         
         for deviceID in deviceIDs {
-            var uid: CFString?
-            var propertySize = UInt32(MemoryLayout<CFString?>.size)
+            var uid: Unmanaged<CFString>?
+            var propertySize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
             var propertyAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyDeviceUID,
                 mScope: kAudioObjectPropertyScopeGlobal,
@@ -160,7 +160,8 @@ class AudioSharingViewModel: ObservableObject {
                 continue // Skipping this device due to error, continue with next
             }
             
-            if uid == deviceUID {
+            let fetchedUID = uid?.takeRetainedValue()
+            if fetchedUID == deviceUID {
                 return deviceID
             }
         }
