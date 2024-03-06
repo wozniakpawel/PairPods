@@ -104,21 +104,20 @@ class AudioSharingViewModel: ObservableObject {
         return defaultDeviceID
     }
 
-    private func UIDtoID(byUID deviceUID: CFString) -> AudioDeviceID? {
+    // avoid this function if possible, it's pretty expensive to run!
+    private func fetchDeviceID(deviceUID: String) -> AudioDeviceID? {
         guard let deviceIDs = fetchAllAudioDeviceIDs() else { return nil }
         
         for deviceID in deviceIDs {
-            var uidSize = UInt32(MemoryLayout<CFString>.size)
-            var uid: CFString? = nil
+            var uid: CFString?
+            var propertySize = UInt32(MemoryLayout<CFString?>.size)
             var propertyAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyDeviceUID,
                 mScope: kAudioObjectPropertyScopeGlobal,
                 mElement: kAudioObjectPropertyElementMain)
             
-            let status = withUnsafeMutablePointer(to: &uid) {
-                AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &uidSize, $0)
-            }
-            if status == noErr && uid == deviceUID {
+            let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &uid)
+            if status == noErr, let fetchedUID = uid as String?, fetchedUID == deviceUID {
                 return deviceID
             }
         }
