@@ -233,4 +233,24 @@ class AudioSharingViewModel: ObservableObject {
 
         return setStatus
     }
+    
+    private func removeMultiOutputDevice(byUID deviceUID: String) -> OSStatus {
+        // First, convert the UID to an AudioDeviceID
+        guard let deviceID = UIDtoID(byUID: deviceUID as CFString) else {
+            print("Error: Device with UID \(deviceUID) not found.")
+            return kAudioHardwareBadDeviceError
+        }
+        
+        // Now, attempt to remove the device using its AudioDeviceID
+        let status = AudioHardwareDestroyAggregateDevice(deviceID)
+        
+        if status == noErr {
+            print("Successfully removed the multi-output device with UID \(deviceUID).")
+        } else {
+            print("Failed to remove the multi-output device with UID \(deviceUID). Error: \(status)")
+        }
+        
+        return status
+    }
+
 }
