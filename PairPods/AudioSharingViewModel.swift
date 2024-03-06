@@ -141,8 +141,11 @@ class AudioSharingViewModel: ObservableObject {
     }
 
     // avoid this function if possible, it's pretty expensive to run!
-    private func fetchDeviceID(deviceUID: String) -> AudioDeviceID? {
-        guard let deviceIDs = fetchAllAudioDeviceIDs() else { return nil }
+    private func fetchDeviceID(deviceUID: CFString) -> AudioDeviceID? {
+        guard let deviceIDs = fetchAllAudioDeviceIDs() else {
+            print("Error: Unable to fetch audio device IDs.")
+            return nil
+        }
         
         for deviceID in deviceIDs {
             var uid: CFString?
@@ -159,12 +162,12 @@ class AudioSharingViewModel: ObservableObject {
                 continue // Skipping this device due to error, continue with next
             }
             
-            if let fetchedUID = uid as String?, fetchedUID == deviceUID {
+            if uid == deviceUID {
                 return deviceID
             }
         }
         
-        print("Error: No audio device found with UID: \(deviceUID)")
+        print("Error: No audio device found with UID: \(deviceUID as String)")
         return nil
     }
 
@@ -211,7 +214,6 @@ class AudioSharingViewModel: ObservableObject {
             }
         }
     }
-
 
     private func areTwoAirPodsConnected() -> Bool {
         // Dummy implementation - replace with actual Bluetooth device checking logic
