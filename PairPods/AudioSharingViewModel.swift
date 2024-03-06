@@ -64,13 +64,23 @@ class AudioSharingViewModel: ObservableObject {
 
         var propertySize: UInt32 = 0
         var status = AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize)
-        guard status == noErr else { return nil }
+        guard status == noErr else {
+            print("Error: Unable to get the property data size for audio devices. Status code: \(status)")
+            return nil
+        }
         
         let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
-        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
+        guard deviceCount > 0 else {
+            print("No audio devices found.")
+            return nil
+        }
         
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
         status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &deviceIDs)
-        guard status == noErr else { return nil }
+        guard status == noErr else {
+            print("Error: Unable to get audio device IDs. Status code: \(status)")
+            return nil
+        }
         
         return deviceIDs
     }
