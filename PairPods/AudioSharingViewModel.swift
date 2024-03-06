@@ -117,11 +117,18 @@ class AudioSharingViewModel: ObservableObject {
                 mElement: kAudioObjectPropertyElementMain)
             
             let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &uid)
-            if status == noErr, let fetchedUID = uid as String?, fetchedUID == deviceUID {
+
+            guard status == noErr else {
+                print("Error: Unable to get UID for device ID \(deviceID). Status code: \(status)")
+                continue // Skipping this device due to error, continue with next
+            }
+            
+            if let fetchedUID = uid as String?, fetchedUID == deviceUID {
                 return deviceID
             }
         }
         
+        print("Error: No audio device found with UID: \(deviceUID)")
         return nil
     }
 
