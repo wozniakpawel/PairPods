@@ -74,8 +74,27 @@ class AudioSharingViewModel: ObservableObject {
         
         return deviceIDs
     }
-    
-    private func findAudioDeviceID(byUID deviceUID: CFString) -> AudioDeviceID? {
+
+    private func findDefaultAudioDeviceID() -> AudioDeviceID? {
+        var defaultDeviceID = AudioDeviceID()
+        var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
+
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+
+        let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &defaultDeviceID)
+
+        if status == noErr {
+            return defaultDeviceID
+        } else {
+            print("Error: Unable to get default audio device ID. Status code: \(status)")
+            return nil
+        }
+    }
+
+    private func UIDtoID(byUID deviceUID: CFString) -> AudioDeviceID? {
         guard let deviceIDs = fetchAllAudioDeviceIDs() else { return nil }
         
         for deviceID in deviceIDs {
@@ -97,6 +116,30 @@ class AudioSharingViewModel: ObservableObject {
         return nil
     }
 
+    private func IDtoUID(byID deviceID: AudioDeviceID) -> String? {
+        var uid: CFString?
+        var propertySize = UInt32(MemoryLayout<CFString?>.size)
+
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyDeviceUID,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+
+        let status = withUnsafeMutablePointer(to: &uid) { pointer in
+            pointer.withMemoryRebound(to: CFString.self, capacity: 1) { reboundPointer in
+                AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, reboundPointer)
+            }
+        }
+
+        if status == noErr, let uid = uid {
+            return uid as String
+        } else {
+            print("Error: Unable to get audio device UID for device ID: \(deviceID). Status code: \(status)")
+            return nil
+        }
+    }
+
+    
     private func fetchDeviceNameAndUID(deviceID: AudioDeviceID) -> (name: String, uid: String)? {
         var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceNameCFString, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
         var name: CFString = "" as CFString
