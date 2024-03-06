@@ -96,12 +96,12 @@ class AudioSharingViewModel: ObservableObject {
 
         let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &defaultDeviceID)
 
-        if status == noErr {
-            return defaultDeviceID
-        } else {
-            print("Error: Unable to get default audio device ID. Status code: \(status)")
+        guard status == noErr else {
+            print("Error: Unable to get the default audio device ID. Status code: \(status)")
             return nil
         }
+        
+        return defaultDeviceID
     }
 
     private func UIDtoID(byUID deviceUID: CFString) -> AudioDeviceID? {
