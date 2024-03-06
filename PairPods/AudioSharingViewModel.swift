@@ -20,38 +20,18 @@ class AudioSharingViewModel: ObservableObject {
     }
     
     private func startSharingAudio() {
-        // Check for two pairs of AirPods connected
         print("Sharing audio between two pairs of AirPods")
         listAllOutputDevices()
         // Placeholder UIDs for demonstration. You'll need to dynamically find these.
         let masterDeviceUID: CFString = "18-3F-70-77-F9-80:output" as CFString
         let secondDeviceUID: CFString = "EC-73-79-3D-0E-42:output" as CFString
+        // call findTwoOutputDevices() here
         let pairPodsDeviceID = createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID)
-        //        guard areTwoAirPodsConnected() else {
-        //            // Handle the error: Not enough AirPods connected
-        //            print("Error: Two pairs of AirPods must be connected.")
-        //            DispatchQueue.main.async {
-        //                self.isSharingAudio = false
-        //            }
-        //            return
-        //        }
-        //
-        //        // Create the Multi-Output Device and set it as the system's output
-        //        createAndUseMultiOutputDevice()
     }
     
     private func stopSharingAudio() {
-        // Set MacBook speakers as the output device and remove the Multi-Output Device
-        // setSystemAudioOutputDevice()
         print("Audio Sharing stopped.")
         let removeDeviceStatus = removePairPodsOutputDevice()
-        //        print("Setting the output device to internal speakers")
-        //        guard let builtInSpeakerID = findBuiltInSpeakerDeviceID() else {
-        //            print("Failed to find the built-in speaker device ID.")
-        //            return
-        //        }
-        //        print("Setting the output device to internal speakers")
-        //        setSystemAudioOutputDevice(to: builtInSpeakerID)
     }
     
     private func fetchAllAudioDeviceIDs() -> [AudioDeviceID]? {
