@@ -161,7 +161,7 @@ class AudioSharingViewModel: ObservableObject {
             }
         }
         
-        print("Error: No audio device found with UID: \(deviceUID as String)")
+        print("No audio device found with UID: \(deviceUID as String)")
         return nil
     }
     
@@ -317,7 +317,6 @@ class AudioSharingViewModel: ObservableObject {
         let multiOutUID = "PairPodsOutputDevice" as CFString
 
         guard let deviceID = fetchDeviceID(deviceUID: multiOutUID) else {
-            print("Device with UID \(multiOutUID) not found. Perhaps it was already removed.")
             return noErr
         }
 
