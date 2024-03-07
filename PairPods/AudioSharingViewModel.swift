@@ -24,27 +24,25 @@ class AudioSharingViewModel: ObservableObject {
     private func startSharingAudio() {
         guard !isShowingAlert else { return }
 
-        print("Sharing audio between two pairs of AirPods")
-        
         // Ensure we're not creating another device if one already exists
-        let _ = removePairPodsOutputDevice()
-        
-        guard let outputDevices = findTwoOutputDevices() else {
-            alertMessage = "Please make sure two pairs of AirPods are connected via Bluetooth."
-            isShowingAlert = true
-            isSharingAudio = false
+        let removalStatus = removePairPodsOutputDevice()
+        if removalStatus != noErr && removalStatus != kAudioHardwareBadDeviceError {
+            handleError("Failed to remove existing device before creating a new one.", errorCode: removalStatus)
             return
         }
-        let masterDeviceUID = outputDevices[0].deviceUID as CFString
-        let secondDeviceUID = outputDevices[1].deviceUID as CFString
-
-        if createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) != nil {
-            print("Successfully created and set multi-output device.")
-        } else {
-            alertMessage = "Something went wrong. Failed to create multi-output device."
-            isShowingAlert = true
-            isSharingAudio = false
+        
+        guard let outputDevices = findTwoOutputDevices(), outputDevices.count >= 2 else {
+            handleError("Please make sure two pairs of AirPods are connected via Bluetooth.")
+            return
         }
+        
+        let (masterDeviceUID, secondDeviceUID) = (outputDevices[0].deviceUID as CFString, outputDevices[1].deviceUID as CFString)
+        guard createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) != nil else {
+            handleError("Something went wrong. Failed to create multi-output device.")
+            return
+        }
+
+        print("Successfully created and set multi-output device.")
     }
 
     private func stopSharingAudio() {
@@ -324,6 +322,14 @@ class AudioSharingViewModel: ObservableObject {
         }
 
         return removeMultiOutputDevice(deviceID: deviceID)
+    }
+    
+    private func handleError(_ message: String, errorCode: OSStatus? = nil) {
+        let fullMessage = errorCode != nil ? "\(message) Error code: \(errorCode!)" : message
+        print(fullMessage)
+        alertMessage = message
+        isShowingAlert = true
+        isSharingAudio = false // Assuming we want to reset sharing state on error
     }
 
 }
