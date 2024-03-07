@@ -17,7 +17,6 @@ class AudioSharingViewModel: ObservableObject {
     private var currentAggregateDeviceID: AudioDeviceID?
 
     func toggleAudioSharing() {
-        isSharingAudio.toggle()
         if isSharingAudio {
             startSharingAudio()
         } else {
