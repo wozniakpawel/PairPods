@@ -21,6 +21,9 @@ struct ContentView: View {
             .controlSize(.mini)
         }
         .padding()
+        .alert(isPresented: $viewModel.isShowingAlert) {
+            Alert(title: Text("Alert"), message: Text(viewModel.alertMessage), dismissButton: .default(Text("OK")))
+        }
     }
 }
 

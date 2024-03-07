@@ -10,6 +10,8 @@ import CoreAudio
 
 class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false
+    @Published var isShowingAlert = false
+    @Published var alertMessage = ""
     
     func toggleAudioSharing() {
         if isSharingAudio {
@@ -22,11 +24,22 @@ class AudioSharingViewModel: ObservableObject {
     private func startSharingAudio() {
         print("Sharing audio between two pairs of AirPods")
         listAllOutputDevices()
-        // Placeholder UIDs for demonstration. You'll need to dynamically find these.
-        let masterDeviceUID: CFString = "18-3F-70-77-F9-80:output" as CFString
-        let secondDeviceUID: CFString = "EC-73-79-3D-0E-42:output" as CFString
-        // call findTwoOutputDevices() here
-        let pairPodsDeviceID = createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID)
+        // Attempt to find two output devices
+        guard let outputDevices = findTwoOutputDevices() else {
+            alertMessage = "Please make sure two pairs of AirPods are connected via Bluetooth"
+            isShowingAlert = true
+            isSharingAudio = false
+            return
+        }
+        let masterDeviceUID = outputDevices[0].deviceUID as CFString
+        let secondDeviceUID = outputDevices[1].deviceUID as CFString
+        if let _ = createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) {
+            print("Successfully created and set multi-output device.")
+        } else {
+            alertMessage = "Failed to create multi-output device."
+            isShowingAlert = true
+            isSharingAudio = false
+        }
     }
     
     private func stopSharingAudio() {
@@ -198,6 +211,40 @@ class AudioSharingViewModel: ObservableObject {
         // Dummy implementation - replace with actual Bluetooth device checking logic
         // This part is highly dependent on macOS APIs and the ability to access Bluetooth device status.
         return true // Assuming two pairs are connected for demonstration purposes
+    }
+    
+    private func findTwoOutputDevices() -> [(deviceID: AudioDeviceID, deviceUID: String)]? {
+        guard let audioDevices = fetchAllAudioDeviceIDs() else {
+            return nil
+        }
+        
+        var outputDevices: [(deviceID: AudioDeviceID, deviceUID: String)] = []
+        
+        for deviceID in audioDevices {
+            guard let deviceUID = fetchDeviceUID(deviceID: deviceID),
+                  !deviceUID.contains("BuiltInSpeakerDevice"),
+                  !deviceUID.contains("AMS2_Aggregate"),
+                  !deviceUID.contains("AMS2_StackedOutput"),
+                  let _ = fetchDeviceName(deviceID: deviceID) else { continue }
+            
+            var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreamConfiguration, mScope: kAudioObjectPropertyScopeOutput, mElement: kAudioObjectPropertyElementMain)
+            var dataSize: UInt32 = 0
+            let statusDataSize = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
+            
+            if statusDataSize == noErr, dataSize > 0 {
+                let bufferPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
+                defer { bufferPointer.deallocate() }
+                
+                let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, bufferPointer)
+                
+                if status == noErr, bufferPointer.pointee.mNumberBuffers > 0 {
+                    outputDevices.append((deviceID, deviceUID))
+                    if outputDevices.count == 2 { break } // Only need two devices
+                }
+            }
+        }
+        
+        return outputDevices.count == 2 ? outputDevices : nil
     }
     
     private func createMultiOutputDevice(masterDeviceUID: CFString, secondDeviceUID: CFString) -> AudioDeviceID? {
