@@ -12,8 +12,12 @@ class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false
     @Published var isShowingAlert = false
     @Published var alertMessage = ""
-    
+
+    // Track the current aggregate device ID
+    private var currentAggregateDeviceID: AudioDeviceID?
+
     func toggleAudioSharing() {
+        isSharingAudio.toggle()
         if isSharingAudio {
             startSharingAudio()
         } else {
@@ -22,9 +26,16 @@ class AudioSharingViewModel: ObservableObject {
     }
     
     private func startSharingAudio() {
+        guard !isShowingAlert else { return }
+
         print("Sharing audio between two pairs of AirPods")
-        listAllOutputDevices()
-        // Attempt to find two output devices
+        // Ensure we're not creating another device if one already exists
+        guard currentAggregateDeviceID == nil else {
+            print("An aggregate device already exists. ID: \(String(describing: currentAggregateDeviceID))")
+            return
+        }
+
+        // Simplified device finding logic for demonstration
         guard let outputDevices = findTwoOutputDevices() else {
             alertMessage = "Please make sure two pairs of AirPods are connected via Bluetooth"
             isShowingAlert = true
@@ -33,18 +44,30 @@ class AudioSharingViewModel: ObservableObject {
         }
         let masterDeviceUID = outputDevices[0].deviceUID as CFString
         let secondDeviceUID = outputDevices[1].deviceUID as CFString
-        if let _ = createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) {
+
+        if let deviceID = createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) {
             print("Successfully created and set multi-output device.")
+            currentAggregateDeviceID = deviceID
         } else {
             alertMessage = "Failed to create multi-output device."
             isShowingAlert = true
             isSharingAudio = false
         }
     }
-    
+
     private func stopSharingAudio() {
-        print("Audio Sharing stopped.")
-        let removeDeviceStatus = removePairPodsOutputDevice()
+        guard let deviceID = currentAggregateDeviceID else {
+            print("No aggregate device to remove.")
+            return
+        }
+        
+        let removeDeviceStatus = removeMultiOutputDevice(deviceID: deviceID)
+        if removeDeviceStatus == noErr {
+            print("Audio Sharing stopped and device removed.")
+            currentAggregateDeviceID = nil
+        } else {
+            print("Failed to remove the aggregate device. Status: \(removeDeviceStatus)")
+        }
     }
     
     private func fetchAllAudioDeviceIDs() -> [AudioDeviceID]? {
@@ -315,8 +338,8 @@ class AudioSharingViewModel: ObservableObject {
         let multiOutUID = "PairPodsOutputDevice" as CFString
 
         guard let deviceID = fetchDeviceID(deviceUID: multiOutUID) else {
-            print("Error: Device with UID \(multiOutUID) not found.")
-            return kAudioHardwareBadDeviceError
+            print("Device with UID \(multiOutUID) not found. Perhaps it was already removed.")
+            return noErr
         }
 
         return removeMultiOutputDevice(deviceID: deviceID)
