@@ -83,9 +83,7 @@ class ToggleNSView: NSView {
     override func layout() {
         super.layout()
         // Apply padding by insetting the bounds
-        let paddingX: CGFloat = 5
-        let paddingY: CGFloat = 0
-        effectView?.frame = bounds.insetBy(dx: paddingX, dy: paddingY)
+        effectView?.frame = bounds.insetBy(dx: 5, dy: 0)
     }
 
     override func updateTrackingAreas() {
