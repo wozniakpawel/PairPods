@@ -28,7 +28,6 @@ class AudioSharingViewModel: ObservableObject {
         }
     }
     
-        
     private func startSharingAudio() -> Bool {
         
         // Ensure we're not creating another device if one already exists

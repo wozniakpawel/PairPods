@@ -23,8 +23,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create the toggle menu item with custom view
         let toggleItem = NSMenuItem()
         let toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
-        toggleView.configure(with: viewModel)
-        toggleView.appDelegate = self
+        toggleView.onToggle = { [weak self] isOn in
+            self?.viewModel.isSharingAudio = isOn
+            self?.updateStatusItemIcon()
+        }
         toggleItem.view = toggleView
         
         menu.addItem(toggleItem)

@@ -10,23 +10,17 @@ import AppKit
 class ToggleNSView: NSView {
     var toggleSwitch = NSSwitch(frame: .zero)
     var label = NSTextField()
-    var viewModel: AudioSharingViewModel!
-    weak var appDelegate: AppDelegate?
+    var onToggle: ((Bool) -> Void)?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        setupViews()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(with viewModel: AudioSharingViewModel) {
-        self.viewModel = viewModel
-        setupViews()
-        updateToggleState()
-    }
-    
     private func setupViews() {
         addSubview(label)
         addSubview(toggleSwitch)
@@ -57,14 +51,9 @@ class ToggleNSView: NSView {
         toggleSwitch.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     }
-    
-    private func updateToggleState() {
-         toggleSwitch.state = viewModel.isSharingAudio ? .on : .off
-     }
 
     @objc func toggleAudioSharing(_ sender: NSSwitch) {
-        viewModel.isSharingAudio = sender.state == .on
-        appDelegate?.updateStatusItemIcon()
+        onToggle?(sender.state == .on)
     }
     
 }
