@@ -9,30 +9,34 @@ import SwiftUI
 
 @main
 struct PairPodsApp: App {
-    @StateObject private var viewModel = AudioSharingViewModel()
-    @State private var errorMessage: String = ""
-
     var body: some Scene {
         MenuBarExtra("PairPods", systemImage: "airpods.gen3") {
-            
-            Toggle("Share Audio", isOn: $viewModel.isSharingAudio)
-                .padding()
-                .toggleStyle(.switch)
-                .controlSize(.mini)
-            
-            Divider()
-                        
-            Button("About") {
-                showAbout()
-            }.keyboardShortcut("a")
-            
-            Button("Quit") {
-                gracefulShutdown()
-            }.keyboardShortcut("q")
+            MenuBarContentView()
         }
         .menuBarExtraStyle(.window)
     }
-    
+}
+
+struct MenuBarContentView: View {
+    @StateObject private var viewModel = AudioSharingViewModel()
+
+    var body: some View {
+        Toggle("Share Audio", isOn: $viewModel.isSharingAudio)
+            .padding()
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+        
+        Divider()
+                    
+        Button("About") {
+            showAbout()
+        }.keyboardShortcut("a")
+        
+        Button("Quit") {
+            gracefulShutdown()
+        }.keyboardShortcut("q")
+    }
+
     func gracefulShutdown() {
         viewModel.isSharingAudio = false
         NSApplication.shared.terminate(nil)

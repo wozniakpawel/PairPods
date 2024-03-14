@@ -329,13 +329,13 @@ class AudioSharingViewModel: ObservableObject {
         let fullMessage = errorCode != nil ? "\(message) Error code: \(errorCode!)" : message
         print(fullMessage)
         
+        isSharingAudio = false
+        
         let alert = NSAlert()
         alert.messageText = message
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
         alert.runModal()
-        
-        isSharingAudio = false
     }
 
 }
