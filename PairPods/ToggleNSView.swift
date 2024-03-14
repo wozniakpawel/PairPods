@@ -8,7 +8,7 @@
 import AppKit
 
 class ToggleNSView: NSView {
-    var toggleSwitch = NSSwitch(frame: NSRect(x: 0, y: 0, width: 40, height: 20))
+    var toggleSwitch = NSSwitch(frame: .zero)
     var label = NSTextField(string: "Share Audio")
 
     override init(frame frameRect: NSRect) {
@@ -19,16 +19,24 @@ class ToggleNSView: NSView {
         label.translatesAutoresizingMaskIntoConstraints = false
         toggleSwitch.translatesAutoresizingMaskIntoConstraints = false
         
-        label.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-        label.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+        NSLayoutConstraint.activate([
+            label.centerYAnchor.constraint(equalTo: centerYAnchor),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 15), // Add padding to the label
+            label.trailingAnchor.constraint(lessThanOrEqualTo: toggleSwitch.leadingAnchor, constant: -10), // Ensure there is space between label and switch
+            
+            toggleSwitch.centerYAnchor.constraint(equalTo: centerYAnchor),
+            toggleSwitch.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10) // Add some padding to the right of the toggle switch
+        ])
+        
         label.stringValue = "Share Audio"
         label.isBezeled = false
         label.drawsBackground = false
         label.isEditable = false
         label.isSelectable = false
         
-        toggleSwitch.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-        toggleSwitch.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+        // This ensures that the switch is aligned to the right and doesn't overlap with the text
+        toggleSwitch.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        toggleSwitch.setContentCompressionResistancePriority(.required, for: .horizontal)
     }
     
     required init?(coder: NSCoder) {

@@ -25,8 +25,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         
         // Create the toggle menu item with custom view
-        let toggleItem = NSMenuItem(title: "Share Audio", action: nil, keyEquivalent: "s")
-        let toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 40, height: 20))
+        let toggleItem = NSMenuItem()
+        let toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
         toggleView.toggleSwitch.target = self
         toggleView.toggleSwitch.action = #selector(toggleAudioSharing(_:))
         toggleItem.view = toggleView
@@ -66,7 +66,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func quitApp() {
-//        viewModel.isSharingAudio = false
+        viewModel.isSharingAudio = false
         NSApplication.shared.terminate(nil)
     }
 }
