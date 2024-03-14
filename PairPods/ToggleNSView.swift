@@ -12,6 +12,11 @@ class ToggleNSView: NSView {
     var label = NSTextField()
     var onToggle: ((Bool) -> Void)?
     private var trackingArea: NSTrackingArea?
+    private var highlighted = false {
+        didSet {
+            self.needsDisplay = true
+        }
+    }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -85,12 +90,12 @@ class ToggleNSView: NSView {
       
       override func mouseEntered(with event: NSEvent) {
           super.mouseEntered(with: event)
-          // Highlight the view by changing the background color or other visual cues
+          highlighted = true
       }
 
       override func mouseExited(with event: NSEvent) {
           super.mouseExited(with: event)
-          // Remove highlight
+          highlighted = false
       }
       
       override func updateTrackingAreas() {
@@ -103,8 +108,11 @@ class ToggleNSView: NSView {
       }
       
       override func draw(_ dirtyRect: NSRect) {
+          if highlighted {
+              NSColor.controlAccentColor.set()
+              let highlightPath = NSBezierPath(rect: bounds)
+              highlightPath.fill()
+          }
           super.draw(dirtyRect)
-          // Drawing code for custom highlight or other styles if needed
-      }
-    
+      }    
 }
