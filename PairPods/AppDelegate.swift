@@ -13,9 +13,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var viewModel = AudioSharingViewModel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Create the status bar item with variable length
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "airpods.gen3", accessibilityDescription: "PairPods")
+        statusItem = NSStatusBar.system.statusItem(withLength: 45)
+        updateStatusItemIcon()
         
         // Set up the menu for the status bar item
         let menu = NSMenu()
@@ -25,6 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let toggleItem = NSMenuItem()
         let toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
         toggleView.configure(with: viewModel)
+        toggleView.appDelegate = self
         toggleItem.view = toggleView
         
         menu.addItem(toggleItem)
@@ -39,6 +39,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(quitItem)
     }
         
+    func updateStatusItemIcon() {
+        let iconName = viewModel.isSharingAudio ? "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill" : "airpodspro.chargingcase.wireless.fill"
+        statusItem.button?.image = NSImage(systemSymbolName: iconName, accessibilityDescription: "PairPods")?.withSymbolConfiguration(NSImage.SymbolConfiguration(textStyle: .title1))
+        statusItem.button?.imagePosition = .imageLeft
+        print("Icon updated!!!!!")
+    }
+    
     @objc func showAbout() {
         DispatchQueue.main.async {
             let alert = NSAlert()

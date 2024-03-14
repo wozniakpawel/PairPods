@@ -11,6 +11,7 @@ class ToggleNSView: NSView {
     var toggleSwitch = NSSwitch(frame: .zero)
     var label = NSTextField()
     var viewModel: AudioSharingViewModel!
+    weak var appDelegate: AppDelegate?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -60,9 +61,10 @@ class ToggleNSView: NSView {
     private func updateToggleState() {
          toggleSwitch.state = viewModel.isSharingAudio ? .on : .off
      }
-    
+
     @objc func toggleAudioSharing(_ sender: NSSwitch) {
         viewModel.isSharingAudio = sender.state == .on
+        appDelegate?.updateStatusItemIcon()
     }
     
 }
