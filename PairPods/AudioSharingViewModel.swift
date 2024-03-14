@@ -13,6 +13,7 @@ class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false {
         didSet {
             toggleAudioSharing()
+            NotificationCenter.default.post(name: NSNotification.Name("updateShareAudioToggle"), object: nil)
         }
     }
     

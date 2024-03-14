@@ -9,10 +9,11 @@ import SwiftUI
 
 @main
 struct PairPodsApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
-        MenuBarExtra("PairPods", systemImage: "airpods.gen3") {
-            MenuBarContentView()
+        Settings {
+            Text("PairPods Settings")
         }
-        .menuBarExtraStyle(.window)
     }
 }

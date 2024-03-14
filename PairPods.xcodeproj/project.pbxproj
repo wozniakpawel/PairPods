@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E9525AFA2BA2FA42006D1B84 /* MenuBarContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9525AF92BA2FA42006D1B84 /* MenuBarContentView.swift */; };
+		E9525AFC2BA30E8A006D1B84 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9525AFB2BA30E8A006D1B84 /* AppDelegate.swift */; };
+		E9525AFE2BA31728006D1B84 /* ToggleNSView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9525AFD2BA31728006D1B84 /* ToggleNSView.swift */; };
 		E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9972B92F59F005494FA /* PairPodsApp.swift */; };
 		E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99B2B92F5A0005494FA /* Assets.xcassets */; };
 		E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */; };
@@ -36,7 +37,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		E9525AF92BA2FA42006D1B84 /* MenuBarContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarContentView.swift; sourceTree = "<group>"; };
+		E9525AFB2BA30E8A006D1B84 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		E9525AFD2BA31728006D1B84 /* ToggleNSView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleNSView.swift; sourceTree = "<group>"; };
 		E985A9942B92F59F005494FA /* PairPods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPods.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E985A9972B92F59F005494FA /* PairPodsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsApp.swift; sourceTree = "<group>"; };
 		E985A99B2B92F5A0005494FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -103,8 +105,9 @@
 			isa = PBXGroup;
 			children = (
 				E9B438DD2BA2C374005EB7A9 /* Info.plist */,
+				E9525AFD2BA31728006D1B84 /* ToggleNSView.swift */,
 				E985A9972B92F59F005494FA /* PairPodsApp.swift */,
-				E9525AF92BA2FA42006D1B84 /* MenuBarContentView.swift */,
+				E9525AFB2BA30E8A006D1B84 /* AppDelegate.swift */,
 				E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */,
 				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
 				E985A9A02B92F5A0005494FA /* PairPods.entitlements */,
@@ -276,9 +279,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9525AFC2BA30E8A006D1B84 /* AppDelegate.swift in Sources */,
 				E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */,
-				E9525AFA2BA2FA42006D1B84 /* MenuBarContentView.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
+				E9525AFE2BA31728006D1B84 /* ToggleNSView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
