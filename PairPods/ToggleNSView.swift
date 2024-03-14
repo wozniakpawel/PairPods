@@ -12,16 +12,12 @@ class ToggleNSView: NSView {
     var label = NSTextField()
     var onToggle: ((Bool) -> Void)?
     private var trackingArea: NSTrackingArea?
-    private var highlighted = false {
-        didSet {
-            self.needsDisplay = true
-        }
-    }
+    private var effectView: NSVisualEffectView?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupViews()
-        setupTrackingArea()
+        setupEffectView()
     }
     
     required init?(coder: NSCoder) {
@@ -70,43 +66,46 @@ class ToggleNSView: NSView {
               onToggle?(newValue)
           }
       }
-      
-      private func setupTrackingArea() {
-          if let existingTrackingArea = trackingArea {
-              removeTrackingArea(existingTrackingArea)
-          }
-          
-          trackingArea = NSTrackingArea(rect: bounds, options: [.activeAlways, .mouseEnteredAndExited], owner: self, userInfo: nil)
-          if let newTrackingArea = trackingArea {
-              addTrackingArea(newTrackingArea)
-          }
-      }
-      
+    
+    private func setupEffectView() {
+        effectView = NSVisualEffectView()
+        effectView?.blendingMode = .withinWindow
+        effectView?.state = .active
+        effectView?.isHidden = true // Initially hidden
+        addSubview(effectView!, positioned: .below, relativeTo: nil)
+    }
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        
+        if let existingTrackingArea = trackingArea {
+            removeTrackingArea(existingTrackingArea)
+        }
+        
+        trackingArea = NSTrackingArea(rect: bounds, options: [.activeAlways, .mouseEnteredAndExited], owner: self, userInfo: nil)
+        if let newTrackingArea = trackingArea {
+            addTrackingArea(newTrackingArea)
+        }
+    }
+    
+    override func layout() {
+        super.layout()
+        effectView?.frame = bounds
+    }
+
       override func mouseEntered(with event: NSEvent) {
           super.mouseEntered(with: event)
-          highlighted = true
+          effectView?.isHidden = false
+          effectView?.material = .selection
       }
 
       override func mouseExited(with event: NSEvent) {
           super.mouseExited(with: event)
-          highlighted = false
-      }
-      
-      override func updateTrackingAreas() {
-          super.updateTrackingAreas()
-          setupTrackingArea()
+          effectView?.isHidden = true
       }
 
       override func mouseDown(with event: NSEvent) {
           isSharingAudio.toggle()
       }
       
-      override func draw(_ dirtyRect: NSRect) {
-          if highlighted {
-              NSColor.controlAccentColor.set()
-              let highlightPath = NSBezierPath(rect: bounds)
-              highlightPath.fill()
-          }
-          super.draw(dirtyRect)
-      }    
 }
