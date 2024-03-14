@@ -7,12 +7,15 @@
 
 import Foundation
 import CoreAudio
+import AppKit
 
 class AudioSharingViewModel: ObservableObject {
-    @Published var isSharingAudio = false
-    @Published var isShowingAlert = false
-    @Published var alertMessage = ""
-
+    @Published var isSharingAudio = false {
+        didSet {
+            toggleAudioSharing()
+        }
+    }
+    
     func toggleAudioSharing() {
         if isSharingAudio {
             startSharingAudio()
@@ -22,8 +25,7 @@ class AudioSharingViewModel: ObservableObject {
     }
     
     private func startSharingAudio() {
-        guard !isShowingAlert else { return }
-
+        
         // Ensure we're not creating another device if one already exists
         let removalStatus = removePairPodsOutputDevice()
         if removalStatus != noErr && removalStatus != kAudioHardwareBadDeviceError {
@@ -41,10 +43,10 @@ class AudioSharingViewModel: ObservableObject {
             handleError("Something went wrong. Failed to create multi-output device.")
             return
         }
-
+        
         print("Successfully created and set multi-output device.")
     }
-
+    
     private func stopSharingAudio() {
         let _ = removePairPodsOutputDevice()
     }
@@ -104,14 +106,14 @@ class AudioSharingViewModel: ObservableObject {
             mSelector: kAudioDevicePropertyDeviceNameCFString,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain)
-
+        
         let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &name)
-
+        
         guard status == noErr, let deviceName = name?.takeRetainedValue() else {
             print("Error: Unable to get the name for device ID: \(deviceID). Status code: \(status)")
             return nil
         }
-
+        
         return deviceName as String
     }
     
@@ -258,15 +260,15 @@ class AudioSharingViewModel: ObservableObject {
             kAudioAggregateDeviceMasterSubDeviceKey: masterDeviceUID,
             kAudioAggregateDeviceIsStackedKey: 1,
         ]
-
+        
         var aggregateDevice: AudioDeviceID = 0
         let status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateDevice)
-
+        
         guard status == noErr else {
             print("Failed to create the multi-output device. Error: \(status)")
             return nil
         }
-
+        
         return aggregateDevice
     }
     
@@ -276,59 +278,64 @@ class AudioSharingViewModel: ObservableObject {
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain)
-
+        
         let setStatus = AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &defaultOutputPropertyAddress, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &mutableDeviceID)
-
+        
         guard setStatus == noErr else {
             print("Failed to set the device ID \(deviceID) as the default output device. Error: \(setStatus)")
             return setStatus
         }
-
+        
         return setStatus
     }
-
+    
     private func createAndUseMultiOutputDevice(masterDeviceUID: CFString, secondDeviceUID: CFString) -> AudioDeviceID? {
         guard let deviceID = createMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) else {
             return nil
         }
-
+        
         let setStatus = setDefaultOutputDevice(deviceID: deviceID)
         guard setStatus == noErr else {
             print("Failed to set the multi-output device as default. Error: \(setStatus)")
             return nil
         }
-
+        
         return deviceID
     }
     
     private func removeMultiOutputDevice(deviceID: AudioDeviceID) -> OSStatus {
         let status = AudioHardwareDestroyAggregateDevice(deviceID)
-
+        
         guard status == noErr else {
             print("Failed to remove the multi-output device with ID \(deviceID). Error: \(status)")
             return status
         }
-
+        
         print("Successfully removed the multi-output device with ID \(deviceID).")
         return status
     }
-
+    
     private func removePairPodsOutputDevice() -> OSStatus {
         let multiOutUID = "PairPodsOutputDevice" as CFString
-
+        
         guard let deviceID = fetchDeviceID(deviceUID: multiOutUID) else {
             return noErr
         }
-
+        
         return removeMultiOutputDevice(deviceID: deviceID)
     }
     
     private func handleError(_ message: String, errorCode: OSStatus? = nil) {
         let fullMessage = errorCode != nil ? "\(message) Error code: \(errorCode!)" : message
         print(fullMessage)
-        alertMessage = message
-        isShowingAlert = true
-        isSharingAudio = false // Assuming we want to reset sharing state on error
+        
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+        
+        isSharingAudio = false
     }
 
 }

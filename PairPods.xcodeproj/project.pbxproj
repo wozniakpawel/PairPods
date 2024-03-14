@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9972B92F59F005494FA /* PairPodsApp.swift */; };
-		E985A99A2B92F59F005494FA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9992B92F59F005494FA /* ContentView.swift */; };
 		E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99B2B92F5A0005494FA /* Assets.xcassets */; };
 		E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */; };
 		E985A9AA2B92F5A0005494FA /* PairPodsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9A92B92F5A0005494FA /* PairPodsTests.swift */; };
@@ -38,7 +37,6 @@
 /* Begin PBXFileReference section */
 		E985A9942B92F59F005494FA /* PairPods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPods.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E985A9972B92F59F005494FA /* PairPodsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsApp.swift; sourceTree = "<group>"; };
-		E985A9992B92F59F005494FA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E985A99B2B92F5A0005494FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		E985A9A02B92F5A0005494FA /* PairPods.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PairPods.entitlements; sourceTree = "<group>"; };
@@ -49,6 +47,7 @@
 		E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		E985A9C32B936984005494FA /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSharingViewModel.swift; sourceTree = "<group>"; };
+		E9B438DD2BA2C374005EB7A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,9 +100,9 @@
 		E985A9962B92F59F005494FA /* PairPods */ = {
 			isa = PBXGroup;
 			children = (
+				E9B438DD2BA2C374005EB7A9 /* Info.plist */,
 				E985A9972B92F59F005494FA /* PairPodsApp.swift */,
 				E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */,
-				E985A9992B92F59F005494FA /* ContentView.swift */,
 				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
 				E985A9A02B92F5A0005494FA /* PairPods.entitlements */,
 				E985A99D2B92F5A0005494FA /* Preview Content */,
@@ -275,7 +274,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */,
-				E985A99A2B92F59F005494FA /* ContentView.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -445,6 +443,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PairPods/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PairPods;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -474,6 +473,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PairPods/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PairPods;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
