@@ -62,13 +62,7 @@ class ToggleNSView: NSView {
     @objc func toggleAudioSharing(_ sender: NSSwitch) {
         onToggle?(sender.state == .on)
     }
-    
-    @objc func toggleSwitchChanged(_ sender: NSSwitch) {
-          // Instead of directly calling onToggle, change the state
-          // This allows the entire view to control the state change
-          isSharingAudio = sender.state == .on
-      }
-
+ 
       var isSharingAudio: Bool {
           get { toggleSwitch.state == .on }
           set {
