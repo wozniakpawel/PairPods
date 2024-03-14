@@ -25,7 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         
         // Create the toggle menu item with custom view
-        let toggleItem = NSMenuItem()
+        let toggleItem = NSMenuItem(title: "Share Audio", action: nil, keyEquivalent: "s")
         let toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 40, height: 20))
         toggleView.toggleSwitch.target = self
         toggleView.toggleSwitch.action = #selector(toggleAudioSharing(_:))
@@ -43,6 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(quitItem)
         
         statusItem.menu = menu
+        statusItem.button?.image = NSImage(systemSymbolName: "airpods.gen3", accessibilityDescription: "PairPods")
     }
     
     @objc func toggleAudioSharing(_ sender: NSSwitch) {
