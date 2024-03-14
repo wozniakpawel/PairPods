@@ -72,9 +72,22 @@ class ToggleNSView: NSView {
         effectView?.blendingMode = .withinWindow
         effectView?.state = .active
         effectView?.isHidden = true // Initially hidden
+        effectView?.wantsLayer = true // This will create a backing layer
         addSubview(effectView!, positioned: .below, relativeTo: nil)
+
+        // Configure the layer with corner radius
+        effectView?.layer?.cornerRadius = 6
+        effectView?.layer?.masksToBounds = true // Make sure sublayers are clipped to the rounded corners
     }
-    
+
+    override func layout() {
+        super.layout()
+        // Apply padding by insetting the bounds
+        let paddingX: CGFloat = 5
+        let paddingY: CGFloat = 0
+        effectView?.frame = bounds.insetBy(dx: paddingX, dy: paddingY)
+    }
+
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         
@@ -86,11 +99,6 @@ class ToggleNSView: NSView {
         if let newTrackingArea = trackingArea {
             addTrackingArea(newTrackingArea)
         }
-    }
-    
-    override func layout() {
-        super.layout()
-        effectView?.frame = bounds
     }
 
       override func mouseEntered(with event: NSEvent) {
