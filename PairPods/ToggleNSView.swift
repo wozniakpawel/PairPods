@@ -46,6 +46,7 @@ class ToggleNSView: NSView {
         label.isEditable = false
         label.isSelectable = false
         
+        toggleSwitch.controlSize = .regular
         toggleSwitch.target = self
         toggleSwitch.action = #selector(toggleAudioSharing(_:))
         
