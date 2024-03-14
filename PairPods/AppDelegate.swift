@@ -43,7 +43,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let iconName = viewModel.isSharingAudio ? "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill" : "airpodspro.chargingcase.wireless.fill"
         statusItem.button?.image = NSImage(systemSymbolName: iconName, accessibilityDescription: "PairPods")?.withSymbolConfiguration(NSImage.SymbolConfiguration(textStyle: .title1))
         statusItem.button?.imagePosition = .imageLeft
-        print("Icon updated!!!!!")
     }
     
     @objc func showAbout() {

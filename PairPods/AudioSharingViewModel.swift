@@ -11,32 +11,46 @@ import AppKit
 
 class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false {
-        willSet {
-            newValue ? startSharingAudio() : stopSharingAudio()
+        didSet {
+            toggleAudioSharing(shouldShare: isSharingAudio)
         }
     }
+    
+    private func toggleAudioSharing(shouldShare: Bool) {
+        if shouldShare {
+            if !startSharingAudio() {
+                DispatchQueue.main.async {
+                    self.isSharingAudio = false
+                }
+            }
+        } else {
+            stopSharingAudio()
+        }
+    }
+    
         
-    private func startSharingAudio() {
+    private func startSharingAudio() -> Bool {
         
         // Ensure we're not creating another device if one already exists
         let removalStatus = removePairPodsOutputDevice()
         if removalStatus != noErr && removalStatus != kAudioHardwareBadDeviceError {
-            handleError("Failed to remove existing device before creating a new one.", errorCode: removalStatus)
-            return
+            handleError("Failed to remove existing device before creating a new one.")
+            return false
         }
         
         guard let outputDevices = findTwoOutputDevices(), outputDevices.count >= 2 else {
             handleError("Please make sure two pairs of AirPods are connected via Bluetooth.")
-            return
+            return false
         }
         
         let (masterDeviceUID, secondDeviceUID) = (outputDevices[0].deviceUID as CFString, outputDevices[1].deviceUID as CFString)
         guard createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) != nil else {
             handleError("Something went wrong. Failed to create multi-output device.")
-            return
+            return false
         }
         
         print("Successfully created and set multi-output device.")
+        return true
     }
     
     private func stopSharingAudio() {
@@ -203,12 +217,6 @@ class AudioSharingViewModel: ObservableObject {
         }
     }
     
-    private func areTwoAirPodsConnected() -> Bool {
-        // Dummy implementation - replace with actual Bluetooth device checking logic
-        // This part is highly dependent on macOS APIs and the ability to access Bluetooth device status.
-        return true // Assuming two pairs are connected for demonstration purposes
-    }
-    
     private func findTwoOutputDevices() -> [(deviceID: AudioDeviceID, deviceUID: String)]? {
         guard let audioDevices = fetchAllAudioDeviceIDs() else {
             return nil
@@ -317,17 +325,14 @@ class AudioSharingViewModel: ObservableObject {
         return removeMultiOutputDevice(deviceID: deviceID)
     }
     
-    private func handleError(_ message: String, errorCode: OSStatus? = nil) {
-        let fullMessage = errorCode != nil ? "\(message) Error code: \(errorCode!)" : message
-        print(fullMessage)
-        
-        isSharingAudio = false
-        
-        let alert = NSAlert()
-        alert.messageText = message
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
+    private func handleError(_ message: String) {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = message
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
     }
 
 }
