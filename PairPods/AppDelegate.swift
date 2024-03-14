@@ -59,7 +59,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showAbout() {
         DispatchQueue.main.async {
             let alert = NSAlert()
-            alert.messageText = "PairPods\nVersion: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")\nCopyright (C) Vertex Forge \(Calendar.current.component(.year, from: Date()))"
+            alert.messageText = "PairPods\nVersion: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")\nVertex Forge © \(Calendar.current.component(.year, from: Date()))"
             alert.addButton(withTitle: "OK")
             alert.runModal()
         }
