@@ -11,20 +11,11 @@ import AppKit
 
 class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false {
-        didSet {
-            toggleAudioSharing()
-            NotificationCenter.default.post(name: NSNotification.Name("updateShareAudioToggle"), object: nil)
+        willSet {
+            newValue ? startSharingAudio() : stopSharingAudio()
         }
     }
-    
-    func toggleAudioSharing() {
-        if isSharingAudio {
-            startSharingAudio()
-        } else {
-            stopSharingAudio()
-        }
-    }
-    
+        
     private func startSharingAudio() {
         
         // Ensure we're not creating another device if one already exists
