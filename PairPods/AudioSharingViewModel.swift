@@ -325,6 +325,9 @@ class AudioSharingViewModel: ObservableObject {
             let alert = NSAlert()
             alert.messageText = message
             alert.alertStyle = .warning
+            if let warningIcon = NSImage(named: NSImage.cautionName) {
+                alert.icon = warningIcon
+            }
             alert.addButton(withTitle: "OK")
             alert.runModal()
         }
