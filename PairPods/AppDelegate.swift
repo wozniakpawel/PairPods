@@ -6,11 +6,14 @@
 //
 
 import Cocoa
+import Combine
 import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var viewModel = AudioSharingViewModel()
+    var toggleView: ToggleNSView?
+    private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: 45)
@@ -22,10 +25,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Create the toggle menu item with custom view
         let toggleItem = NSMenuItem()
-        let toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
-        toggleView.onToggle = { [weak self] isOn in
+        toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
+        toggleView?.onToggle = { [weak self] isOn in
             self?.viewModel.isSharingAudio = isOn
-            self?.updateStatusItemIcon()
         }
         toggleItem.view = toggleView
         
@@ -39,6 +41,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
+
+        viewModel.$isSharingAudio
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isSharingAudio in
+                self?.updateStatusItemIcon()
+                self?.toggleView?.toggleSwitch.state = isSharingAudio ? .on : .off
+            }
+            .store(in: &cancellables)
     }
         
     func updateStatusItemIcon() {

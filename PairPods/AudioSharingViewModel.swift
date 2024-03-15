@@ -12,19 +12,14 @@ import AppKit
 class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false {
         didSet {
-            toggleAudioSharing(shouldShare: isSharingAudio)
-        }
-    }
-    
-    private func toggleAudioSharing(shouldShare: Bool) {
-        if shouldShare {
-            if !startSharingAudio() {
-                DispatchQueue.main.async {
-                    self.isSharingAudio = false
+            if isSharingAudio {
+                if !startSharingAudio() {
+                    isSharingAudio = false
                 }
             }
-        } else {
-            stopSharingAudio()
+            else {
+                stopSharingAudio()
+            }
         }
     }
     
