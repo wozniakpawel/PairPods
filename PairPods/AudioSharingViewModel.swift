@@ -326,6 +326,7 @@ class AudioSharingViewModel: ObservableObject {
     
     private func handleError(_ message: String) {
         DispatchQueue.main.async {
+            print(message)
             let alert = NSAlert()
             alert.messageText = message
             alert.alertStyle = .warning
