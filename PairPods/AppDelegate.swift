@@ -17,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: 45)
+        viewModel.isSharingAudio = false // destroy output device on startup
         updateStatusItemIcon()
         
         // Set up the menu for the status bar item
