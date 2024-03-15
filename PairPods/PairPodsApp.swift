@@ -7,6 +7,18 @@
 
 import SwiftUI
 
+func prepareMenuIcon(imageName: String, targetWidth: CGFloat) -> NSImage {
+    guard let originalImage = NSImage(systemSymbolName: imageName, accessibilityDescription: nil) else { return NSImage() }
+    
+    let paddedImage = NSImage(size: NSSize(width: targetWidth, height: originalImage.size.height))
+    paddedImage.lockFocus()
+    let xPosition = (targetWidth - originalImage.size.width) / 2
+    originalImage.draw(at: CGPoint(x: xPosition, y: 0), from: .zero, operation: .sourceOver, fraction: 1)
+    paddedImage.unlockFocus()
+    
+    return paddedImage
+}
+
 @main
 struct PairPodsApp: App {
     @StateObject private var viewModel = AudioSharingViewModel()
@@ -14,6 +26,7 @@ struct PairPodsApp: App {
     var body: some Scene {
         
         MenuBarExtra {
+            
             Toggle(isOn: $viewModel.isSharingAudio) {
                 Text("Share Audio")
             }.keyboardShortcut("s")
@@ -35,8 +48,9 @@ struct PairPodsApp: App {
             }.keyboardShortcut("q")
             
         } label: {
-            Image(systemName: viewModel.isSharingAudio ? "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill" : "airpodspro.chargingcase.wireless.fill")
-                .labelStyle(IconOnlyLabelStyle())
+            let iconName = viewModel.isSharingAudio ? "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill" : "airpodspro.chargingcase.wireless.fill"
+            let menuIcon = prepareMenuIcon(imageName: iconName, targetWidth: 30)
+            Image(nsImage: menuIcon)
         }
     }
 }
