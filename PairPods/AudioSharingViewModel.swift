@@ -5,9 +5,7 @@
 //  Created by Pawel Wozniak on 04/03/2024.
 //
 
-import Foundation
 import CoreAudio
-import AppKit
 
 class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false {
@@ -318,20 +316,6 @@ class AudioSharingViewModel: ObservableObject {
         }
         
         return removeMultiOutputDevice(deviceID: deviceID)
-    }
-    
-    private func handleError(_ message: String) {
-        DispatchQueue.main.async {
-            print(message)
-            let alert = NSAlert()
-            alert.messageText = message
-            alert.alertStyle = .warning
-            if let warningIcon = NSImage(named: NSImage.cautionName) {
-                alert.icon = warningIcon
-            }
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-        }
     }
 
 }

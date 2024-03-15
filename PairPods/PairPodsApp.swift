@@ -7,18 +7,6 @@
 
 import SwiftUI
 
-func prepareMenuIcon(imageName: String, targetWidth: CGFloat) -> NSImage {
-    guard let originalImage = NSImage(systemSymbolName: imageName, accessibilityDescription: nil) else { return NSImage() }
-    
-    let paddedImage = NSImage(size: NSSize(width: targetWidth, height: originalImage.size.height))
-    paddedImage.lockFocus()
-    let xPosition = (targetWidth - originalImage.size.width) / 2
-    originalImage.draw(at: CGPoint(x: xPosition, y: 0), from: .zero, operation: .sourceOver, fraction: 1)
-    paddedImage.unlockFocus()
-    
-    return paddedImage
-}
-
 @main
 struct PairPodsApp: App {
     @StateObject private var viewModel = AudioSharingViewModel()
@@ -34,12 +22,7 @@ struct PairPodsApp: App {
             Divider()
 
             Button("About") {
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "PairPods\nVersion: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")\nVertex Forge © \(Calendar.current.component(.year, from: Date()))"
-                    alert.addButton(withTitle: "OK")
-                    alert.runModal()
-                }
+                displayAboutWindow()
             }.keyboardShortcut("a")
             
             Button("Quit") {
