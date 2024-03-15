@@ -12,53 +12,38 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var viewModel = AudioSharingViewModel()
-    var toggleView: ToggleNSView?
     private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusItem = NSStatusBar.system.statusItem(withLength: 45)
         viewModel.isSharingAudio = false // destroy output device on startup
-        updateStatusItemIcon()
-        
-        // Set up the menu for the status bar item
+        statusItem = NSStatusBar.system.statusItem(withLength: 30)
+        setupStatusBar()
+        bindViewModel()
+    }
+      
+    private func setupStatusBar() {
         let menu = NSMenu()
         statusItem.menu = menu
         
-        // Create the toggle menu item with custom view
-        let toggleItem = NSMenuItem()
-        toggleView = ToggleNSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
-        toggleView?.onToggle = { [weak self] isOn in
-            self?.viewModel.isSharingAudio = isOn
-        }
-        toggleItem.view = toggleView
-        
-        menu.addItem(toggleItem)
+        menu.addItem(withTitle: "Share Audio", action: #selector(toggleAudioSharing), keyEquivalent: "s")
         menu.addItem(NSMenuItem.separator())
-        
-        let aboutItem = NSMenuItem(title: "About", action: #selector(showAbout), keyEquivalent: "a")
-        aboutItem.target = self
-        menu.addItem(aboutItem)
-        
-        let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
-        quitItem.target = self
-        menu.addItem(quitItem)
-
+        menu.addItem(withTitle: "About", action: #selector(showAbout), keyEquivalent: "a")
+        menu.addItem(withTitle: "Quit", action: #selector(quitApp), keyEquivalent: "q")
+    }
+       
+    private func bindViewModel() {
         viewModel.$isSharingAudio
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isSharingAudio in
-                self?.updateStatusItemIcon()
-                self?.toggleView?.toggleSwitch.state = isSharingAudio ? .on : .off
-            }
+            .sink(receiveValue: updateStatusItemIcon(isSharing:))
             .store(in: &cancellables)
     }
         
-    func updateStatusItemIcon() {
-        let iconName = viewModel.isSharingAudio ? "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill" : "airpodspro.chargingcase.wireless.fill"
-        statusItem.button?.image = NSImage(systemSymbolName: iconName, accessibilityDescription: "PairPods")?.withSymbolConfiguration(NSImage.SymbolConfiguration(textStyle: .title1))
-        statusItem.button?.imagePosition = .imageLeft
+    private func updateStatusItemIcon(isSharing: Bool) {
+        let iconName = isSharing ? "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill" : "airpodspro.chargingcase.wireless.fill"
+        statusItem.button?.image = NSImage(systemSymbolName: iconName, accessibilityDescription: "PairPods")
     }
     
-    @objc func showAbout() {
+    @objc private func showAbout() {
         DispatchQueue.main.async {
             let alert = NSAlert()
             alert.messageText = "PairPods\nVersion: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")\nVertex Forge © \(Calendar.current.component(.year, from: Date()))"
@@ -67,8 +52,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    @objc func quitApp() {
+    @objc private func quitApp() {
         viewModel.isSharingAudio = false
         NSApplication.shared.terminate(nil)
+    }
+    
+    @objc private func toggleAudioSharing() {
+        viewModel.isSharingAudio.toggle()
     }
 }
