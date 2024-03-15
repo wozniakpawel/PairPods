@@ -18,9 +18,14 @@ class AudioSharingViewModel: ObservableObject {
                 }
             }
             else {
-                stopSharingAudio()
+                let _ = removePairPodsOutputDevice()
             }
         }
+    }
+        
+    init() {
+        // destroy any existing PairPodsOutputDevice on startup
+        let _ = removePairPodsOutputDevice()
     }
     
     private func startSharingAudio() -> Bool {
@@ -45,10 +50,6 @@ class AudioSharingViewModel: ObservableObject {
         
         print("Successfully created and set multi-output device.")
         return true
-    }
-    
-    private func stopSharingAudio() {
-        let _ = removePairPodsOutputDevice()
     }
     
     private func fetchAllAudioDeviceIDs() -> [AudioDeviceID]? {
