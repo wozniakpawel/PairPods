@@ -7,18 +7,6 @@
 
 import AppKit
 
-func prepareMenuIcon(imageName: String, targetWidth: CGFloat) -> NSImage {
-    guard let originalImage = NSImage(systemSymbolName: imageName, accessibilityDescription: nil) else { return NSImage() }
-    
-    let paddedImage = NSImage(size: NSSize(width: targetWidth, height: originalImage.size.height))
-    paddedImage.lockFocus()
-    let xPosition = (targetWidth - originalImage.size.width) / 2
-    originalImage.draw(at: CGPoint(x: xPosition, y: 0), from: .zero, operation: .sourceOver, fraction: 1)
-    paddedImage.unlockFocus()
-    
-    return paddedImage
-}
-
 func displayAboutWindow() {
     DispatchQueue.main.async {
         let alert = NSAlert()

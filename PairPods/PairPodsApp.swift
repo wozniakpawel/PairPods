@@ -31,9 +31,11 @@ struct PairPodsApp: App {
             }.keyboardShortcut("q")
             
         } label: {
-            let iconName = viewModel.isSharingAudio ? "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill" : "airpodspro.chargingcase.wireless.fill"
-            let menuIcon = prepareMenuIcon(imageName: iconName, targetWidth: 30)
-            Image(nsImage: menuIcon)
+            let currentColor = viewModel.isSharingAudio ? Color.blue : Color.red
+            Image(systemName: "airpodspro.chargingcase.wireless.radiowaves.left.and.right.fill")
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.primary, currentColor, Color.blue)
+                .animation(.interpolatingSpring(stiffness: 100, damping: 10), value: viewModel.isSharingAudio)
         }
     }
 }
