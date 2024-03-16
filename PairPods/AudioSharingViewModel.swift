@@ -28,13 +28,6 @@ class AudioSharingViewModel: ObservableObject {
     
     private func startSharingAudio() -> Bool {
         
-        // Ensure we're not creating another device if one already exists
-        let removalStatus = removePairPodsOutputDevice()
-        if removalStatus != noErr && removalStatus != kAudioHardwareBadDeviceError {
-            handleError("Failed to remove existing device before creating a new one.")
-            return false
-        }
-        
         guard let outputDevices = findTwoOutputDevices(), outputDevices.count >= 2 else {
             handleError("Please make sure two pairs of AirPods are connected via Bluetooth.")
             return false
