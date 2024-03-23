@@ -39,6 +39,6 @@ struct PairPodsApp: App {
             }(NSImage(named: viewModel.isSharingAudio ? "IconEnabled" : "IconDisabled")!)
 
             Image(nsImage: image)
-        }
+        } .menuBarExtraStyle(.menu)
     }
 }
