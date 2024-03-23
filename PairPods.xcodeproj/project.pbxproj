@@ -11,29 +11,9 @@
 		E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9972B92F59F005494FA /* PairPodsApp.swift */; };
 		E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99B2B92F5A0005494FA /* Assets.xcassets */; };
 		E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */; };
-		E985A9AA2B92F5A0005494FA /* PairPodsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9A92B92F5A0005494FA /* PairPodsTests.swift */; };
-		E985A9B42B92F5A0005494FA /* PairPodsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9B32B92F5A0005494FA /* PairPodsUITests.swift */; };
-		E985A9B62B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */; };
 		E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C32B936984005494FA /* CoreAudio.framework */; };
 		E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		E985A9A62B92F5A0005494FA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = E985A98C2B92F59F005494FA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = E985A9932B92F59F005494FA;
-			remoteInfo = PairPods;
-		};
-		E985A9B02B92F5A0005494FA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = E985A98C2B92F59F005494FA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = E985A9932B92F59F005494FA;
-			remoteInfo = PairPods;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		E9525AFF2BA4AC70006D1B84 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
@@ -42,11 +22,6 @@
 		E985A99B2B92F5A0005494FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		E985A9A02B92F5A0005494FA /* PairPods.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PairPods.entitlements; sourceTree = "<group>"; };
-		E985A9A52B92F5A0005494FA /* PairPodsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PairPodsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E985A9A92B92F5A0005494FA /* PairPodsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsTests.swift; sourceTree = "<group>"; };
-		E985A9AF2B92F5A0005494FA /* PairPodsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PairPodsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E985A9B32B92F5A0005494FA /* PairPodsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsUITests.swift; sourceTree = "<group>"; };
-		E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		E985A9C32B936984005494FA /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSharingViewModel.swift; sourceTree = "<group>"; };
 		E9B438DD2BA2C374005EB7A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -61,20 +36,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		E985A9A22B92F5A0005494FA /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		E985A9AC2B92F5A0005494FA /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -82,8 +43,6 @@
 			isa = PBXGroup;
 			children = (
 				E985A9962B92F59F005494FA /* PairPods */,
-				E985A9A82B92F5A0005494FA /* PairPodsTests */,
-				E985A9B22B92F5A0005494FA /* PairPodsUITests */,
 				E985A9952B92F59F005494FA /* Products */,
 				E985A9C22B936984005494FA /* Frameworks */,
 			);
@@ -93,8 +52,6 @@
 			isa = PBXGroup;
 			children = (
 				E985A9942B92F59F005494FA /* PairPods.app */,
-				E985A9A52B92F5A0005494FA /* PairPodsTests.xctest */,
-				E985A9AF2B92F5A0005494FA /* PairPodsUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,23 +76,6 @@
 				E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
-			sourceTree = "<group>";
-		};
-		E985A9A82B92F5A0005494FA /* PairPodsTests */ = {
-			isa = PBXGroup;
-			children = (
-				E985A9A92B92F5A0005494FA /* PairPodsTests.swift */,
-			);
-			path = PairPodsTests;
-			sourceTree = "<group>";
-		};
-		E985A9B22B92F5A0005494FA /* PairPodsUITests */ = {
-			isa = PBXGroup;
-			children = (
-				E985A9B32B92F5A0005494FA /* PairPodsUITests.swift */,
-				E985A9B52B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift */,
-			);
-			path = PairPodsUITests;
 			sourceTree = "<group>";
 		};
 		E985A9C22B936984005494FA /* Frameworks */ = {
@@ -166,42 +106,6 @@
 			productReference = E985A9942B92F59F005494FA /* PairPods.app */;
 			productType = "com.apple.product-type.application";
 		};
-		E985A9A42B92F5A0005494FA /* PairPodsTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = E985A9BC2B92F5A0005494FA /* Build configuration list for PBXNativeTarget "PairPodsTests" */;
-			buildPhases = (
-				E985A9A12B92F5A0005494FA /* Sources */,
-				E985A9A22B92F5A0005494FA /* Frameworks */,
-				E985A9A32B92F5A0005494FA /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				E985A9A72B92F5A0005494FA /* PBXTargetDependency */,
-			);
-			name = PairPodsTests;
-			productName = PairPodsTests;
-			productReference = E985A9A52B92F5A0005494FA /* PairPodsTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		E985A9AE2B92F5A0005494FA /* PairPodsUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = E985A9BF2B92F5A0005494FA /* Build configuration list for PBXNativeTarget "PairPodsUITests" */;
-			buildPhases = (
-				E985A9AB2B92F5A0005494FA /* Sources */,
-				E985A9AC2B92F5A0005494FA /* Frameworks */,
-				E985A9AD2B92F5A0005494FA /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				E985A9B12B92F5A0005494FA /* PBXTargetDependency */,
-			);
-			name = PairPodsUITests;
-			productName = PairPodsUITests;
-			productReference = E985A9AF2B92F5A0005494FA /* PairPodsUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -214,14 +118,6 @@
 				TargetAttributes = {
 					E985A9932B92F59F005494FA = {
 						CreatedOnToolsVersion = 15.2;
-					};
-					E985A9A42B92F5A0005494FA = {
-						CreatedOnToolsVersion = 15.2;
-						TestTargetID = E985A9932B92F59F005494FA;
-					};
-					E985A9AE2B92F5A0005494FA = {
-						CreatedOnToolsVersion = 15.2;
-						TestTargetID = E985A9932B92F59F005494FA;
 					};
 				};
 			};
@@ -239,8 +135,6 @@
 			projectRoot = "";
 			targets = (
 				E985A9932B92F59F005494FA /* PairPods */,
-				E985A9A42B92F5A0005494FA /* PairPodsTests */,
-				E985A9AE2B92F5A0005494FA /* PairPodsUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -252,20 +146,6 @@
 			files = (
 				E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */,
 				E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		E985A9A32B92F5A0005494FA /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		E985A9AD2B92F5A0005494FA /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,37 +162,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		E985A9A12B92F5A0005494FA /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				E985A9AA2B92F5A0005494FA /* PairPodsTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		E985A9AB2B92F5A0005494FA /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				E985A9B62B92F5A0005494FA /* PairPodsUITestsLaunchTests.swift in Sources */,
-				E985A9B42B92F5A0005494FA /* PairPodsUITests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		E985A9A72B92F5A0005494FA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = E985A9932B92F59F005494FA /* PairPods */;
-			targetProxy = E985A9A62B92F5A0005494FA /* PBXContainerItemProxy */;
-		};
-		E985A9B12B92F5A0005494FA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = E985A9932B92F59F005494FA /* PairPods */;
-			targetProxy = E985A9B02B92F5A0005494FA /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		E985A9B72B92F5A0005494FA /* Debug */ = {
@@ -499,82 +349,6 @@
 			};
 			name = Release;
 		};
-		E985A9BD2B92F5A0005494FA /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 8BU5KPHH6Z;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = wozniakpawel.PairPodsTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PairPods.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PairPods";
-			};
-			name = Debug;
-		};
-		E985A9BE2B92F5A0005494FA /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 8BU5KPHH6Z;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = wozniakpawel.PairPodsTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PairPods.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PairPods";
-			};
-			name = Release;
-		};
-		E985A9C02B92F5A0005494FA /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 8BU5KPHH6Z;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = wozniakpawel.PairPodsUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = PairPods;
-			};
-			name = Debug;
-		};
-		E985A9C12B92F5A0005494FA /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 8BU5KPHH6Z;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = wozniakpawel.PairPodsUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = PairPods;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -592,24 +366,6 @@
 			buildConfigurations = (
 				E985A9BA2B92F5A0005494FA /* Debug */,
 				E985A9BB2B92F5A0005494FA /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		E985A9BC2B92F5A0005494FA /* Build configuration list for PBXNativeTarget "PairPodsTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E985A9BD2B92F5A0005494FA /* Debug */,
-				E985A9BE2B92F5A0005494FA /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		E985A9BF2B92F5A0005494FA /* Build configuration list for PBXNativeTarget "PairPodsUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E985A9C02B92F5A0005494FA /* Debug */,
-				E985A9C12B92F5A0005494FA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
