@@ -31,9 +31,14 @@ struct PairPodsApp: App {
             }.keyboardShortcut("q")
             
         } label: {
-            Image(systemName: "airpodspro.chargingcase.wireless.fill")
-            .symbolRenderingMode(.palette)
-            .foregroundStyle(viewModel.isSharingAudio ? Color.blue : Color.white)
+            let image: NSImage = {
+                let ratio = $0.size.height / $0.size.width
+                $0.size.height = 18
+                $0.size.width = 18 / ratio
+                return $0
+            }(NSImage(named: viewModel.isSharingAudio ? "IconEnabled" : "IconDisabled")!)
+
+            Image(nsImage: image)
         }
     }
 }
