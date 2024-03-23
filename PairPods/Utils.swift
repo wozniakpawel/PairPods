@@ -10,7 +10,7 @@ import AppKit
 func displayAboutWindow() {
     DispatchQueue.main.async {
         let alert = NSAlert()
-        alert.messageText = "PairPods\nVersion: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")\nVertex Forge © \(Calendar.current.component(.year, from: Date()))"
+        alert.messageText = "PairPods\nVersion: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")\nCopyright © \(Calendar.current.component(.year, from: Date())) Vantabyte"
         alert.addButton(withTitle: "OK")
         alert.runModal()
     }
