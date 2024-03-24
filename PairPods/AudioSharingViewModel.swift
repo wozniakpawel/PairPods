@@ -28,19 +28,22 @@ class AudioSharingViewModel: ObservableObject {
     
     private func startSharingAudio() -> Bool {
         
+        listAllOutputDevices()
+        
         guard let outputDevices = findTwoOutputDevices(), outputDevices.count >= 2 else {
             handleError("Please make sure two pairs of AirPods are connected via Bluetooth.")
             return false
         }
         
         let (masterDeviceUID, secondDeviceUID) = (outputDevices[0].deviceUID as CFString, outputDevices[1].deviceUID as CFString)
-        guard createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) != nil else {
+        
+        if let deviceID = createAndUseMultiOutputDevice(masterDeviceUID: masterDeviceUID, secondDeviceUID: secondDeviceUID) {
+            print("Successfully created and set multi-output device with ID: \(deviceID)")
+            return true
+        } else {
             handleError("Something went wrong. Failed to create multi-output device.")
             return false
         }
-        
-        print("Successfully created and set multi-output device.")
-        return true
     }
     
     private func fetchAllAudioDeviceIDs() -> [AudioDeviceID]? {
@@ -168,38 +171,82 @@ class AudioSharingViewModel: ObservableObject {
         print("\n--- Listing Output Devices ---\n")
         
         for deviceID in audioDevices {
-            guard let deviceName = fetchDeviceName(deviceID: deviceID),
-                  let deviceUID = fetchDeviceUID(deviceID: deviceID) else {
-                print("Warning: Could not fetch name or UID for device ID \(deviceID). Skipping...")
-                continue
+            
+            print("Device ID: \(deviceID)")
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyDeviceNameCFString, propertyName: "Name")
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyDeviceUID, propertyName: "UID")
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyModelUID, propertyName: "Model UID")
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyTransportType, propertyName: "Transport Type")
+            printProperty(deviceID: deviceID, propertySelector: kAudioObjectPropertyManufacturer, propertyName: "Manufacturer")
+
+            // Advanced details (add as needed)
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyDeviceIsAlive, propertyName: "Is Alive")
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyDeviceIsRunning, propertyName: "Is Running")
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyNominalSampleRate, propertyName: "Nominal Sample Rate")
+            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyStreams, propertyName: "Streams")
+
+            // Note: For properties requiring special handling (e.g., arrays, structs), you'll need custom printProperty implementations.
+            
+            print("\n")
+        }
+    }
+
+    private func printProperty(deviceID: AudioObjectID, propertySelector: AudioObjectPropertySelector, propertyName: String) {
+        var propertyAddress = AudioObjectPropertyAddress(mSelector: propertySelector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        
+        var dataSize: UInt32 = 0
+        var status = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
+        
+        guard status == noErr else {
+            print("Failed to get data size for \(propertyName)")
+            return
+        }
+        
+        if propertySelector == kAudioDevicePropertyDeviceNameCFString ||
+            propertySelector == kAudioDevicePropertyDeviceUID ||
+            propertySelector == kAudioDevicePropertyModelUID ||
+            propertySelector == kAudioObjectPropertyManufacturer {
+            
+            let buffer = UnsafeMutablePointer<Unmanaged<CFString>?>.allocate(capacity: 1)
+            defer { buffer.deallocate() }
+            
+            status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, buffer)
+            if status == noErr, let cfStr: CFString = buffer.pointee?.takeRetainedValue() {
+                let str = cfStr as String
+                print("\(propertyName): \(str)")
+            } else {
+                print("Failed to get \(propertyName)")
             }
-            
-            // Determine if the device has any output channels
-            var propertyAddress = AudioObjectPropertyAddress(
-                mSelector: kAudioDevicePropertyStreamConfiguration,
-                mScope: kAudioDevicePropertyScopeOutput,
-                mElement: kAudioObjectPropertyElementMain)
-            var dataSize: UInt32 = 0
-            let statusDataSize = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
-            
-            guard statusDataSize == noErr, dataSize > 0 else {
-                continue // Skip this device if unable to get data size or if there are no output channels
+        } else if propertySelector == kAudioDevicePropertyTransportType {
+            var transportType: UInt32 = 0
+            status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, &transportType)
+            if status == noErr {
+                print("\(propertyName): \(transportTypeToString(transportType))")
+            } else {
+                print("Failed to get \(propertyName)")
             }
-            
-            let bufferPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
-            defer { bufferPointer.deallocate() }
-            
-            let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, bufferPointer)
-            
-            guard status == noErr else {
-                print("Error: Failed to get stream configuration for device ID \(deviceID). Status code: \(status). Skipping...")
-                continue
-            }
-            
-            let streamConfig = bufferPointer.pointee
-            if streamConfig.mNumberBuffers > 0 {
-                print("Output Device Name: \(deviceName), ID: \(deviceID), UID: \(deviceUID)")
-            }
+        } else {
+            // Generic handling for numbers and other data types
+            print("Property \(propertyName) requires specific handling")
+        }
+    }
+
+    private func transportTypeToString(_ transportType: UInt32) -> String {
+        switch transportType {
+        case kAudioDeviceTransportTypeBuiltIn: return "Built-in"
+        case kAudioDeviceTransportTypeAggregate: return "Aggregate"
+        case kAudioDeviceTransportTypeVirtual: return "Virtual"
+        case kAudioDeviceTransportTypePCI: return "PCI"
+        case kAudioDeviceTransportTypeUSB: return "USB"
+        case kAudioDeviceTransportTypeFireWire: return "FireWire"
+        case kAudioDeviceTransportTypeBluetooth: return "Bluetooth"
+        case kAudioDeviceTransportTypeBluetoothLE: return "Bluetooth LE"
+        case kAudioDeviceTransportTypeHDMI: return "HDMI"
+        case kAudioDeviceTransportTypeDisplayPort: return "DisplayPort"
+        case kAudioDeviceTransportTypeAirPlay: return "AirPlay"
+        case kAudioDeviceTransportTypeAVB: return "AVB"
+        case kAudioDeviceTransportTypeThunderbolt: return "Thunderbolt"
+        default: return "Unknown"
         }
     }
     
