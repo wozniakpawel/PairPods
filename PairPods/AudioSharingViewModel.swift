@@ -14,16 +14,15 @@ class AudioSharingViewModel: ObservableObject {
                 if !startSharingAudio() {
                     isSharingAudio = false
                 }
-            }
-            else {
-                let _ = removePairPodsOutputDevice()
+            } else {
+                _ = removePairPodsOutputDevice()
             }
         }
     }
-        
+    
     init() {
         // destroy any existing PairPodsOutputDevice on startup
-        let _ = removePairPodsOutputDevice()
+        _ = removePairPodsOutputDevice()
     }
     
     private func startSharingAudio() -> Bool {
