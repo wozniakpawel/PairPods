@@ -261,35 +261,48 @@ class AudioSharingViewModel: ObservableObject {
         guard let audioDevices = fetchAllAudioDeviceIDs() else {
             return nil
         }
-        
-        var outputDevices: [(deviceID: AudioDeviceID, deviceUID: String)] = []
-        
+
+        var bluetoothOutputDevices: [(deviceID: AudioDeviceID, deviceUID: String)] = []
+
         for deviceID in audioDevices {
-            guard let deviceUID = fetchDeviceUID(deviceID: deviceID),
-                  !deviceUID.contains("BuiltInSpeakerDevice"),
-                  !deviceUID.contains("AMS2_Aggregate"),
-                  !deviceUID.contains("AMS2_StackedOutput"),
-                  let _ = fetchDeviceName(deviceID: deviceID) else { continue }
+            // Check if the device is Bluetooth
+            var transportTypePropertyAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyTransportType,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain)
             
-            var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreamConfiguration, mScope: kAudioObjectPropertyScopeOutput, mElement: kAudioObjectPropertyElementMain)
-            var dataSize: UInt32 = 0
-            let statusDataSize = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
+            var transportType: UInt32 = 0
+            var dataSize = UInt32(MemoryLayout<UInt32>.size)
+            var status = AudioObjectGetPropertyData(deviceID, &transportTypePropertyAddress, 0, nil, &dataSize, &transportType)
             
-            if statusDataSize == noErr, dataSize > 0 {
-                let bufferPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
-                defer { bufferPointer.deallocate() }
+            guard status == noErr,
+                  (transportType == kAudioDeviceTransportTypeBluetooth || transportType == kAudioDeviceTransportTypeBluetoothLE),
+                  let deviceUID = fetchDeviceUID(deviceID: deviceID) else {
+                continue
+            }
+            
+            // Check if the device has output streams
+            var streamConfigurationAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyStreamConfiguration,
+                mScope: kAudioObjectPropertyScopeOutput,
+                mElement: kAudioObjectPropertyElementMain)
+            
+            var streamConfiguration: AudioBufferList = AudioBufferList()
+            dataSize = UInt32(MemoryLayout<AudioBufferList>.size)
+            status = AudioObjectGetPropertyData(deviceID, &streamConfigurationAddress, 0, nil, &dataSize, &streamConfiguration)
+
+            if status == noErr, streamConfiguration.mNumberBuffers > 0 {
+                bluetoothOutputDevices.append((deviceID: deviceID, deviceUID: deviceUID))
                 
-                let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, bufferPointer)
-                
-                if status == noErr, bufferPointer.pointee.mNumberBuffers > 0 {
-                    outputDevices.append((deviceID, deviceUID))
-                    if outputDevices.count == 2 { break } // Only need two devices
+                if bluetoothOutputDevices.count == 2 {
+                    break // Stop once we have two Bluetooth output devices
                 }
             }
         }
-        
-        return outputDevices.count == 2 ? outputDevices : nil
+
+        return bluetoothOutputDevices.count == 2 ? bluetoothOutputDevices : nil
     }
+
     
     private func createMultiOutputDevice(masterDeviceUID: CFString, secondDeviceUID: CFString) -> AudioDeviceID? {
         let multiOutUID = "PairPodsOutputDevice"
