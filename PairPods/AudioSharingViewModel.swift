@@ -303,7 +303,6 @@ class AudioSharingViewModel: ObservableObject {
         return bluetoothOutputDevices.count == 2 ? bluetoothOutputDevices : nil
     }
 
-    
     private func createMultiOutputDevice(masterDeviceUID: CFString, secondDeviceUID: CFString) -> AudioDeviceID? {
         let multiOutUID = "PairPodsOutputDevice"
         let desc: [String: Any] = [
