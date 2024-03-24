@@ -178,9 +178,6 @@ class AudioSharingViewModel: ObservableObject {
             printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyTransportType, propertyName: "Transport Type")
             printProperty(deviceID: deviceID, propertySelector: kAudioObjectPropertyManufacturer, propertyName: "Manufacturer")
             
-            printIsAliveProperty(deviceID: deviceID)
-            printIsRunningProperty(deviceID: deviceID)
-            printNominalSampleRateProperty(deviceID: deviceID)
             printStreamsProperty(deviceID: deviceID)
             
             print("\n")
@@ -226,51 +223,12 @@ class AudioSharingViewModel: ObservableObject {
             print("Property \(propertyName) requires specific handling")
         }
     }
-    
-    private func printIsAliveProperty(deviceID: AudioDeviceID) {
-        var isAlive: UInt32 = 0
-        var dataSize = UInt32(MemoryLayout.size(ofValue: isAlive))
-        var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsAlive, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-
-        let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, &isAlive)
-        if status == noErr {
-            print("Is Alive: \(isAlive > 0 ? "Yes" : "No")")
-        } else {
-            print("Failed to get Is Alive")
-        }
-    }
-
-    private func printIsRunningProperty(deviceID: AudioDeviceID) {
-        var isRunning: UInt32 = 0
-        var dataSize = UInt32(MemoryLayout.size(ofValue: isRunning))
-        var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsRunning, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-
-        let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, &isRunning)
-        if status == noErr {
-            print("Is Running: \(isRunning > 0 ? "Yes" : "No")")
-        } else {
-            print("Failed to get Is Running")
-        }
-    }
-
-    private func printNominalSampleRateProperty(deviceID: AudioDeviceID) {
-        var sampleRate: Float64 = 0.0
-        var dataSize = UInt32(MemoryLayout.size(ofValue: sampleRate))
-        var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyNominalSampleRate, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-
-        let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, &sampleRate)
-        if status == noErr {
-            print("Nominal Sample Rate: \(sampleRate) Hz")
-        } else {
-            print("Failed to get Nominal Sample Rate")
-        }
-    }
 
     private func printStreamsProperty(deviceID: AudioDeviceID) {
         var dataSize: UInt32 = 0
         var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreams, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
 
-        var status = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
+        let status = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
         guard status == noErr, dataSize > 0 else {
             print("Failed to get Streams data size")
             return
