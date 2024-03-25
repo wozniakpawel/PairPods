@@ -23,6 +23,11 @@ class AudioSharingViewModel: ObservableObject {
     init() {
         // destroy any existing PairPodsOutputDevice on startup
         _ = removePairPodsOutputDevice()
+        startMonitoringAudioDevices()
+    }
+    
+    deinit {
+        stopMonitoringAudioDevices()
     }
     
     private func startSharingAudio() -> Bool {
@@ -45,6 +50,63 @@ class AudioSharingViewModel: ObservableObject {
         }
     }
     
+    private func startMonitoringAudioDevices() {
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        
+        let status = AudioObjectAddPropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            DispatchQueue.main
+        ) { [weak self] _, _ in
+            self?.handleAudioDeviceChange()
+        }
+        
+        if status != noErr {
+            print("Error: Unable to add audio device change listener. Status code: \(status)")
+        }
+    }
+    
+    private func stopMonitoringAudioDevices() {
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        
+        let status = AudioObjectRemovePropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            DispatchQueue.main,
+            { _, _ in }
+        )
+        
+        if status != noErr {
+            print("Error: Unable to remove audio device change listener. Status code: \(status)")
+        }
+    }
+
+    private func handleAudioDeviceChange() {
+        guard let defaultDeviceID = findDefaultAudioDeviceID() else {
+            print("Error: Unable to fetch the default audio device ID.")
+            self.isSharingAudio = false
+            return
+        }
+        
+        guard let defaultDeviceUID = fetchDeviceUID(deviceID: defaultDeviceID) else {
+            print("Error: Unable to fetch the UID for the default audio device.")
+            self.isSharingAudio = false
+            return
+        }
+        
+        if defaultDeviceUID != "PairPodsOutputDevice" {
+            DispatchQueue.main.async {
+                self.isSharingAudio = false
+            }
+        }
+    }
+
     private func fetchAllAudioDeviceIDs() -> [AudioDeviceID]? {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
