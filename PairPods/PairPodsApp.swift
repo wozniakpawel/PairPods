@@ -20,7 +20,7 @@ struct PairPodsApp: App {
             }.keyboardShortcut("s")
 
             Divider()
-
+            
             Button("About") {
                 displayAboutWindow()
             }.keyboardShortcut("a")
@@ -31,14 +31,11 @@ struct PairPodsApp: App {
             }.keyboardShortcut("q")
             
         } label: {
-            let image: NSImage = {
-                let ratio = $0.size.height / $0.size.width
-                $0.size.height = 18
-                $0.size.width = 18 / ratio
-                return $0
-            }(NSImage(named: viewModel.isSharingAudio ? "IconEnabled" : "IconDisabled")!)
-
-            Image(nsImage: image)
+            let primaryColor = viewModel.isSharingAudio ? Color.blue : Color.primary 
+            let secondaryColor = viewModel.isSharingAudio ? Color.blue : Color.secondary
+            Image(systemName: "earbuds")
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(primaryColor, secondaryColor)
         } .menuBarExtraStyle(.menu)
     }
 }
