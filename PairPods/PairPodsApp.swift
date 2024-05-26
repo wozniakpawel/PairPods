@@ -34,7 +34,7 @@ struct PairPodsApp: App {
             }.keyboardShortcut("q")
             
         } label: {
-            let primaryColor = viewModel.isSharingAudio ? Color.blue : Color.primary 
+            let primaryColor = viewModel.isSharingAudio ? Color.blue : Color.primary
             let secondaryColor = viewModel.isSharingAudio ? Color.blue : Color.secondary
             Image(systemName: "earbuds")
                 .symbolRenderingMode(.palette)
