@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import LaunchAtLogin
 
 @main
 struct PairPodsApp: App {
@@ -20,6 +21,8 @@ struct PairPodsApp: App {
             }.keyboardShortcut("s")
 
             Divider()
+            
+            LaunchAtLogin.Toggle()
             
             Button("About") {
                 displayAboutWindow()

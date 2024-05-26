@@ -13,6 +13,7 @@
 		E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */; };
 		E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C32B936984005494FA /* CoreAudio.framework */; };
 		E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */; };
+		E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */,
 				E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -102,6 +104,9 @@
 			dependencies = (
 			);
 			name = PairPods;
+			packageProductDependencies = (
+				E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */,
+			);
 			productName = PairPods;
 			productReference = E985A9942B92F59F005494FA /* PairPods.app */;
 			productType = "com.apple.product-type.application";
@@ -130,6 +135,9 @@
 				Base,
 			);
 			mainGroup = E985A98B2B92F59F005494FA;
+			packageReferences = (
+				E9C177792C03EA950062C0E0 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */,
+			);
 			productRefGroup = E985A9952B92F59F005494FA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -371,6 +379,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E9C177792C03EA950062C0E0 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin-Modern";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9C177792C03EA950062C0E0 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */;
+			productName = LaunchAtLogin;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E985A98C2B92F59F005494FA /* Project object */;
 }
