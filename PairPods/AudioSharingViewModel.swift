@@ -21,7 +21,6 @@ class AudioSharingViewModel: ObservableObject {
     }
     
     init() {
-        // destroy any existing PairPodsOutputDevice on startup
         _ = removePairPodsOutputDevice()
         startMonitoringAudioDevices()
     }
@@ -31,11 +30,10 @@ class AudioSharingViewModel: ObservableObject {
     }
     
     private func startSharingAudio() -> Bool {
-        
-        listAllOutputDevices()
+        AudioDeviceDebugHelper.listAllOutputDevices()
         
         guard let outputDevices = findTwoOutputDevices(), outputDevices.count >= 2 else {
-            handleError("Please make sure two pairs of AirPods are connected via Bluetooth.")
+            handleError("Please make sure two Bluetooth audio devices are connected.")
             return false
         }
         
@@ -54,7 +52,8 @@ class AudioSharingViewModel: ObservableObject {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
+            mElement: kAudioObjectPropertyElementMain
+        )
         
         let status = AudioObjectAddPropertyListenerBlock(
             AudioObjectID(kAudioObjectSystemObject),
@@ -73,7 +72,8 @@ class AudioSharingViewModel: ObservableObject {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
+            mElement: kAudioObjectPropertyElementMain
+        )
         
         let status = AudioObjectRemovePropertyListenerBlock(
             AudioObjectID(kAudioObjectSystemObject),
@@ -86,15 +86,15 @@ class AudioSharingViewModel: ObservableObject {
             print("Error: Unable to remove audio device change listener. Status code: \(status)")
         }
     }
-
+    
     private func handleAudioDeviceChange() {
-        guard let defaultDeviceID = findDefaultAudioDeviceID() else {
+        guard let defaultDeviceID = AudioDeviceHelper.findDefaultAudioDeviceID() else {
             print("Error: Unable to fetch the default audio device ID.")
             self.isSharingAudio = false
             return
         }
         
-        guard let defaultDeviceUID = fetchDeviceUID(deviceID: defaultDeviceID) else {
+        guard let defaultDeviceUID = AudioDeviceHelper.fetchDeviceUID(deviceID: defaultDeviceID) else {
             print("Error: Unable to fetch the UID for the default audio device.")
             self.isSharingAudio = false
             return
@@ -106,254 +106,42 @@ class AudioSharingViewModel: ObservableObject {
             }
         }
     }
-
-    private func fetchAllAudioDeviceIDs() -> [AudioDeviceID]? {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-        
-        var propertySize: UInt32 = 0
-        var status = AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize)
-        guard status == noErr else {
-            print("Error: Unable to get the property data size for audio devices. Status code: \(status)")
-            return nil
-        }
-        
-        let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
-        guard deviceCount > 0 else {
-            print("No audio devices found.")
-            return nil
-        }
-        
-        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
-        status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &deviceIDs)
-        guard status == noErr else {
-            print("Error: Unable to get audio device IDs. Status code: \(status)")
-            return nil
-        }
-        
-        return deviceIDs
-    }
-    
-    private func findDefaultAudioDeviceID() -> AudioDeviceID? {
-        var defaultDeviceID = AudioDeviceID()
-        var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
-        
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-        
-        let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &defaultDeviceID)
-        
-        guard status == noErr else {
-            print("Error: Unable to get the default audio device ID. Status code: \(status)")
-            return nil
-        }
-        
-        return defaultDeviceID
-    }
-    
-    private func fetchDeviceName(deviceID: AudioDeviceID) -> String? {
-        var name: Unmanaged<CFString>?
-        var propertySize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyDeviceNameCFString,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-        
-        let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &name)
-        
-        guard status == noErr, let deviceName = name?.takeRetainedValue() else {
-            print("Error: Unable to get the name for device ID: \(deviceID). Status code: \(status)")
-            return nil
-        }
-        
-        return deviceName as String
-    }
-    
-    private func fetchDeviceUID(deviceID: AudioDeviceID) -> String? {
-        var uid: Unmanaged<CFString>?
-        var propertySize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyDeviceUID,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-        
-        let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &uid)
-        
-        guard status == noErr, let deviceUID = uid?.takeRetainedValue() else {
-            print("Error: Unable to get the UID for device ID: \(deviceID). Status code: \(status)")
-            return nil
-        }
-        
-        return deviceUID as String
-    }
-    
-    // avoid this function if possible, it's pretty expensive to run!
-    private func fetchDeviceID(deviceUID: CFString) -> AudioDeviceID? {
-        guard let deviceIDs = fetchAllAudioDeviceIDs() else {
-            print("Error: Unable to fetch audio device IDs.")
-            return nil
-        }
-        
-        for deviceID in deviceIDs {
-            var uid: Unmanaged<CFString>?
-            var propertySize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-            var propertyAddress = AudioObjectPropertyAddress(
-                mSelector: kAudioDevicePropertyDeviceUID,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain)
-            
-            let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &uid)
-            
-            guard status == noErr else {
-                print("Error: Unable to get UID for device ID \(deviceID). Status code: \(status)")
-                continue // Skipping this device due to error, continue with next
-            }
-            
-            let fetchedUID = uid?.takeRetainedValue()
-            if fetchedUID == deviceUID {
-                return deviceID
-            }
-        }
-        
-        print("No audio device found with UID: \(deviceUID as String)")
-        return nil
-    }
-    
-    private func listAllOutputDevices() {
-        guard let audioDevices = fetchAllAudioDeviceIDs() else {
-            print("Error: Unable to fetch audio device IDs.")
-            return
-        }
-        
-        print("\n--- Listing Output Devices ---\n")
-        
-        for deviceID in audioDevices {
-            
-            print("Device ID: \(deviceID)")
-            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyDeviceNameCFString, propertyName: "Name")
-            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyDeviceUID, propertyName: "UID")
-            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyModelUID, propertyName: "Model UID")
-            printProperty(deviceID: deviceID, propertySelector: kAudioDevicePropertyTransportType, propertyName: "Transport Type")
-            printProperty(deviceID: deviceID, propertySelector: kAudioObjectPropertyManufacturer, propertyName: "Manufacturer")
-            
-            printStreamsProperty(deviceID: deviceID)
-            
-            print("\n")
-        }
-    }
-
-    private func printProperty(deviceID: AudioObjectID, propertySelector: AudioObjectPropertySelector, propertyName: String) {
-        var propertyAddress = AudioObjectPropertyAddress(mSelector: propertySelector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-        
-        var dataSize: UInt32 = 0
-        var status = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
-        
-        guard status == noErr else {
-            print("Failed to get data size for \(propertyName)")
-            return
-        }
-        
-        if propertySelector == kAudioDevicePropertyDeviceNameCFString ||
-            propertySelector == kAudioDevicePropertyDeviceUID ||
-            propertySelector == kAudioDevicePropertyModelUID ||
-            propertySelector == kAudioObjectPropertyManufacturer {
-            
-            let buffer = UnsafeMutablePointer<Unmanaged<CFString>?>.allocate(capacity: 1)
-            defer { buffer.deallocate() }
-            
-            status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, buffer)
-            if status == noErr, let cfStr: CFString = buffer.pointee?.takeRetainedValue() {
-                let str = cfStr as String
-                print("\(propertyName): \(str)")
-            } else {
-                print("Failed to get \(propertyName)")
-            }
-        } else if propertySelector == kAudioDevicePropertyTransportType {
-            var transportType: UInt32 = 0
-            status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &dataSize, &transportType)
-            if status == noErr {
-                print("\(propertyName): \(transportTypeToString(transportType))")
-            } else {
-                print("Failed to get \(propertyName)")
-            }
-        } else {
-            // Generic handling for numbers and other data types
-            print("Property \(propertyName) requires specific handling")
-        }
-    }
-
-    private func printStreamsProperty(deviceID: AudioDeviceID) {
-        var dataSize: UInt32 = 0
-        var propertyAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreams, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-
-        let status = AudioObjectGetPropertyDataSize(deviceID, &propertyAddress, 0, nil, &dataSize)
-        guard status == noErr, dataSize > 0 else {
-            print("Failed to get Streams data size")
-            return
-        }
-
-        let streamCount = Int(dataSize) / MemoryLayout<AudioStreamID>.size
-        print("Streams: \(streamCount)")
-    }
-
-    private func transportTypeToString(_ transportType: UInt32) -> String {
-        switch transportType {
-        case kAudioDeviceTransportTypeBuiltIn: return "Built-in"
-        case kAudioDeviceTransportTypeAggregate: return "Aggregate"
-        case kAudioDeviceTransportTypeVirtual: return "Virtual"
-        case kAudioDeviceTransportTypePCI: return "PCI"
-        case kAudioDeviceTransportTypeUSB: return "USB"
-        case kAudioDeviceTransportTypeFireWire: return "FireWire"
-        case kAudioDeviceTransportTypeBluetooth: return "Bluetooth"
-        case kAudioDeviceTransportTypeBluetoothLE: return "Bluetooth LE"
-        case kAudioDeviceTransportTypeHDMI: return "HDMI"
-        case kAudioDeviceTransportTypeDisplayPort: return "DisplayPort"
-        case kAudioDeviceTransportTypeAirPlay: return "AirPlay"
-        case kAudioDeviceTransportTypeAVB: return "AVB"
-        case kAudioDeviceTransportTypeThunderbolt: return "Thunderbolt"
-        default: return "Unknown"
-        }
-    }
     
     private func findTwoOutputDevices() -> [(deviceID: AudioDeviceID, deviceUID: String)]? {
-        guard let audioDevices = fetchAllAudioDeviceIDs() else {
+        guard let audioDevices = AudioDeviceHelper.fetchAllAudioDeviceIDs() else {
             return nil
         }
-
+        
         var bluetoothOutputDevices: [(deviceID: AudioDeviceID, deviceUID: String)] = []
-
+        
         for deviceID in audioDevices {
-            // Check if the device is Bluetooth
             var transportTypePropertyAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyTransportType,
                 mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain)
+                mElement: kAudioObjectPropertyElementMain
+            )
             
             var transportType: UInt32 = 0
             var dataSize = UInt32(MemoryLayout<UInt32>.size)
-            var status = AudioObjectGetPropertyData(deviceID, &transportTypePropertyAddress, 0, nil, &dataSize, &transportType)
+            let status = AudioObjectGetPropertyData(deviceID, &transportTypePropertyAddress, 0, nil, &dataSize, &transportType)
             
             guard status == noErr,
                   (transportType == kAudioDeviceTransportTypeBluetooth || transportType == kAudioDeviceTransportTypeBluetoothLE),
-                  let deviceUID = fetchDeviceUID(deviceID: deviceID) else {
+                  let deviceUID = AudioDeviceHelper.fetchDeviceUID(deviceID: deviceID) else {
                 continue
             }
             
-            // Check if the device has output streams
             var streamConfigurationAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyStreamConfiguration,
                 mScope: kAudioObjectPropertyScopeOutput,
-                mElement: kAudioObjectPropertyElementMain)
+                mElement: kAudioObjectPropertyElementMain
+            )
             
             var streamConfiguration: AudioBufferList = AudioBufferList()
             dataSize = UInt32(MemoryLayout<AudioBufferList>.size)
-            status = AudioObjectGetPropertyData(deviceID, &streamConfigurationAddress, 0, nil, &dataSize, &streamConfiguration)
-
-            if status == noErr, streamConfiguration.mNumberBuffers > 0 {
+            let streamStatus = AudioObjectGetPropertyData(deviceID, &streamConfigurationAddress, 0, nil, &dataSize, &streamConfiguration)
+            
+            if streamStatus == noErr, streamConfiguration.mNumberBuffers > 0 {
                 bluetoothOutputDevices.append((deviceID: deviceID, deviceUID: deviceUID))
                 
                 if bluetoothOutputDevices.count == 2 {
@@ -361,18 +149,21 @@ class AudioSharingViewModel: ObservableObject {
                 }
             }
         }
-
+        
         return bluetoothOutputDevices.count == 2 ? bluetoothOutputDevices : nil
     }
-
+    
     private func createMultiOutputDevice(masterDeviceUID: CFString, secondDeviceUID: CFString) -> AudioDeviceID? {
         let multiOutUID = "PairPodsOutputDevice"
         let desc: [String: Any] = [
             kAudioAggregateDeviceNameKey: "PairPods Output Device",
             kAudioAggregateDeviceUIDKey: multiOutUID,
-            kAudioAggregateDeviceSubDeviceListKey: [[kAudioSubDeviceUIDKey: masterDeviceUID], [kAudioSubDeviceUIDKey: secondDeviceUID]],
+            kAudioAggregateDeviceSubDeviceListKey: [
+                [kAudioSubDeviceUIDKey: masterDeviceUID],
+                [kAudioSubDeviceUIDKey: secondDeviceUID]
+            ],
             kAudioAggregateDeviceMasterSubDeviceKey: masterDeviceUID,
-            kAudioAggregateDeviceIsStackedKey: 1,
+            kAudioAggregateDeviceIsStackedKey: 1
         ]
         
         var aggregateDevice: AudioDeviceID = 0
@@ -387,13 +178,21 @@ class AudioSharingViewModel: ObservableObject {
     }
     
     private func setDefaultOutputDevice(deviceID: AudioDeviceID) -> OSStatus {
-        var mutableDeviceID = deviceID // Make a mutable copy to prevent compiler errors
+        var mutableDeviceID = deviceID
         var defaultOutputPropertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
+            mElement: kAudioObjectPropertyElementMain
+        )
         
-        let setStatus = AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &defaultOutputPropertyAddress, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &mutableDeviceID)
+        let setStatus = AudioObjectSetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &defaultOutputPropertyAddress,
+            0,
+            nil,
+            UInt32(MemoryLayout<AudioDeviceID>.size),
+            &mutableDeviceID
+        )
         
         guard setStatus == noErr else {
             print("Failed to set the device ID \(deviceID) as the default output device. Error: \(setStatus)")
@@ -432,11 +231,10 @@ class AudioSharingViewModel: ObservableObject {
     private func removePairPodsOutputDevice() -> OSStatus {
         let multiOutUID = "PairPodsOutputDevice" as CFString
         
-        guard let deviceID = fetchDeviceID(deviceUID: multiOutUID) else {
+        guard let deviceID = AudioDeviceHelper.fetchDeviceID(deviceUID: multiOutUID) else {
             return noErr
         }
         
         return removeMultiOutputDevice(deviceID: deviceID)
     }
-
 }

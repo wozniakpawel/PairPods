@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E93159FF2C03F24200D238F7 /* AudioDeviceHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93159FE2C03F24200D238F7 /* AudioDeviceHelper.swift */; };
+		E9315A012C03F74400D238F7 /* AudioDeviceDebugHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9315A002C03F74400D238F7 /* AudioDeviceDebugHelper.swift */; };
 		E9525B002BA4AC70006D1B84 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9525AFF2BA4AC70006D1B84 /* Utils.swift */; };
 		E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9972B92F59F005494FA /* PairPodsApp.swift */; };
 		E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99B2B92F5A0005494FA /* Assets.xcassets */; };
@@ -17,6 +19,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E93159FE2C03F24200D238F7 /* AudioDeviceHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceHelper.swift; sourceTree = "<group>"; };
+		E9315A002C03F74400D238F7 /* AudioDeviceDebugHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceDebugHelper.swift; sourceTree = "<group>"; };
 		E9525AFF2BA4AC70006D1B84 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		E985A9942B92F59F005494FA /* PairPods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPods.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E985A9972B92F59F005494FA /* PairPodsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsApp.swift; sourceTree = "<group>"; };
@@ -63,8 +67,10 @@
 			children = (
 				E9B438DD2BA2C374005EB7A9 /* Info.plist */,
 				E985A9972B92F59F005494FA /* PairPodsApp.swift */,
-				E9525AFF2BA4AC70006D1B84 /* Utils.swift */,
+				E93159FE2C03F24200D238F7 /* AudioDeviceHelper.swift */,
+				E9315A002C03F74400D238F7 /* AudioDeviceDebugHelper.swift */,
 				E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */,
+				E9525AFF2BA4AC70006D1B84 /* Utils.swift */,
 				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
 				E985A9A02B92F5A0005494FA /* PairPods.entitlements */,
 				E985A99D2B92F5A0005494FA /* Preview Content */,
@@ -164,6 +170,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E93159FF2C03F24200D238F7 /* AudioDeviceHelper.swift in Sources */,
+				E9315A012C03F74400D238F7 /* AudioDeviceDebugHelper.swift in Sources */,
 				E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
 				E9525B002BA4AC70006D1B84 /* Utils.swift in Sources */,
