@@ -9,11 +9,11 @@ import AppKit
 import SwiftUI
 
 func displayAboutWindow(purchaseManager: PurchaseManager) {
-    var statusText = "Status: Free"
+    var statusText = "License status: Free"
     if case let .trial(daysRemaining) = purchaseManager.purchaseState {
-        statusText = "Status: Trial (\(daysRemaining) days remaining)"
+        statusText = "License status: Trial (\(daysRemaining) days remaining)"
     } else if case .pro = purchaseManager.purchaseState {
-        statusText = "Status: Pro"
+        statusText = "License status: Pro"
     }
 
     DispatchQueue.main.async {
@@ -21,8 +21,8 @@ func displayAboutWindow(purchaseManager: PurchaseManager) {
         alert.messageText = """
         PairPods
         Version: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")
-        \(statusText)
         Copyright © \(Calendar.current.component(.year, from: Date())) Vantabyte
+        \n\(statusText)
         """
         if purchaseManager.purchaseState != .pro {
             alert.addButton(withTitle: "Manage License")
