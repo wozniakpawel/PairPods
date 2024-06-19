@@ -6,18 +6,60 @@
 //
 
 import AppKit
+import SwiftUI
 
-func displayAboutWindow() {
+func displayAboutWindow(purchaseManager: PurchaseManager) {
+    var statusText = "Status: Free"
+    if case let .trial(daysRemaining) = purchaseManager.purchaseState {
+        statusText = "Status: Trial (\(daysRemaining) days remaining)"
+    } else if case .pro = purchaseManager.purchaseState {
+        statusText = "Status: Pro"
+    }
+
     DispatchQueue.main.async {
         let alert = NSAlert()
         alert.messageText = """
         PairPods
         Version: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")
+        \(statusText)
         Copyright © \(Calendar.current.component(.year, from: Date())) Vantabyte
         """
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
+        if purchaseManager.purchaseState != .pro {
+            alert.addButton(withTitle: "Manage License")
+            alert.addButton(withTitle: "Close")
+        } else {
+            alert.addButton(withTitle: "Close")
+        }
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn && purchaseManager.purchaseState != .pro {
+            displayLicenseManager(purchaseManager: purchaseManager)
+        }
     }
+}
+
+func displayPurchaseInvitation(purchaseManager: PurchaseManager) {
+    let alert = NSAlert()
+    alert.messageText = "Trial Ended"
+    alert.informativeText = "Please purchase the full version to continue using PairPods."
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "Manage License")
+    alert.addButton(withTitle: "Close")
+    let response = alert.runModal()
+    if response == .alertFirstButtonReturn {
+        displayLicenseManager(purchaseManager: purchaseManager)
+    }
+}
+
+func displayLicenseManager(purchaseManager: PurchaseManager) {
+    let licenseManagerView = LicenseManager().environmentObject(purchaseManager)
+    let hostingController = NSHostingController(rootView: licenseManagerView)
+    let window = NSWindow(contentViewController: hostingController)
+    window.title = "License Manager"
+    window.setContentSize(NSSize(width: 480, height: 300))
+    window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
+    window.center()
+    window.makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
 }
 
 func handleError(_ message: String) {

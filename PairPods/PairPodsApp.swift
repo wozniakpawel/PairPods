@@ -10,29 +10,33 @@ import LaunchAtLogin
 
 @main
 struct PairPodsApp: App {
-    @StateObject private var viewModel = AudioSharingViewModel()
-    
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var viewModel: AudioSharingViewModel
+
+    init() {
+        let purchaseManager = PurchaseManager()
+        _viewModel = StateObject(wrappedValue: AudioSharingViewModel(purchaseManager: purchaseManager))
+    }
+
     var body: some Scene {
-        
         MenuBarExtra {
-            
             Toggle(isOn: $viewModel.isSharingAudio) {
                 Text("Share Audio")
             }.keyboardShortcut("s")
 
             Divider()
-            
+
             LaunchAtLogin.Toggle()
-            
+
             Button("About") {
-                displayAboutWindow()
+                displayAboutWindow(purchaseManager: appDelegate.purchaseManager)
             }.keyboardShortcut("a")
-            
+
             Button("Quit") {
                 viewModel.isSharingAudio = false
                 NSApplication.shared.terminate(nil)
             }.keyboardShortcut("q")
-            
+
         } label: {
             let primaryColor = viewModel.isSharingAudio ? Color.blue : Color.primary
             let secondaryColor = viewModel.isSharingAudio ? Color.blue : Color.secondary

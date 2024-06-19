@@ -20,7 +20,10 @@ class AudioSharingViewModel: ObservableObject {
         }
     }
     
-    init() {
+    private var purchaseManager: PurchaseManager
+    
+    init(purchaseManager: PurchaseManager) {
+        self.purchaseManager = purchaseManager
         _ = removePairPodsOutputDevice()
         startMonitoringAudioDevices()
     }

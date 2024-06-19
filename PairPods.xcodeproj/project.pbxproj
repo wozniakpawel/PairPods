@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		E93159FF2C03F24200D238F7 /* AudioDeviceHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93159FE2C03F24200D238F7 /* AudioDeviceHelper.swift */; };
 		E9315A012C03F74400D238F7 /* AudioDeviceDebugHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9315A002C03F74400D238F7 /* AudioDeviceDebugHelper.swift */; };
+		E949B8552C233C0100FCB28D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E949B8542C233C0100FCB28D /* AppDelegate.swift */; };
 		E9525B002BA4AC70006D1B84 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9525AFF2BA4AC70006D1B84 /* Utils.swift */; };
 		E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9972B92F59F005494FA /* PairPodsApp.swift */; };
 		E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99B2B92F5A0005494FA /* Assets.xcassets */; };
@@ -16,11 +17,14 @@
 		E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C32B936984005494FA /* CoreAudio.framework */; };
 		E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */; };
 		E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */; };
+		E9D7BF272C0AC16A00C91691 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D7BF262C0AC16A00C91691 /* PurchaseManager.swift */; };
+		E9D7BF2B2C0AC6B300C91691 /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D7BF2A2C0AC6B300C91691 /* LicenseManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		E93159FE2C03F24200D238F7 /* AudioDeviceHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceHelper.swift; sourceTree = "<group>"; };
 		E9315A002C03F74400D238F7 /* AudioDeviceDebugHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceDebugHelper.swift; sourceTree = "<group>"; };
+		E949B8542C233C0100FCB28D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E9525AFF2BA4AC70006D1B84 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		E985A9942B92F59F005494FA /* PairPods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPods.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E985A9972B92F59F005494FA /* PairPodsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsApp.swift; sourceTree = "<group>"; };
@@ -30,6 +34,9 @@
 		E985A9C32B936984005494FA /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSharingViewModel.swift; sourceTree = "<group>"; };
 		E9B438DD2BA2C374005EB7A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E9D7BF262C0AC16A00C91691 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
+		E9D7BF2A2C0AC6B300C91691 /* LicenseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
+		E9D7BF2D2C0AE6AE00C91691 /* LicensePricing.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = LicensePricing.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +74,10 @@
 			children = (
 				E9B438DD2BA2C374005EB7A9 /* Info.plist */,
 				E985A9972B92F59F005494FA /* PairPodsApp.swift */,
+				E949B8542C233C0100FCB28D /* AppDelegate.swift */,
+				E9D7BF2A2C0AC6B300C91691 /* LicenseManager.swift */,
+				E9D7BF262C0AC16A00C91691 /* PurchaseManager.swift */,
+				E9D7BF2D2C0AE6AE00C91691 /* LicensePricing.storekit */,
 				E93159FE2C03F24200D238F7 /* AudioDeviceHelper.swift */,
 				E9315A002C03F74400D238F7 /* AudioDeviceDebugHelper.swift */,
 				E985A9C52B95975A005494FA /* AudioSharingViewModel.swift */,
@@ -170,11 +181,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E949B8552C233C0100FCB28D /* AppDelegate.swift in Sources */,
 				E93159FF2C03F24200D238F7 /* AudioDeviceHelper.swift in Sources */,
 				E9315A012C03F74400D238F7 /* AudioDeviceDebugHelper.swift in Sources */,
 				E985A9C62B95975A005494FA /* AudioSharingViewModel.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
+				E9D7BF272C0AC16A00C91691 /* PurchaseManager.swift in Sources */,
 				E9525B002BA4AC70006D1B84 /* Utils.swift in Sources */,
+				E9D7BF2B2C0AC6B300C91691 /* LicenseManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
