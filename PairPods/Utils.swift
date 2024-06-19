@@ -55,7 +55,7 @@ func displayLicenseManager(purchaseManager: PurchaseManager) {
     let hostingController = NSHostingController(rootView: licenseManagerView)
     let window = NSWindow(contentViewController: hostingController)
     window.title = "License Manager"
-    window.setContentSize(NSSize(width: 480, height: 300))
+    window.setContentSize(NSSize(width: 500, height: 500))
     window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
     window.center()
     window.makeKeyAndOrderFront(nil)

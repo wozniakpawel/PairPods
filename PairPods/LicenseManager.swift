@@ -19,7 +19,10 @@ struct LicenseManager: View {
                 .font(.largeTitle)
                 .padding()
             
-            Text("Please select an option:")
+            Text("""
+                 You are welcome to use PairPods Free for as long as you like, but the audio sharing feature is limited to 5 minutes at a time.
+                 Alternatively, you can try our 7-day trial version for unlimited audio sharing, or purchase a lifetime Pro version license.
+                 """)
                 .padding()
             
             Picker("Select an option", selection: $selectedOption) {
