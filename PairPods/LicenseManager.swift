@@ -6,6 +6,40 @@
 //
 
 import SwiftUI
+import AppKit
+
+private var licenseManagerWindow: NSWindow?
+private var licenseManagerWindowDelegate: LicenseManagerWindowDelegate?
+
+func showLicenseManager(purchaseManager: PurchaseManager) {
+    if licenseManagerWindow != nil {
+        licenseManagerWindow?.makeKeyAndOrderFront(nil)
+        return
+    }
+
+    let licenseManagerView = LicenseManager().environmentObject(purchaseManager)
+    let hostingController = NSHostingController(rootView: licenseManagerView)
+    let window = NSWindow(contentViewController: hostingController)
+    window.title = "License Manager"
+    window.setContentSize(NSSize(width: 400, height: 300))
+    window.styleMask = [.titled, .closable, .resizable]
+    window.center()
+    window.makeKeyAndOrderFront(nil)
+    
+    let delegate = LicenseManagerWindowDelegate() // Create the delegate
+    window.delegate = delegate
+    licenseManagerWindowDelegate = delegate // Retain the delegate
+    licenseManagerWindow = window
+}
+
+private class LicenseManagerWindowDelegate: NSObject, NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        if let window = notification.object as? NSWindow, window == licenseManagerWindow {
+            licenseManagerWindow = nil
+            licenseManagerWindowDelegate = nil // Release the delegate reference
+        }
+    }
+}
 
 struct LicenseManager: View {
     @EnvironmentObject var purchaseManager: PurchaseManager

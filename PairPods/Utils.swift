@@ -32,7 +32,7 @@ func displayAboutWindow(purchaseManager: PurchaseManager) {
         }
         let response = alert.runModal()
         if response == .alertFirstButtonReturn && purchaseManager.purchaseState != .pro {
-            displayLicenseManager(purchaseManager: purchaseManager)
+            showLicenseManager(purchaseManager: purchaseManager)
         }
     }
 }
@@ -46,20 +46,8 @@ func displayPurchaseInvitation(purchaseManager: PurchaseManager) {
     alert.addButton(withTitle: "Close")
     let response = alert.runModal()
     if response == .alertFirstButtonReturn {
-        displayLicenseManager(purchaseManager: purchaseManager)
+        showLicenseManager(purchaseManager: purchaseManager)
     }
-}
-
-func displayLicenseManager(purchaseManager: PurchaseManager) {
-    let licenseManagerView = LicenseManager().environmentObject(purchaseManager)
-    let hostingController = NSHostingController(rootView: licenseManagerView)
-    let window = NSWindow(contentViewController: hostingController)
-    window.title = "License Manager"
-    window.setContentSize(NSSize(width: 500, height: 500))
-    window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
-    window.center()
-    window.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
 }
 
 func handleError(_ message: String) {
