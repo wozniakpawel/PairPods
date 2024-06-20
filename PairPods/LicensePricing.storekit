@@ -10,9 +10,9 @@
       "internalID" : "0E3AEB76",
       "localizations" : [
         {
-          "description" : "",
-          "displayName" : "",
-          "locale" : "en_US"
+          "description" : "Try out unlimited audio sharing for 7 days.",
+          "displayName" : "7-day Free Trial",
+          "locale" : "en_GB"
         }
       ],
       "productID" : "7DAYTRIAL",
@@ -25,9 +25,9 @@
       "internalID" : "EFC21CD3",
       "localizations" : [
         {
-          "description" : "",
-          "displayName" : "",
-          "locale" : "en_US"
+          "description" : "Lifetime license for unlimited audio sharing.",
+          "displayName" : "PairPods Pro",
+          "locale" : "en_GB"
         }
       ],
       "productID" : "LIFETIMELICENSE",
