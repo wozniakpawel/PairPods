@@ -25,17 +25,22 @@ struct LicenseManager: View {
                  """)
                 .padding()
             
-            Picker("Select an option", selection: $selectedOption) {
-                Text("Use for free").tag(PurchaseState.free)
-                if let trialProduct = purchaseManager.products.first(where: { $0.id == "7DAYTRIAL" }) {
-                    Text("\(trialProduct.displayName) (\(trialProduct.displayPrice))").tag(PurchaseState.trial(daysRemaining: 7))
+            if purchaseManager.products.isEmpty {
+                Text("Loading products...")
+                    .padding()
+            } else {
+                Picker("Select an option", selection: $selectedOption) {
+                    Text("Continue using for free (audio sharing limited to 5 minutes at a time)").tag(PurchaseState.free)
+                    if let trialProduct = purchaseManager.products.first(where: { $0.id == "7DAYTRIAL" }) {
+                        Text("\(trialProduct.displayName) (\(trialProduct.displayPrice))").tag(PurchaseState.trial(daysRemaining: 7))
+                    }
+                    if let fullProduct = purchaseManager.products.first(where: { $0.id == "LIFETIMELICENSE" }) {
+                        Text("\(fullProduct.displayName) (\(fullProduct.displayPrice))").tag(PurchaseState.pro)
+                    }
                 }
-                if let fullProduct = purchaseManager.products.first(where: { $0.id == "LIFETIMELICENSE" }) {
-                    Text("\(fullProduct.displayName) (\(fullProduct.displayPrice))").tag(PurchaseState.pro)
-                }
+                .pickerStyle(RadioGroupPickerStyle())
+                .padding()
             }
-            .pickerStyle(RadioGroupPickerStyle())
-            .padding()
             
             Button(action: {
                 handleContinue()
