@@ -20,8 +20,7 @@ func showLicenseManager(purchaseManager: PurchaseManager) {
     let licenseManagerView = LicenseManager().environmentObject(purchaseManager)
     let hostingController = NSHostingController(rootView: licenseManagerView)
     let window = NSWindow(contentViewController: hostingController)
-    window.title = "License Manager"
-    window.setContentSize(NSSize(width: 400, height: 300))
+    window.title = "PairPods License Manager"
     window.styleMask = [.titled, .closable, .resizable]
     window.center()
     window.makeKeyAndOrderFront(nil)
@@ -58,21 +57,39 @@ struct LicenseManager: View {
                  Alternatively, you can try our 7-day trial version for unlimited audio sharing, or purchase a lifetime Pro version license.
                  """)
                 .padding()
+                .fixedSize(horizontal: false, vertical: true)
             
             if purchaseManager.products.isEmpty {
                 Text("Loading products...")
                     .padding()
             } else {
-                Picker("Select an option", selection: $selectedOption) {
-                    Text("Continue using for free (audio sharing limited to 5 minutes at a time)").tag(PurchaseState.free)
+                VStack(spacing: 16) {
+                    productSelectionView(
+                        title: "Continue using for free",
+                        description: "Use for free for as long as you like. Audio sharing limited to 5 minutes at a time.",
+                        price: "",
+                        isSelected: selectedOption == .free,
+                        selectionAction: { selectedOption = .free }
+                    )
                     if let trialProduct = purchaseManager.products.first(where: { $0.id == "7DAYTRIAL" }) {
-                        Text("\(trialProduct.displayName) (\(trialProduct.displayPrice))").tag(PurchaseState.trial(daysRemaining: 7))
+                        productSelectionView(
+                            title: trialProduct.displayName,
+                            description: trialProduct.description,
+                            price: trialProduct.displayPrice,
+                            isSelected: selectedOption == .trial(daysRemaining: 7),
+                            selectionAction: { selectedOption = .trial(daysRemaining: 7) }
+                        )
                     }
                     if let fullProduct = purchaseManager.products.first(where: { $0.id == "LIFETIMELICENSE" }) {
-                        Text("\(fullProduct.displayName) (\(fullProduct.displayPrice))").tag(PurchaseState.pro)
+                        productSelectionView(
+                            title: fullProduct.displayName,
+                            description: fullProduct.description,
+                            price: fullProduct.displayPrice,
+                            isSelected: selectedOption == .pro,
+                            selectionAction: { selectedOption = .pro }
+                        )
                     }
                 }
-                .pickerStyle(RadioGroupPickerStyle())
                 .padding()
             }
             
@@ -80,21 +97,59 @@ struct LicenseManager: View {
                 handleContinue()
             }) {
                 Text("Continue")
+                    .bold()
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
             }
-            .padding()
+            .padding(.horizontal)
             
             Button(action: {
                 purchaseManager.restorePurchases()
             }) {
                 Text("Restore Purchases")
+                    .bold()
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
             }
-            .padding()
+            .padding(.horizontal)
         }
+        .padding()
+        .frame(minWidth: 400, minHeight: 300) // Minimum window size
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Purchase Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
         .onAppear {
             purchaseManager.fetchProducts()
+        }
+    }
+    
+    private func productSelectionView(title: String, description: String, price: String, isSelected: Bool, selectionAction: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                Text(price)
+                    .font(.headline)
+            }
+            Text(description)
+                .font(.subheadline)
+                .foregroundColor(.gray)
+                .fixedSize(horizontal: false, vertical: true) // Allow text wrapping
+        }
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 10)
+                        .stroke(isSelected ? Color.blue : Color.gray, lineWidth: 2)
+                        .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+                        .cornerRadius(10))
+        .onTapGesture {
+            selectionAction()
         }
     }
     
