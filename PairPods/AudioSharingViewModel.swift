@@ -6,6 +6,7 @@
 //
 
 import CoreAudio
+import Combine
 
 class AudioSharingViewModel: ObservableObject {
     @Published var isSharingAudio = false {
@@ -13,23 +14,39 @@ class AudioSharingViewModel: ObservableObject {
             if isSharingAudio {
                 if !startSharingAudio() {
                     isSharingAudio = false
+                } else {
+                    if purchaseManager.purchaseState == .free {
+                        startFreeLicenseTimer()
+                    }
                 }
             } else {
+                stopFreeLicenseTimer()
                 _ = removePairPodsOutputDevice()
             }
         }
     }
     
     private var purchaseManager: PurchaseManager
+    private var freeLicenseTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     
     init(purchaseManager: PurchaseManager) {
         self.purchaseManager = purchaseManager
         _ = removePairPodsOutputDevice()
         startMonitoringAudioDevices()
+        
+        purchaseManager.$purchaseState
+            .sink { [weak self] state in
+                if state != .free {
+                    self?.stopFreeLicenseTimer()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     deinit {
         stopMonitoringAudioDevices()
+        stopFreeLicenseTimer()
     }
     
     private func startSharingAudio() -> Bool {
@@ -239,5 +256,23 @@ class AudioSharingViewModel: ObservableObject {
         }
         
         return removeMultiOutputDevice(deviceID: deviceID)
+    }
+    
+    private func startFreeLicenseTimer() {
+        freeLicenseTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: false) { [weak self] _ in
+            self?.stopFreeLicenseActions()
+        }
+    }
+    
+    private func stopFreeLicenseTimer() {
+        freeLicenseTimer?.invalidate()
+        freeLicenseTimer = nil
+    }
+    
+    private func stopFreeLicenseActions() {
+        DispatchQueue.main.async {
+            self.isSharingAudio = false
+            displayPurchaseInvitation(purchaseManager: self.purchaseManager)
+        }
     }
 }
