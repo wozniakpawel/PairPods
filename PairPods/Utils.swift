@@ -24,14 +24,10 @@ func displayAboutWindow(purchaseManager: PurchaseManager) {
         Copyright © \(Calendar.current.component(.year, from: Date())) Vantabyte
         \n\(statusText)
         """
-        if purchaseManager.purchaseState != .pro {
-            alert.addButton(withTitle: "Manage License")
-            alert.addButton(withTitle: "Close")
-        } else {
-            alert.addButton(withTitle: "Close")
-        }
+        alert.addButton(withTitle: "Manage License")
+        alert.addButton(withTitle: "Close")
         let response = alert.runModal()
-        if response == .alertFirstButtonReturn && purchaseManager.purchaseState != .pro {
+        if response == .alertFirstButtonReturn {
             showLicenseManager(purchaseManager: purchaseManager)
         }
     }
