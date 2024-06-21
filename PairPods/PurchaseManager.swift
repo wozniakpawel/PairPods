@@ -6,6 +6,7 @@
 //
 
 import StoreKit
+import Combine
 
 class PurchaseManager: ObservableObject {
     @Published var purchaseState: PurchaseState = .free
@@ -62,18 +63,28 @@ class PurchaseManager: ObservableObject {
                     let result = try await product.purchase()
                     switch result {
                     case .success:
-                        checkPurchaseState()
-                        completion(.success(()))
+                        DispatchQueue.main.async {
+                            self.checkPurchaseState()
+                            completion(.success(()))
+                        }
                     case .pending, .userCancelled:
-                        completion(.failure(PurchaseError.purchaseCancelled))
+                        DispatchQueue.main.async {
+                            completion(.failure(PurchaseError.purchaseCancelled))
+                        }
                     @unknown default:
-                        completion(.failure(PurchaseError.unknown))
+                        DispatchQueue.main.async {
+                            completion(.failure(PurchaseError.unknown))
+                        }
                     }
                 } else {
-                    completion(.failure(PurchaseError.productNotFound))
+                    DispatchQueue.main.async {
+                        completion(.failure(PurchaseError.productNotFound))
+                    }
                 }
             } catch {
-                completion(.failure(error))
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }
     }
@@ -97,23 +108,29 @@ class PurchaseManager: ObservableObject {
         }
 
         if transaction.productID == "LIFETIMELICENSE" && transaction.revocationDate == nil {
-            purchaseState = .pro
+            DispatchQueue.main.async {
+                self.purchaseState = .pro
+            }
             return
         } else if transaction.productID == "7DAYTRIAL" && transaction.revocationDate == nil {
             let trialStartDate = transaction.originalPurchaseDate
             let trialDays = Calendar.current.dateComponents([.day], from: trialStartDate, to: Date()).day ?? 0
             if trialDays < 7 {
-                purchaseState = .trial(daysRemaining: 7 - trialDays)
-                trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+                DispatchQueue.main.async {
+                    self.purchaseState = .trial(daysRemaining: 7 - trialDays)
+                    self.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+                }
             } else {
-                purchaseState = .free
+                DispatchQueue.main.async {
+                    self.purchaseState = .free
+                }
             }
             return
         }
     }
 }
 
-enum PurchaseState: Hashable {
+enum PurchaseState: Hashable, Codable {
     case free
     case trial(daysRemaining: Int)
     case pro

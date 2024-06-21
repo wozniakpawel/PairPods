@@ -71,6 +71,7 @@ struct LicenseManager: View {
                         description: "Use for free for as long as you like. Audio sharing limited to 5 minutes at a time.",
                         price: "",
                         isSelected: selectedOption == .free,
+                        isDisabled: purchaseManager.purchaseState == .pro,
                         selectionAction: { selectedOption = .free }
                     )
                     if let trialProduct = purchaseManager.products.first(where: { $0.id == "7DAYTRIAL" }) {
@@ -79,6 +80,7 @@ struct LicenseManager: View {
                             description: trialProduct.description,
                             price: trialProduct.displayPrice,
                             isSelected: selectedOption == .trial(daysRemaining: 7),
+                            isDisabled: purchaseManager.purchaseState == .pro || purchaseManager.purchaseState == .trial(daysRemaining: 0),
                             selectionAction: { selectedOption = .trial(daysRemaining: 7) }
                         )
                     }
@@ -88,6 +90,7 @@ struct LicenseManager: View {
                             description: fullProduct.description,
                             price: fullProduct.displayPrice,
                             isSelected: selectedOption == .pro,
+                            isDisabled: purchaseManager.purchaseState == .pro,
                             selectionAction: { selectedOption = .pro }
                         )
                     }
@@ -122,18 +125,35 @@ struct LicenseManager: View {
             }
             .buttonStyle(PlainButtonStyle()) // Ensure custom button style is applied
             .padding(.horizontal)
+
+            Button(action: {
+                closeLicenseManagerWindow()
+            }) {
+                Text("Close")
+                    .bold()
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            .buttonStyle(PlainButtonStyle()) // Ensure custom button style is applied
+            .padding(.horizontal)
         }
         .padding()
-        .frame(minWidth: 400, minHeight: 550) // Minimum window size
+        .frame(minWidth: 400, minHeight: 600) // Minimum window size increased for Close button
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Purchase Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
         .onAppear {
             purchaseManager.fetchProducts()
         }
+        .onReceive(purchaseManager.$purchaseState) { _ in
+            // Refresh the view when purchaseState changes
+        }
     }
     
-    private func productSelectionView(title: String, description: String, price: String, isSelected: Bool, selectionAction: @escaping () -> Void) -> some View {
+    private func productSelectionView(title: String, description: String, price: String, isSelected: Bool, isDisabled: Bool, selectionAction: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
@@ -154,14 +174,19 @@ struct LicenseManager: View {
                         .cornerRadius(10))
         .contentShape(Rectangle()) // Make entire area tappable
         .onTapGesture {
-            selectionAction()
+            if !isDisabled {
+                selectionAction()
+            }
         }
+        .opacity(isDisabled ? 0.5 : 1.0)
+        .disabled(isDisabled)
     }
     
     private func handleContinue() {
         switch selectedOption {
         case .free:
             purchaseManager.purchaseState = .free
+            closeLicenseManagerWindow()
         case .trial:
             purchaseManager.purchase(productID: "7DAYTRIAL") { result in
                 handlePurchaseResult(result)
@@ -176,10 +201,19 @@ struct LicenseManager: View {
     private func handlePurchaseResult(_ result: Result<Void, Error>) {
         switch result {
         case .success:
-            break // Purchase was successful
+            // Refresh the view
+            DispatchQueue.main.async {
+                purchaseManager.objectWillChange.send()
+            }
         case .failure(let error):
-            alertMessage = error.localizedDescription
-            showAlert = true
+            DispatchQueue.main.async {
+                alertMessage = error.localizedDescription
+                showAlert = true
+            }
         }
+    }
+    
+    private func closeLicenseManagerWindow() {
+        licenseManagerWindow?.close()
     }
 }
