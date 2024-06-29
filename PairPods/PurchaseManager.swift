@@ -109,25 +109,32 @@ class PurchaseManager: ObservableObject {
         }
 
         stateQueue.sync {
-            if transaction.productID == "LIFETIMELICENSE" && transaction.revocationDate == nil {
+            let productID = transaction.productID
+            let revocationDate = transaction.revocationDate
+            
+            if productID == "LIFETIMELICENSE" && revocationDate == nil {
                 DispatchQueue.main.async {
                     self.purchaseState = .pro
                 }
-            } else if transaction.productID == "7DAYTRIAL" && transaction.revocationDate == nil {
+            } else if productID == "7DAYTRIAL" && revocationDate == nil {
                 let trialStartDate = transaction.originalPurchaseDate
-                let trialDays = Calendar.current.dateComponents([.day], from: trialStartDate, to: Date()).day ?? 0
-                if trialDays < 7 {
-                    DispatchQueue.main.async {
-                        if self.purchaseState != .pro {
+                let currentDate = Date()
+                let trialDaysPassed = Calendar.current.dateComponents([.day], from: trialStartDate, to: currentDate).day ?? 0
+
+                DispatchQueue.main.async {
+                    if self.purchaseState != .pro {
+                        if trialDaysPassed < 7 {
                             self.purchaseState = .trial
-                            self.trialDaysRemaining = 7 - trialDays
-                        }
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        if self.purchaseState != .pro {
+                            self.trialDaysRemaining = 7 - trialDaysPassed
+                        } else {
                             self.purchaseState = .free
                         }
+                    }
+                }
+            } else {
+                DispatchQueue.main.async {
+                    if self.purchaseState != .pro {
+                        self.purchaseState = .free
                     }
                 }
             }
