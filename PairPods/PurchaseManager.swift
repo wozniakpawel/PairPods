@@ -158,3 +158,20 @@ enum PurchaseError: Error, LocalizedError {
         }
     }
 }
+
+func displayPurchaseInvitation(purchaseManager: PurchaseManager) {
+    let alert = NSAlert()
+    alert.messageText = "Audio Sharing Stopped"
+    alert.informativeText = """
+    We hope you're enjoying using PairPods!
+    PairPods' free audio sharing is limited to 5 minutes per session.
+    You can start another free session right away, or consider upgrading to PairPods Pro to unlock unlimited audio sharing.
+    """
+    alert.alertStyle = .warning
+    alert.addButton(withTitle: "Manage License")
+    alert.addButton(withTitle: "Close")
+    let response = alert.runModal()
+    if response == .alertFirstButtonReturn {
+    showLicenseManager(purchaseManager: purchaseManager)
+    }
+}

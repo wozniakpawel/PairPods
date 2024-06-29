@@ -57,3 +57,40 @@ struct PairPodsApp: App {
         }
     }
 }
+
+func displayAboutWindow(purchaseManager: PurchaseManager) {
+    var statusText = "License status: Free"
+    if case let .trial(daysRemaining) = purchaseManager.purchaseState {
+        statusText = "License status: Trial (\(daysRemaining) days remaining)"
+    } else if case .pro = purchaseManager.purchaseState {
+        statusText = "License status: Pro"
+    }
+
+    DispatchQueue.main.async {
+        let alert = NSAlert()
+        alert.messageText = """
+        PairPods
+        Version: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown")
+        Copyright © \(Calendar.current.component(.year, from: Date())) Vantabyte
+        \n\(statusText)
+        """
+        alert.addButton(withTitle: "Manage License")
+        alert.addButton(withTitle: "Close")
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            showLicenseManager(purchaseManager: purchaseManager)
+        }
+    }
+}
+
+func handleError(_ message: String) {
+    DispatchQueue.main.async {
+        print(message)
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.alertStyle = .warning
+        alert.icon = NSImage(named: NSImage.cautionName)
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+    }
+}
