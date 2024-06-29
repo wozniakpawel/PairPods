@@ -48,6 +48,7 @@ class PurchaseManager: ObservableObject {
             for await result in Transaction.currentEntitlements {
                 switch result {
                 case .verified(let transaction):
+                    print(transaction)
                     await handle(transaction: transaction)
                 case .unverified(_, let error):
                     print("Unverified transaction: \(error.localizedDescription)")
