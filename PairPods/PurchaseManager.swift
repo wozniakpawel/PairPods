@@ -9,9 +9,12 @@ import StoreKit
 import Combine
 
 class PurchaseManager: ObservableObject {
-    @Published var purchaseState: PurchaseState = .free
-    @Published var trialDaysRemaining: Int = 0
     @Published var products: [Product] = []
+    @Published var purchaseState: PurchaseState = .free
+    @Published var trialWasPurchased: Bool = false
+    @Published var trialStartDate: Date?
+    @Published var trialEndDate: Date?
+    @Published var trialDaysRemaining: Int = 0
 
     private let stateQueue = DispatchQueue(label: "com.vantabyte.PairPods.PurchaseManager")
 
@@ -121,6 +124,10 @@ class PurchaseManager: ObservableObject {
                 let currentDate = Date()
                 let trialDaysPassed = Calendar.current.dateComponents([.day], from: trialStartDate, to: currentDate).day ?? 0
 
+                self.trialWasPurchased = true
+                self.trialStartDate = trialStartDate
+                self.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+
                 DispatchQueue.main.async {
                     if self.purchaseState != .pro {
                         if trialDaysPassed < 7 {
@@ -129,12 +136,6 @@ class PurchaseManager: ObservableObject {
                         } else {
                             self.purchaseState = .free
                         }
-                    }
-                }
-            } else {
-                DispatchQueue.main.async {
-                    if self.purchaseState != .pro {
-                        self.purchaseState = .free
                     }
                 }
             }
@@ -166,7 +167,7 @@ func displayPurchaseInvitation(purchaseManager: PurchaseManager) {
     alert.addButton(withTitle: "Close")
     let response = alert.runModal()
     if response == .alertFirstButtonReturn {
-    showLicenseManager(purchaseManager: purchaseManager)
+        showLicenseManager(purchaseManager: purchaseManager)
     }
 }
 
