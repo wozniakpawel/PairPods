@@ -183,7 +183,6 @@ struct LicenseManager: View {
     private func handleContinue() {
         switch selectedOption {
         case .free:
-            purchaseManager.purchaseState = .free
             closeLicenseManagerWindow()
         case .trial:
             purchaseManager.purchase(productID: "7DAYTRIAL") { result in
