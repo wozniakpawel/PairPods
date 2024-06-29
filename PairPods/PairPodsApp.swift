@@ -10,12 +10,13 @@ import LaunchAtLogin
 
 @main
 struct PairPodsApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var viewModel: AudioSharingViewModel
+    private static var purchaseManager: PurchaseManager = PurchaseManager()
 
     init() {
-        let purchaseManager = PurchaseManager()
-        _viewModel = StateObject(wrappedValue: AudioSharingViewModel(purchaseManager: purchaseManager))
+        let viewModel = AudioSharingViewModel(purchaseManager: PairPodsApp.purchaseManager)
+        _viewModel = StateObject(wrappedValue: viewModel)
+        checkFirstLaunch(purchaseManager: PairPodsApp.purchaseManager)
     }
 
     var body: some Scene {
@@ -29,7 +30,7 @@ struct PairPodsApp: App {
             LaunchAtLogin.Toggle()
 
             Button("About") {
-                displayAboutWindow(purchaseManager: appDelegate.purchaseManager)
+                displayAboutWindow(purchaseManager: PairPodsApp.purchaseManager)
             }.keyboardShortcut("a")
 
             Button("Quit") {
@@ -44,5 +45,15 @@ struct PairPodsApp: App {
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(primaryColor, secondaryColor)
         } .menuBarExtraStyle(.menu)
+    }
+
+    private func checkFirstLaunch(purchaseManager: PurchaseManager) {
+        let isFirstLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+        if isFirstLaunch {
+            UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
+            showLicenseManager(purchaseManager: purchaseManager)
+        } else if purchaseManager.purchaseState == .free {
+            showLicenseManager(purchaseManager: purchaseManager)
+        }
     }
 }
