@@ -113,7 +113,7 @@ class PurchaseManager: ObservableObject {
                 self.purchaseState = .pro
             }
             return
-        } else if transaction.productID == "7DAYTRIAL" && transaction.revocationDate == nil {
+        } else if transaction.productID == "7DAYTRIAL" && transaction.revocationDate == nil && self.purchaseState != .pro {
             let trialStartDate = transaction.originalPurchaseDate
             let trialDays = Calendar.current.dateComponents([.day], from: trialStartDate, to: Date()).day ?? 0
             if trialDays < 7 {
