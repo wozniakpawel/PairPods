@@ -13,7 +13,6 @@ class PurchaseManager: ObservableObject {
     @Published var trialDaysRemaining: Int = 0
     @Published var products: [Product] = []
 
-    private var trialEndDate: Date?
     private let stateQueue = DispatchQueue(label: "com.vantabyte.PairPods.PurchaseManager")
 
     init() {
@@ -120,8 +119,8 @@ class PurchaseManager: ObservableObject {
                 if trialDays < 7 {
                     DispatchQueue.main.async {
                         if self.purchaseState != .pro {
-                            self.purchaseState = .trial(daysRemaining: 7 - trialDays)
-                            self.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+                            self.purchaseState = .trial
+                            self.trialDaysRemaining = 7 - trialDays
                         }
                     }
                 } else {
@@ -139,8 +138,8 @@ class PurchaseManager: ObservableObject {
         switch purchaseState {
         case .free:
             return "Free"
-        case let .trial(daysRemaining):
-            return "Trial (\(daysRemaining) days remaining)"
+        case .trial:
+            return "Trial (\(trialDaysRemaining) days remaining)"
         case .pro:
             return "Pro"
         }
@@ -166,7 +165,7 @@ func displayPurchaseInvitation(purchaseManager: PurchaseManager) {
 
 enum PurchaseState: Hashable, Codable {
     case free
-    case trial(daysRemaining: Int)
+    case trial
     case pro
 }
 

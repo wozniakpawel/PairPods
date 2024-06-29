@@ -78,9 +78,9 @@ struct LicenseManager: View {
                             title: trialProduct.displayName,
                             description: trialProduct.description,
                             price: trialProduct.displayPrice,
-                            isSelected: selectedOption == .trial(daysRemaining: 7),
-                            isDisabled: purchaseManager.purchaseState == .pro || purchaseManager.purchaseState == .trial(daysRemaining: 0),
-                            selectionAction: { selectedOption = .trial(daysRemaining: 7) }
+                            isSelected: selectedOption == .trial,
+                            isDisabled: purchaseManager.purchaseState == .pro || purchaseManager.purchaseState == .trial,
+                            selectionAction: { selectedOption = .trial }
                         )
                     }
                     if let fullProduct = purchaseManager.products.first(where: { $0.id == "LIFETIMELICENSE" }) {
@@ -215,3 +215,4 @@ struct LicenseManager: View {
         licenseManagerWindow?.close()
     }
 }
+
