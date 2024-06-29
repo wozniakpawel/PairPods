@@ -12,10 +12,10 @@ class PurchaseManager: ObservableObject {
     @Published var purchaseState: PurchaseState = .free
     @Published var trialDaysRemaining: Int = 0
     @Published var products: [Product] = []
-    
+
     private var trialEndDate: Date?
     private let stateQueue = DispatchQueue(label: "com.vantabyte.PairPods.PurchaseManager")
-    
+
     init() {
         checkPurchaseState()
         fetchProducts()
@@ -30,7 +30,7 @@ class PurchaseManager: ObservableObject {
             }
         }
     }
-    
+
     func fetchProducts() {
         Task {
             do {
@@ -43,7 +43,7 @@ class PurchaseManager: ObservableObject {
             }
         }
     }
-    
+
     func checkPurchaseState() {
         Task {
             for await result in Transaction.currentEntitlements {
@@ -57,7 +57,7 @@ class PurchaseManager: ObservableObject {
             }
         }
     }
-    
+
     func purchase(productID: String, completion: @escaping (Result<Void, Error>) -> Void) {
         Task {
             do {
@@ -90,7 +90,7 @@ class PurchaseManager: ObservableObject {
             }
         }
     }
-    
+
     func restorePurchases() {
         Task {
             do {
@@ -101,7 +101,7 @@ class PurchaseManager: ObservableObject {
             }
         }
     }
-    
+
     private func handle(transaction: Transaction) async {
         defer {
             Task {
@@ -134,27 +134,15 @@ class PurchaseManager: ObservableObject {
             }
         }
     }
-}
 
-enum PurchaseState: Hashable, Codable {
-    case free
-    case trial(daysRemaining: Int)
-    case pro
-}
-
-enum PurchaseError: Error, LocalizedError {
-    case purchaseCancelled
-    case productNotFound
-    case unknown
-    
-    var errorDescription: String? {
-        switch self {
-        case .purchaseCancelled:
-            return "Purchase was cancelled."
-        case .productNotFound:
-            return "Product not found."
-        case .unknown:
-            return "Unknown error occurred."
+    func getCurrentLicenseType() -> String {
+        switch purchaseState {
+        case .free:
+            return "Free"
+        case let .trial(daysRemaining):
+            return "Trial (\(daysRemaining) days remaining)"
+        case .pro:
+            return "Pro"
         }
     }
 }
@@ -173,5 +161,28 @@ func displayPurchaseInvitation(purchaseManager: PurchaseManager) {
     let response = alert.runModal()
     if response == .alertFirstButtonReturn {
     showLicenseManager(purchaseManager: purchaseManager)
+    }
+}
+
+enum PurchaseState: Hashable, Codable {
+    case free
+    case trial(daysRemaining: Int)
+    case pro
+}
+
+enum PurchaseError: Error, LocalizedError {
+    case purchaseCancelled
+    case productNotFound
+    case unknown
+
+    var errorDescription: String? {
+        switch self {
+        case .purchaseCancelled:
+            return "Purchase was cancelled."
+        case .productNotFound:
+            return "Product not found."
+        case .unknown:
+            return "Unknown error occurred."
+        }
     }
 }

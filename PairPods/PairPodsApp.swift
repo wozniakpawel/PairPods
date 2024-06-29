@@ -59,12 +59,7 @@ struct PairPodsApp: App {
 }
 
 func displayAboutWindow(purchaseManager: PurchaseManager) {
-    var statusText = "License status: Free"
-    if case let .trial(daysRemaining) = purchaseManager.purchaseState {
-        statusText = "License status: Trial (\(daysRemaining) days remaining)"
-    } else if case .pro = purchaseManager.purchaseState {
-        statusText = "License status: Pro"
-    }
+    let statusText = "License status: \(purchaseManager.getCurrentLicenseType())"
 
     DispatchQueue.main.async {
         let alert = NSAlert()

@@ -45,18 +45,18 @@ struct LicenseManager: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var selectedOption: PurchaseState = .free
-
+    
     var body: some View {
         VStack {
             VStack(spacing: 4) {
                 Text("""
-                     You are currently running PairPods with a \(getCurrentLicenseType()) license.
+                     You are currently running PairPods with a \(purchaseManager.getCurrentLicenseType()) license.
                      
                      If you wish to upgrade, you can do that below.
                      """)
                 .font(.headline)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .padding()
             
@@ -96,7 +96,6 @@ struct LicenseManager: View {
                 }
                 .padding()
             }
-            
             Button(action: {
                 handleContinue()
             }) {
@@ -124,7 +123,7 @@ struct LicenseManager: View {
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal)
-
+            
             Button(action: {
                 closeLicenseManagerWindow()
             }) {
@@ -168,9 +167,9 @@ struct LicenseManager: View {
         }
         .padding()
         .background(RoundedRectangle(cornerRadius: 10)
-                        .stroke(isSelected ? Color.blue : Color.gray, lineWidth: 2)
-                        .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
-                        .cornerRadius(10))
+            .stroke(isSelected ? Color.blue : Color.gray, lineWidth: 2)
+            .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+            .cornerRadius(10))
         .contentShape(Rectangle())
         .onTapGesture {
             if !isDisabled {
@@ -210,16 +209,6 @@ struct LicenseManager: View {
                 showAlert = true
             }
         }
-    }
-    
-    private func getCurrentLicenseType() -> String {
-        var statusText = "Free"
-        if case let .trial(daysRemaining) = purchaseManager.purchaseState {
-            statusText = "Trial (\(daysRemaining) days remaining)"
-        } else if case .pro = purchaseManager.purchaseState {
-            statusText = "Pro"
-        }
-        return statusText
     }
     
     private func closeLicenseManagerWindow() {
