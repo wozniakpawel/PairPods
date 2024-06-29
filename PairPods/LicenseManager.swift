@@ -25,9 +25,9 @@ func showLicenseManager(purchaseManager: PurchaseManager) {
     window.center()
     window.makeKeyAndOrderFront(nil)
     
-    let delegate = LicenseManagerWindowDelegate() // Create the delegate
+    let delegate = LicenseManagerWindowDelegate()
     window.delegate = delegate
-    licenseManagerWindowDelegate = delegate // Retain the delegate
+    licenseManagerWindowDelegate = delegate
     licenseManagerWindow = window
 }
 
@@ -35,7 +35,7 @@ private class LicenseManagerWindowDelegate: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         if let window = notification.object as? NSWindow, window == licenseManagerWindow {
             licenseManagerWindow = nil
-            licenseManagerWindowDelegate = nil // Release the delegate reference
+            licenseManagerWindowDelegate = nil
         }
     }
 }
@@ -49,17 +49,16 @@ struct LicenseManager: View {
     var body: some View {
         VStack {
             VStack(spacing: 4) {
-                Text("Welcome to PairPods!")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.top)
-                
-                Text("Please select your desired license type.")
-                    .font(.title2)
+                Text("""
+                     You are currently running PairPods with a \(getCurrentLicenseType()) license.
+                     
+                     If you wish to upgrade, you can do that below.
+                     """)
+                .font(.headline)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.bottom, 20)
+            .padding()
             
             if purchaseManager.products.isEmpty {
                 Text("Loading products...")
@@ -123,7 +122,7 @@ struct LicenseManager: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
-            .buttonStyle(PlainButtonStyle()) // Ensure custom button style is applied
+            .buttonStyle(PlainButtonStyle())
             .padding(.horizontal)
 
             Button(action: {
@@ -137,19 +136,19 @@ struct LicenseManager: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
-            .buttonStyle(PlainButtonStyle()) // Ensure custom button style is applied
+            .buttonStyle(PlainButtonStyle())
             .padding(.horizontal)
         }
         .padding()
-        .frame(minWidth: 400, minHeight: 600) // Minimum window size increased for Close button
+        .frame(minWidth: 400, minHeight: 550)
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Purchase Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
         .onAppear {
             purchaseManager.fetchProducts()
         }
-        .onReceive(purchaseManager.$purchaseState) { _ in
-            // Refresh the view when purchaseState changes
+        .onReceive(purchaseManager.$purchaseState) { newState in
+            selectedOption = newState
         }
     }
     
@@ -165,14 +164,14 @@ struct LicenseManager: View {
             Text(description)
                 .font(.subheadline)
                 .foregroundColor(.gray)
-                .fixedSize(horizontal: false, vertical: true) // Allow text wrapping
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding()
         .background(RoundedRectangle(cornerRadius: 10)
                         .stroke(isSelected ? Color.blue : Color.gray, lineWidth: 2)
                         .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
                         .cornerRadius(10))
-        .contentShape(Rectangle()) // Make entire area tappable
+        .contentShape(Rectangle())
         .onTapGesture {
             if !isDisabled {
                 selectionAction()
@@ -211,6 +210,16 @@ struct LicenseManager: View {
                 showAlert = true
             }
         }
+    }
+    
+    private func getCurrentLicenseType() -> String {
+        var statusText = "Free"
+        if case let .trial(daysRemaining) = purchaseManager.purchaseState {
+            statusText = "Trial (\(daysRemaining) days remaining)"
+        } else if case .pro = purchaseManager.purchaseState {
+            statusText = "Pro"
+        }
+        return statusText
     }
     
     private func closeLicenseManagerWindow() {
