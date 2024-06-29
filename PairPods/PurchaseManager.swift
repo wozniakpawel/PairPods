@@ -14,6 +14,7 @@ class PurchaseManager: ObservableObject {
     @Published var products: [Product] = []
     
     private var trialEndDate: Date?
+    private let stateQueue = DispatchQueue(label: "com.vantabyte.PairPods.PurchaseManager")
     
     init() {
         checkPurchaseState()
@@ -108,25 +109,29 @@ class PurchaseManager: ObservableObject {
             }
         }
 
-        if transaction.productID == "LIFETIMELICENSE" && transaction.revocationDate == nil {
-            DispatchQueue.main.async {
-                self.purchaseState = .pro
-            }
-            return
-        } else if transaction.productID == "7DAYTRIAL" && transaction.revocationDate == nil && self.purchaseState != .pro {
-            let trialStartDate = transaction.originalPurchaseDate
-            let trialDays = Calendar.current.dateComponents([.day], from: trialStartDate, to: Date()).day ?? 0
-            if trialDays < 7 {
+        stateQueue.sync {
+            if transaction.productID == "LIFETIMELICENSE" && transaction.revocationDate == nil {
                 DispatchQueue.main.async {
-                    self.purchaseState = .trial(daysRemaining: 7 - trialDays)
-                    self.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+                    self.purchaseState = .pro
                 }
-            } else {
-                DispatchQueue.main.async {
-                    self.purchaseState = .free
+            } else if transaction.productID == "7DAYTRIAL" && transaction.revocationDate == nil {
+                let trialStartDate = transaction.originalPurchaseDate
+                let trialDays = Calendar.current.dateComponents([.day], from: trialStartDate, to: Date()).day ?? 0
+                if trialDays < 7 {
+                    DispatchQueue.main.async {
+                        if self.purchaseState != .pro {
+                            self.purchaseState = .trial(daysRemaining: 7 - trialDays)
+                            self.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+                        }
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        if self.purchaseState != .pro {
+                            self.purchaseState = .free
+                        }
+                    }
                 }
             }
-            return
         }
     }
 }
