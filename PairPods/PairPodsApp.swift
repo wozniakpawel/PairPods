@@ -61,8 +61,8 @@ struct PairPodsApp: App {
         if isFirstLaunch {
             UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
             showLicenseManager(purchaseManager: purchaseManager)
-        } else if purchaseManager.purchaseState == .free {
-            showLicenseManager(purchaseManager: purchaseManager)
+//        } else if purchaseManager.purchaseState == .free {
+//            showLicenseManager(purchaseManager: purchaseManager)
         }
     }
 }
