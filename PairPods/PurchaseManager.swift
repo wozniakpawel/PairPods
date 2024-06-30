@@ -124,9 +124,11 @@ class PurchaseManager: ObservableObject {
                 let currentDate = Date()
                 let trialDaysPassed = Calendar.current.dateComponents([.day], from: trialStartDate, to: currentDate).day ?? 0
 
-                self.trialWasPurchased = true
-                self.trialStartDate = trialStartDate
-                self.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+                DispatchQueue.main.async {
+                    self.trialWasPurchased = true
+                    self.trialStartDate = trialStartDate
+                    self.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: trialStartDate)
+                }
 
                 DispatchQueue.main.async {
                     if self.purchaseState != .pro {

@@ -70,7 +70,7 @@ struct LicenseManager: View {
                         description: "Use for free for as long as you like. Audio sharing limited to 5 minutes at a time.",
                         price: "",
                         isSelected: selectedOption == .free,
-                        isDisabled: purchaseManager.purchaseState == .pro,
+                        isDisabled: purchaseManager.purchaseState == .pro || purchaseManager.purchaseState == .trial,
                         selectionAction: { selectedOption = .free }
                     )
                     if let trialProduct = purchaseManager.products.first(where: { $0.id == "7DAYTRIAL" }) {
@@ -79,7 +79,7 @@ struct LicenseManager: View {
                             description: trialProduct.description,
                             price: trialProduct.displayPrice,
                             isSelected: selectedOption == .trial,
-                            isDisabled: purchaseManager.purchaseState == .pro || purchaseManager.purchaseState == .trial,
+                            isDisabled: purchaseManager.purchaseState == .pro || purchaseManager.trialWasPurchased,
                             selectionAction: { selectedOption = .trial }
                         )
                     }
@@ -107,7 +107,7 @@ struct LicenseManager: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
-            .buttonStyle(PlainButtonStyle()) // Ensure custom button style is applied
+            .buttonStyle(PlainButtonStyle())
             .padding(.horizontal)
             
             Button(action: {
