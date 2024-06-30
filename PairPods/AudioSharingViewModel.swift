@@ -9,6 +9,10 @@ import CoreAudio
 import Combine
 
 class AudioSharingViewModel: ObservableObject {
+    private var purchaseManager: PurchaseManager
+    private var freeLicenseTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
+    
     @Published var isSharingAudio = false {
         didSet {
             if isSharingAudio {
@@ -25,10 +29,6 @@ class AudioSharingViewModel: ObservableObject {
             }
         }
     }
-    
-    private var purchaseManager: PurchaseManager
-    private var freeLicenseTimer: Timer?
-    private var cancellables = Set<AnyCancellable>()
     
     init(purchaseManager: PurchaseManager) {
         self.purchaseManager = purchaseManager
