@@ -12,7 +12,8 @@ class AudioSharingViewModel: ObservableObject {
     private var purchaseManager: PurchaseManager
     private var freeLicenseTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    
+    @Published var shouldShowReviewPrompt = false
+
     @Published var isSharingAudio = false {
         didSet {
             if isSharingAudio {
@@ -26,6 +27,10 @@ class AudioSharingViewModel: ObservableObject {
             } else {
                 stopFreeLicenseTimer()
                 _ = removePairPodsOutputDevice()
+                purchaseManager.incrementSuccessfulShares()
+                if purchaseManager.successfulSharesCount >= 10 {
+                    shouldShowReviewPrompt = true
+                }
             }
         }
     }

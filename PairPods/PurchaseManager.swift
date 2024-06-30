@@ -7,6 +7,7 @@
 
 import StoreKit
 import Combine
+import SwiftUI
 
 class PurchaseManager: ObservableObject {
     @Published var products: [Product] = []
@@ -15,6 +16,7 @@ class PurchaseManager: ObservableObject {
     @Published var trialStartDate: Date?
     @Published var trialEndDate: Date?
     @Published var trialDaysRemaining: Int = 0
+    @AppStorage("successfulSharesCount") var successfulSharesCount = 0
 
     private let stateQueue = DispatchQueue(label: "com.vantabyte.PairPods.PurchaseManager")
 
@@ -104,7 +106,7 @@ class PurchaseManager: ObservableObject {
         }
     }
 
-    private func handle(transaction: Transaction) async {
+    private func handle(transaction: StoreKit.Transaction) async {
         defer {
             Task {
                 await transaction.finish()
@@ -142,6 +144,10 @@ class PurchaseManager: ObservableObject {
                 }
             }
         }
+    }
+    
+    func incrementSuccessfulShares() {
+        successfulSharesCount += 1
     }
 
     func getCurrentLicenseType() -> String {

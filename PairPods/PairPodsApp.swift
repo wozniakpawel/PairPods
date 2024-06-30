@@ -11,6 +11,7 @@ import LaunchAtLogin
 @main
 struct PairPodsApp: App {
     @StateObject private var viewModel: AudioSharingViewModel
+    @Environment(\.requestReview) private var requestReview
     private static var purchaseManager: PurchaseManager = PurchaseManager()
 
     init() {
@@ -45,6 +46,14 @@ struct PairPodsApp: App {
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(primaryColor, secondaryColor)
         } .menuBarExtraStyle(.menu)
+        .onChange(of: viewModel.shouldShowReviewPrompt) { shouldShow in
+            if shouldShow {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                    requestReview()
+                    viewModel.shouldShowReviewPrompt = false
+                }
+            }
+        }
     }
 
     private func checkFirstLaunch(purchaseManager: PurchaseManager) {
