@@ -50,9 +50,7 @@ struct LicenseManager: View {
         VStack {
             VStack(spacing: 4) {
                 Text("""
-                     You are currently running PairPods with a \(purchaseManager.getCurrentLicenseType()) license.
-                     
-                     If you wish to upgrade, you can do that below.
+                     You are currently running PairPods with a \(purchaseManager.getCurrentLicenseType()) license. Manage your license below.
                      """)
                 .font(.headline)
                 .foregroundColor(.secondary)
@@ -96,19 +94,22 @@ struct LicenseManager: View {
                 }
                 .padding()
             }
-            Button(action: {
-                handleContinue()
-            }) {
-                Text("Continue")
-                    .bold()
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+            
+            if purchaseManager.purchaseState != .pro {
+                Button(action: {
+                    handleContinue()
+                }) {
+                    Text("Continue")
+                        .bold()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal)
             }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal)
             
             Button(action: {
                 purchaseManager.restorePurchases()
