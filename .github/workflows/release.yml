@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-release:
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -112,12 +112,24 @@ jobs:
           git commit -m "Update appcast.xml for version ${GITHUB_REF#refs/tags/}"
           git push https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
 
+      - name: Extract current version notes
+        id: extract_notes
+        run: |
+          # Extract just the section for current version
+          VERSION=${GITHUB_REF#refs/tags/v}
+          awk -v ver="$VERSION" '
+            BEGIN { found=0; buffer=""; }
+            /^## \['"$VERSION"'\]/ { found=1; }
+            /^## \[.*\]/ && !/^## \['"$VERSION"'\]/ && found==1 { found=0; }
+            { if (found) buffer = buffer $0 "\n" }
+            END { print buffer }' CHANGELOG.md > release-notes.md
+          
       - name: Create Release
         uses: softprops/action-gh-release@v2.2.1
         with:
           files: |
             ./build/export/PairPods.app.zip
             ./build/export/appcast.xml
-          body_path: CHANGELOG.md
+          body_path: release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
