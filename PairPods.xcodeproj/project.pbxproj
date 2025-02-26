@@ -1,0 +1,574 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 70;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E914ED342D660ACB00624746 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E914ED332D660ACB00624746 /* AboutView.swift */; };
+		E958D9FA2CA96D4600A4FC9C /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */; };
+		E958DA002CAA93B200A4FC9C /* LoggingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */; };
+		E958DA0A2CAABF0D00A4FC9C /* AudioDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = E958DA092CAABF0D00A4FC9C /* AudioDevice.swift */; };
+		E967B74F2D6B7ACF000D86CE /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E967B74E2D6B7ACF000D86CE /* XCTest.framework */; };
+		E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9972B92F59F005494FA /* PairPodsApp.swift */; };
+		E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99B2B92F5A0005494FA /* Assets.xcassets */; };
+		E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */; };
+		E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C32B936984005494FA /* CoreAudio.framework */; };
+		E985A9C62B95975A005494FA /* AudioSharingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9C52B95975A005494FA /* AudioSharingManager.swift */; };
+		E995C78A2C9B1E8A00DEB230 /* AudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */; };
+		E99A49F82D6C969A00F492A2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E99A49F72D6C969A00F492A2 /* Sparkle */; };
+		E99A49FA2D6CAA4900F492A2 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = E99A49F92D6CAA4900F492A2 /* SparkleUpdater.swift */; };
+		E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E958D9EC2CA961B700A4FC9C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E985A98C2B92F59F005494FA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E985A9932B92F59F005494FA;
+			remoteInfo = PairPods;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		E914ED332D660ACB00624746 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		E958D9E82CA961B700A4FC9C /* PairPodsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PairPodsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
+		E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingService.swift; sourceTree = "<group>"; };
+		E958DA092CAABF0D00A4FC9C /* AudioDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevice.swift; sourceTree = "<group>"; };
+		E967B74E2D6B7ACF000D86CE /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		E985A9942B92F59F005494FA /* PairPods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PairPods.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E985A9972B92F59F005494FA /* PairPodsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairPodsApp.swift; sourceTree = "<group>"; };
+		E985A99B2B92F5A0005494FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		E985A9A02B92F5A0005494FA /* PairPods.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PairPods.entitlements; sourceTree = "<group>"; };
+		E985A9C32B936984005494FA /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		E985A9C52B95975A005494FA /* AudioSharingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSharingManager.swift; sourceTree = "<group>"; };
+		E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceManager.swift; sourceTree = "<group>"; };
+		E99A49F92D6CAA4900F492A2 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
+		E9B438DD2BA2C374005EB7A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		E958D9E92CA961B700A4FC9C /* PairPodsTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PairPodsTests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E958D9E52CA961B700A4FC9C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E967B74F2D6B7ACF000D86CE /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E985A9912B92F59F005494FA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E99A49F82D6C969A00F492A2 /* Sparkle in Frameworks */,
+				E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */,
+				E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E985A98B2B92F59F005494FA = {
+			isa = PBXGroup;
+			children = (
+				E985A9962B92F59F005494FA /* PairPods */,
+				E958D9E92CA961B700A4FC9C /* PairPodsTests */,
+				E985A9952B92F59F005494FA /* Products */,
+				E985A9C22B936984005494FA /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		E985A9952B92F59F005494FA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E985A9942B92F59F005494FA /* PairPods.app */,
+				E958D9E82CA961B700A4FC9C /* PairPodsTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E985A9962B92F59F005494FA /* PairPods */ = {
+			isa = PBXGroup;
+			children = (
+				E9B438DD2BA2C374005EB7A9 /* Info.plist */,
+				E985A9972B92F59F005494FA /* PairPodsApp.swift */,
+				E914ED332D660ACB00624746 /* AboutView.swift */,
+				E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */,
+				E99A49F92D6CAA4900F492A2 /* SparkleUpdater.swift */,
+				E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */,
+				E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */,
+				E958DA092CAABF0D00A4FC9C /* AudioDevice.swift */,
+				E985A9C52B95975A005494FA /* AudioSharingManager.swift */,
+				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
+				E985A9A02B92F5A0005494FA /* PairPods.entitlements */,
+				E985A99D2B92F5A0005494FA /* Preview Content */,
+			);
+			path = PairPods;
+			sourceTree = "<group>";
+		};
+		E985A99D2B92F5A0005494FA /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		E985A9C22B936984005494FA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E967B74E2D6B7ACF000D86CE /* XCTest.framework */,
+				E985A9C32B936984005494FA /* CoreAudio.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E958D9E72CA961B700A4FC9C /* PairPodsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E958D9EE2CA961B700A4FC9C /* Build configuration list for PBXNativeTarget "PairPodsTests" */;
+			buildPhases = (
+				E958D9E42CA961B700A4FC9C /* Sources */,
+				E958D9E52CA961B700A4FC9C /* Frameworks */,
+				E958D9E62CA961B700A4FC9C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E958D9ED2CA961B700A4FC9C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E958D9E92CA961B700A4FC9C /* PairPodsTests */,
+			);
+			name = PairPodsTests;
+			packageProductDependencies = (
+			);
+			productName = PairPodsTests;
+			productReference = E958D9E82CA961B700A4FC9C /* PairPodsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		E985A9932B92F59F005494FA /* PairPods */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E985A9B92B92F5A0005494FA /* Build configuration list for PBXNativeTarget "PairPods" */;
+			buildPhases = (
+				E985A9902B92F59F005494FA /* Sources */,
+				E985A9912B92F59F005494FA /* Frameworks */,
+				E985A9922B92F59F005494FA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PairPods;
+			packageProductDependencies = (
+				E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */,
+				E99A49F72D6C969A00F492A2 /* Sparkle */,
+			);
+			productName = PairPods;
+			productReference = E985A9942B92F59F005494FA /* PairPods.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E985A98C2B92F59F005494FA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1530;
+				TargetAttributes = {
+					E958D9E72CA961B700A4FC9C = {
+						CreatedOnToolsVersion = 16.0;
+						LastSwiftMigration = 1620;
+						TestTargetID = E985A9932B92F59F005494FA;
+					};
+					E985A9932B92F59F005494FA = {
+						CreatedOnToolsVersion = 15.2;
+					};
+				};
+			};
+			buildConfigurationList = E985A98F2B92F59F005494FA /* Build configuration list for PBXProject "PairPods" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E985A98B2B92F59F005494FA;
+			packageReferences = (
+				E9C177792C03EA950062C0E0 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */,
+				E99A49F62D6C969A00F492A2 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
+			productRefGroup = E985A9952B92F59F005494FA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E985A9932B92F59F005494FA /* PairPods */,
+				E958D9E72CA961B700A4FC9C /* PairPodsTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E958D9E62CA961B700A4FC9C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E985A9922B92F59F005494FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */,
+				E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E958D9E42CA961B700A4FC9C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E985A9902B92F59F005494FA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E995C78A2C9B1E8A00DEB230 /* AudioDeviceManager.swift in Sources */,
+				E914ED342D660ACB00624746 /* AboutView.swift in Sources */,
+				E958D9FA2CA96D4600A4FC9C /* AppDependencies.swift in Sources */,
+				E958DA002CAA93B200A4FC9C /* LoggingService.swift in Sources */,
+				E985A9C62B95975A005494FA /* AudioSharingManager.swift in Sources */,
+				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
+				E99A49FA2D6CAA4900F492A2 /* SparkleUpdater.swift in Sources */,
+				E958DA0A2CAABF0D00A4FC9C /* AudioDevice.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E958D9ED2CA961B700A4FC9C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E985A9932B92F59F005494FA /* PairPods */;
+			targetProxy = E958D9EC2CA961B700A4FC9C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		E958D9EF2CA961B700A4FC9C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VAH9WL9LJH;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPodsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PairPods.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PairPods";
+			};
+			name = Debug;
+		};
+		E958D9F02CA961B700A4FC9C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VAH9WL9LJH;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPodsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PairPods.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PairPods";
+			};
+			name = Release;
+		};
+		E985A9B72B92F5A0005494FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E985A9B82B92F5A0005494FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		E985A9BA2B92F5A0005494FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PairPods/PairPods.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_ASSET_PATHS = "\"PairPods/Preview Content\"";
+				DEVELOPMENT_TEAM = VAH9WL9LJH;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PairPods/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PairPods;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E985A9BB2B92F5A0005494FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PairPods/PairPods.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_ASSET_PATHS = "\"PairPods/Preview Content\"";
+				DEVELOPMENT_TEAM = VAH9WL9LJH;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PairPods/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PairPods;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E958D9EE2CA961B700A4FC9C /* Build configuration list for PBXNativeTarget "PairPodsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E958D9EF2CA961B700A4FC9C /* Debug */,
+				E958D9F02CA961B700A4FC9C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E985A98F2B92F59F005494FA /* Build configuration list for PBXProject "PairPods" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E985A9B72B92F5A0005494FA /* Debug */,
+				E985A9B82B92F5A0005494FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E985A9B92B92F5A0005494FA /* Build configuration list for PBXNativeTarget "PairPods" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E985A9BA2B92F5A0005494FA /* Debug */,
+				E985A9BB2B92F5A0005494FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E99A49F62D6C969A00F492A2 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.0;
+			};
+		};
+		E9C177792C03EA950062C0E0 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin-Modern";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E99A49F72D6C969A00F492A2 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E99A49F62D6C969A00F492A2 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+		E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9C177792C03EA950062C0E0 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */;
+			productName = LaunchAtLogin;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = E985A98C2B92F59F005494FA /* Project object */;
+}

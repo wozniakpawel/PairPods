@@ -1,0 +1,53 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
+
+## User settings
+xcuserdata/
+*.xcuserstate
+
+## Obj-C/Swift specific
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+#
+.build/
+
+# CocoaPods
+#
+Pods/
+
+# Carthage
+#
+Carthage/Build/
+
+# Build artifacts
+build/
+DerivedData/
+
+# Sparkle specific
+sparkle_private_key
+
+# Mac OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Archives and packages
+*.zip
+*.pkg
+*.app.dSYM.zip
+*.app
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output

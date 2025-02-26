@@ -1,0 +1,123 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Set Xcode version
+        uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: '16.2'
+
+      - name: Install Apple Certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Install Sparkle tools
+        id: sparkle-install
+        run: |
+          brew install --cask sparkle
+          GENERATE_APPCAST_PATH=$(find "$(brew --prefix)/Caskroom/sparkle" -name "generate_appcast" -type f | head -n 1)
+          echo "Found generate_appcast at: $GENERATE_APPCAST_PATH"
+          echo "appcast_tool=$GENERATE_APPCAST_PATH" >> $GITHUB_OUTPUT
+
+      - name: Build app
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcodebuild archive \
+            -scheme PairPods \
+            -configuration Release \
+            -archivePath ./build/PairPods.xcarchive \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=$TEAM_ID
+
+      - name: Export app
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ./build/PairPods.xcarchive \
+            -exportOptionsPlist ./Configs/ExportOptions.plist \
+            -exportPath ./build/export
+
+      - name: Create ZIP
+        run: |
+          ditto -c -k --keepParent ./build/export/PairPods.app ./build/export/PairPods.app.zip
+
+      - name: Notarize app
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          # Submit for notarization and wait for completion
+          xcrun notarytool submit ./build/export/PairPods.app.zip \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --wait
+          
+          # Only create a new zip if notarization succeeds
+          xcrun stapler staple ./build/export/PairPods.app
+          
+          # Re-zip the stapled app for distribution
+          cd ./build/export
+          rm PairPods.app.zip
+          ditto -c -k --keepParent PairPods.app PairPods.app.zip
+
+      - name: Generate appcast
+        env:
+          SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          GENERATE_APPCAST_PATH: ${{ steps.sparkle-install.outputs.appcast_tool }}
+        run: |
+          # Write key with explicit line ending handling
+          echo -n "$SPARKLE_KEY" > sparkle_private_key
+
+          # Generate appcast file
+          "$GENERATE_APPCAST_PATH" \
+            --ed-key-file "$(pwd)/sparkle_private_key" \
+            --download-url-prefix https://github.com/wozniakpawel/PairPods/releases/download/${GITHUB_REF#refs/tags/} \
+            ./build/export
+
+      - name: Update appcast.xml
+        run: |
+          cp ./build/export/appcast.xml ./Sparkle/appcast.xml
+          
+          # Check if appcast file changed
+          if git diff --quiet ./Sparkle/appcast.xml; then
+            echo "Error: The generated appcast file is identical to the existing one."
+            echo "This likely means the release contains no changes or the version wasn't updated."
+            exit 1
+          fi
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add ./Sparkle/appcast.xml
+          git commit -m "Update appcast.xml for version ${GITHUB_REF#refs/tags/}"
+          git push https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.2.1
+        with:
+          files: |
+            ./build/export/PairPods.app.zip
+            ./build/export/appcast.xml
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

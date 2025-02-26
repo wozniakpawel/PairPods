@@ -1,0 +1,24 @@
+name: SwiftFormat
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  format:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.head_ref }}
+          
+      - name: Format Swift code
+        run: swiftformat --swiftversion 6.0.3 .
+        
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5.1.0
+        with:
+          commit_message: "Apply SwiftFormat changes"
