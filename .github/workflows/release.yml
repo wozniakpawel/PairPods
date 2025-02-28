@@ -22,6 +22,15 @@ jobs:
         with:
           xcode-version: '16.2'
 
+      - name: Extract tag name and version
+        id: extract_tag
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted tag: $TAG_NAME, version: $VERSION"
+
       - name: Install Apple Certificate
         uses: apple-actions/import-codesign-certs@v3
         with:
@@ -56,35 +65,43 @@ jobs:
             -exportOptionsPlist ./Configs/ExportOptions.plist \
             -exportPath ./build/export
 
-      - name: Create ZIP
+      - name: Create versioned ZIP
+        id: create_zip
+        env:
+          VERSION: ${{ steps.extract_tag.outputs.version }}
         run: |
-          ditto -c -k --keepParent ./build/export/PairPods.app ./build/export/PairPods.app.zip
+          FILENAME="PairPods-${VERSION}.app.zip"
+          echo "Creating versioned ZIP file: $FILENAME"
+          ditto -c -k --keepParent ./build/export/PairPods.app ./build/export/$FILENAME
+          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
 
       - name: Notarize app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          FILENAME: ${{ steps.create_zip.outputs.filename }}
         run: |
           # Submit for notarization and wait for completion
-          xcrun notarytool submit ./build/export/PairPods.app.zip \
+          xcrun notarytool submit ./build/export/$FILENAME \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_PASSWORD" \
             --wait
           
-          # Only create a new zip if notarization succeeds
+          # Staple the app
           xcrun stapler staple ./build/export/PairPods.app
           
-          # Re-zip the stapled app for distribution
+          # Re-zip the stapled app with the versioned filename
           cd ./build/export
-          rm PairPods.app.zip
-          ditto -c -k --keepParent PairPods.app PairPods.app.zip
+          rm $FILENAME
+          ditto -c -k --keepParent PairPods.app $FILENAME
 
       - name: Generate appcast
         env:
           SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           GENERATE_APPCAST_PATH: ${{ steps.sparkle-install.outputs.appcast_tool }}
+          TAG_NAME: ${{ steps.extract_tag.outputs.tag_name }}
         run: |
           # Write key with explicit line ending handling
           echo -n "$SPARKLE_KEY" > sparkle_private_key
@@ -92,7 +109,7 @@ jobs:
           # Generate appcast file
           "$GENERATE_APPCAST_PATH" \
             --ed-key-file "$(pwd)/sparkle_private_key" \
-            --download-url-prefix https://github.com/wozniakpawel/PairPods/releases/download/${GITHUB_REF#refs/tags/} \
+            --download-url-prefix "https://github.com/wozniakpawel/PairPods/releases/download/$TAG_NAME" \
             ./build/export
 
       - name: Update appcast.xml
@@ -114,9 +131,12 @@ jobs:
 
       - name: Extract current version notes
         id: extract_notes
+        env:
+          VERSION: ${{ steps.extract_tag.outputs.version }}
         run: |
           # Extract just the section for current version
-          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Extracting release notes for version: $VERSION"
+          
           awk -v ver="$VERSION" '
             BEGIN { found=0; buffer=""; }
             /^## \['"$VERSION"'\]/ { found=1; }
@@ -128,7 +148,7 @@ jobs:
         uses: softprops/action-gh-release@v2.2.1
         with:
           files: |
-            ./build/export/PairPods.app.zip
+            ./build/export/${{ steps.create_zip.outputs.filename }}
             ./build/export/appcast.xml
           body_path: release-notes.md
         env:
