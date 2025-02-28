@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      test-version:
+        description: 'Test version number (e.g., 0.0.0)'
+        required: true
+        default: '0.0.0-test'
 
 permissions:
   contents: write
@@ -25,11 +31,19 @@ jobs:
       - name: Extract tag name and version
         id: extract_tag
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          VERSION=${TAG_NAME#v}
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted tag: $TAG_NAME, version: $VERSION"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # For manual test runs
+            echo "tag_name=v${{ inputs.test-version }}" >> $GITHUB_OUTPUT
+            echo "version=${{ inputs.test-version }}" >> $GITHUB_OUTPUT
+            echo "Testing with version: ${{ inputs.test-version }}"
+          else
+            # Normal tag-triggered run
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            VERSION=${TAG_NAME#v}
+            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Extracted tag: $TAG_NAME, version: $VERSION"
+          fi
 
       - name: Install Apple Certificate
         uses: apple-actions/import-codesign-certs@v3
@@ -150,6 +164,7 @@ jobs:
             END { print buffer }' CHANGELOG.md > release-notes.md
           
       - name: Create Release
+        if: ${{ !inputs.test-version }}
         uses: softprops/action-gh-release@v2.2.1
         with:
           files: |
@@ -158,3 +173,13 @@ jobs:
           body_path: release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test Release Output (No actual release)
+        if: ${{ inputs.test-version }}
+        run: |
+          echo "TESTING RELEASE PROCESS"
+          echo "Would release version: ${{ inputs.test-version || steps.extract_tag.outputs.version }}"
+          echo "Files that would be included:"
+          ls -la ./build/export/
+          echo "Contents of release notes:"
+          cat release-notes.md || echo "No release notes found"
