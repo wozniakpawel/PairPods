@@ -42,6 +42,7 @@ PairPods is a macOS menubar app that lets you share audio between two Bluetooth 
 ## Requirements
 
 - macOS 13.5 (Ventura) or later
+- Both Apple and Intel silicon are supported
 - Two compatible Bluetooth audio devices
 
 ## Installation
