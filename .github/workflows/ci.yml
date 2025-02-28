@@ -15,15 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - macos: "13 (Ventura)"
-            runner: macos-13
-            xcode: "16.0"
-          - macos: "14 (Sonoma)"
-            runner: macos-14
-            xcode: "16.0"
           - macos: "15 (Sequoia)"
             runner: macos-15
-            xcode: "16.2" 
+            xcode: "16.0" 
           - macos: "Latest"
             runner: macos-latest
             xcode: "latest-stable"
