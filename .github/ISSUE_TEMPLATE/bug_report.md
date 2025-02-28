@@ -22,8 +22,8 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 ## System Information
- - macOS Version: [e.g. Sonoma 14.0]
- - PairPods Version: [e.g. 1.0.0]
+ - macOS Version: [e.g. Sequoia 15.0]
+ - PairPods Version: [e.g. 0.1.0]
  - Mac Model: [e.g. MacBook Pro M1]
  - Audio Devices Used: [e.g. AirPods Pro, Sony WH-1000XM4]
 
