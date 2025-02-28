@@ -128,7 +128,7 @@ jobs:
           # Generate appcast file
           "$GENERATE_APPCAST_PATH" \
             --ed-key-file "$(pwd)/sparkle_private_key" \
-            --download-url-prefix "https://github.com/wozniakpawel/PairPods/releases/download/$TAG_NAME" \
+            --download-url-prefix "https://github.com/wozniakpawel/PairPods/releases/download/$TAG_NAME/" \
             ./build/export
 
       - name: Update appcast.xml
