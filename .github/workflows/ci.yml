@@ -45,12 +45,12 @@ jobs:
           
       - name: Build
         run: |
-          xcodebuild clean build -scheme PairPods -configuration Debug CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.1
         with:
           name: PairPods-${{ matrix.macos }}-Debug
           path: |
-            build/Debug/PairPods.app
+            ./DerivedData/Build/Products/Debug/PairPods.app
           retention-days: 7
