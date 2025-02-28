@@ -1,16 +1,24 @@
 name: CI
-
 on:
   pull_request:
-    branches: [ main ]
   push:
-    branches: [ main ]
   workflow_dispatch:
-
 jobs:
   build:
-    name: Build
-    runs-on: macos-latest
+    name: Build on macOS ${{ matrix.macos }} for ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - macos: "15 (Sequoia)"
+            runner: macos-15
+            xcode: "16.0"
+            arch: "Universal"
+          - macos: "Latest"
+            runner: macos-latest
+            xcode: "latest-stable"
+            arch: "Universal"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
@@ -18,15 +26,15 @@ jobs:
       - name: Set Xcode version
         uses: maxim-lobanov/setup-xcode@v1.6.0
         with:
-          xcode-version: '16.2'
+          xcode-version: ${{ matrix.xcode }}
       
       - name: Cache Swift packages
         uses: actions/cache@v4.2.1
         with:
           path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-${{ matrix.runner }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-${{ matrix.runner }}-spm-
       
       - name: Verify SPM dependencies
         run: |
@@ -34,12 +42,16 @@ jobs:
           
       - name: Build
         run: |
-          xcodebuild clean build -scheme PairPods -configuration Debug CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO
+      
+      - name: Verify app architectures
+        run: |
+          lipo -info ./DerivedData/Build/Products/Debug/PairPods.app/Contents/MacOS/PairPods
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.1
         with:
-          name: PairPods-Debug
+          name: PairPods-${{ matrix.macos }}-${{ matrix.arch }}-Debug
           path: |
-            build/Debug/PairPods.app
+            ./DerivedData/Build/Products/Debug/PairPods.app
           retention-days: 7

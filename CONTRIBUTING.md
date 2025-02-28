@@ -8,8 +8,8 @@ By participating in this project, you agree to maintain a welcoming, inclusive, 
 
 ## Development Requirements
 
-- macOS Sonoma (14.0) or later
-- Xcode 16.0 or later
+- macOS 15.0 (Sequoia) or later
+- Xcode 16.0 or later (required for project format compatibility)
 - Two compatible Bluetooth audio devices for testing
 - [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) for code formatting
 
@@ -153,39 +153,10 @@ git merge develop
 
 ## Testing Guidelines
 
-- Test your changes on different macOS versions (if possible)
 - Test with various Bluetooth audio devices
 - Verify that the menubar app functions correctly
 - Check that audio sharing works as expected
 - Ensure the UI remains responsive
-
-## Reporting Issues
-
-When reporting issues, please include:
-
-- A clear and descriptive title
-- Detailed steps to reproduce the issue
-- Expected behavior
-- Actual behavior
-- macOS version
-- PairPods version
-- Types of Bluetooth devices used
-- Screenshots (if applicable)
-
-## Feature Requests
-
-We welcome feature requests! Please provide:
-
-- A clear and descriptive title
-- Detailed description of the proposed feature
-- Any relevant examples or mockups
-- Potential implementation approaches (optional)
-
-## Questions and Discussions
-
-- Use GitHub Discussions for general questions
-- Check existing issues and discussions before creating new ones
-- Be clear and provide context in your questions
 
 ## License
 
