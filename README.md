@@ -49,8 +49,9 @@ PairPods is a macOS menubar app that lets you share audio between two Bluetooth 
 
 ### Homebrew
 
+To install PairPods with Homebrew, simply run:
+
 ```bash
-brew tap wozniakpawel/pairpods
 brew install --cask pairpods
 ```
 
@@ -82,6 +83,9 @@ git clone https://github.com/wozniakpawel/PairPods.git
 3. Open PairPods.xcodeproj in Xcode
 
 4. Build and run the project (⌘R)
+
+## Updates
+Please note that PairPods uses Sparkle to check for and notify you of new updates automatically. Homebrew does not provide update notifications.
 
 ## Contributing
 

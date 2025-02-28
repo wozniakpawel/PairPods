@@ -183,3 +183,23 @@ jobs:
           ls -la ./build/export/
           echo "Contents of release notes:"
           cat release-notes.md || echo "No release notes found"
+
+      - name: Bump Homebrew Cask
+        if: ${{ !inputs.test-version && success() }}
+        run: |
+          # Install homebrew-cask-bump utility
+          brew tap homebrew/cask-bump
+          
+          # Use the local zip file we just created
+          LOCAL_ZIP="./build/export/${{ steps.create_zip.outputs.filename }}"
+          SHA256=$(shasum -a 256 "$LOCAL_ZIP" | cut -d ' ' -f 1)
+          
+          echo "Bumping cask 'pairpods' to version ${{ steps.extract_tag.outputs.version }} with SHA256: $SHA256"
+          
+          # Run cask bump with the new version and sha
+          brew bump-cask-pr --version=${{ steps.extract_tag.outputs.version }} \
+                            --sha256=$SHA256 \
+                            --message="Automated version bump to ${{ steps.extract_tag.outputs.version }}" \
+                            pairpods
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
