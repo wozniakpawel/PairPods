@@ -1,15 +1,13 @@
 name: CI
-
 on:
   pull_request:
     branches: [ main ]
   push:
     branches: [ main ]
   workflow_dispatch:
-
 jobs:
   build:
-    name: Build on macOS ${{ matrix.macos }}
+    name: Build on macOS ${{ matrix.macos }} for ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -17,11 +15,12 @@ jobs:
         include:
           - macos: "15 (Sequoia)"
             runner: macos-15
-            xcode: "16.0" 
+            xcode: "16.0"
+            arch: "Universal"
           - macos: "Latest"
             runner: macos-latest
             xcode: "latest-stable"
-    
+            arch: "Universal"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
@@ -45,12 +44,16 @@ jobs:
           
       - name: Build
         run: |
-          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO
+      
+      - name: Verify app architectures
+        run: |
+          lipo -info ./DerivedData/Build/Products/Debug/PairPods.app/Contents/MacOS/PairPods
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.1
         with:
-          name: PairPods-${{ matrix.macos }}-Debug
+          name: PairPods-${{ matrix.macos }}-${{ matrix.arch }}-Debug
           path: |
             ./DerivedData/Build/Products/Debug/PairPods.app
           retention-days: 7

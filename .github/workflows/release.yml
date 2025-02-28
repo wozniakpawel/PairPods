@@ -55,7 +55,13 @@ jobs:
             -archivePath ./build/PairPods.xcarchive \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=$TEAM_ID
+            DEVELOPMENT_TEAM=$TEAM_ID \
+            ARCHS="x86_64 arm64" \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Verify app architectures
+        run: |
+          lipo -info ./build/PairPods.xcarchive/Products/Applications/PairPods.app/Contents/MacOS/PairPods
 
       - name: Export app
         run: |
