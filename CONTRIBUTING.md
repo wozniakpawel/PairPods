@@ -8,8 +8,8 @@ By participating in this project, you agree to maintain a welcoming, inclusive, 
 
 ## Development Requirements
 
-- macOS Sonoma (14.0) or later
-- Xcode 16.0 or later
+- macOS Ventura (13.5) or later
+- Xcode 15.0 or later
 - Two compatible Bluetooth audio devices for testing
 - [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) for code formatting
 

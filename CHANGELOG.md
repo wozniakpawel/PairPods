@@ -8,7 +8,7 @@ All notable changes to PairPods will be documented in this file.
 - Initial beta release of PairPods, a macOS menubar app for sharing audio between two Bluetooth devices.
 - Basic functionality to share audio between two connected Bluetooth devices.
 - Menubar icon with a toggle to start and stop audio sharing.
-- Support for macOS Sonoma (14.0) and later.
+- Support for macOS Ventura (13.5) and later.
 - Homebrew installation option for easy setup.
 - Manual installation instructions for downloading and running the app directly.
 

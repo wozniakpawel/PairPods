@@ -8,9 +8,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ci:
-    name: Build
-    runs-on: macos-latest
+  build:
+    name: Build on macOS ${{ matrix.macos }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - macos: "13 (Ventura)"
+            runner: macos-13
+            xcode: "15.0"
+          - macos: "14 (Sonoma)"
+            runner: macos-14
+            xcode: "15.2"
+          - macos: "15 (Sequoia)"
+            runner: macos-15
+            xcode: "16.2" 
+          - macos: "Latest"
+            runner: macos-latest
+            xcode: "latest-stable"
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
@@ -18,15 +35,15 @@ jobs:
       - name: Set Xcode version
         uses: maxim-lobanov/setup-xcode@v1.6.0
         with:
-          xcode-version: '16.2'
+          xcode-version: ${{ matrix.xcode }}
       
       - name: Cache Swift packages
         uses: actions/cache@v4.2.1
         with:
           path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-${{ matrix.runner }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-${{ matrix.runner }}-spm-
       
       - name: Verify SPM dependencies
         run: |
@@ -39,7 +56,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.1
         with:
-          name: PairPods-Debug
+          name: PairPods-${{ matrix.macos }}-Debug
           path: |
             build/Debug/PairPods.app
           retention-days: 7
