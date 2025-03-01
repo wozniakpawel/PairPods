@@ -55,6 +55,9 @@ To install PairPods with Homebrew, simply run:
 brew install --cask pairpods
 ```
 
+### Updates
+Please note that PairPods uses Sparkle to check for and notify you of new updates automatically. Homebrew does not provide update notifications.
+
 ### Manual Installation
 
 1. Download the latest release from the [releases page](https://github.com/wozniakpawel/PairPods/releases)
@@ -83,9 +86,6 @@ git clone https://github.com/wozniakpawel/PairPods.git
 3. Open PairPods.xcodeproj in Xcode
 
 4. Build and run the project (⌘R)
-
-## Updates
-Please note that PairPods uses Sparkle to check for and notify you of new updates automatically. Homebrew does not provide update notifications.
 
 ## Contributing
 
