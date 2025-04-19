@@ -2,56 +2,61 @@
 //  DeviceVolumeView.swift
 //  PairPods
 //
-//  Created by M on 19.04.2025.
+//  Created by m6511 on 19.04.2025.
 //
+
 import SwiftUI
-import AppKit
-import CompactSlider
+import MacControlCenterUI
 
 struct DeviceVolumeView: View {
-    @StateObject var viewModel: DeviceVolumeViewModel
+    @ObservedObject var audioDeviceManager: AudioDeviceManager
+    @ObservedObject var volumeManager: AudioVolumeManager
     
     var body: some View {
-        VStack(spacing: 16) {
-            ForEach(viewModel.compatibleDevices, id: \.id) { device in
-                DeviceVolumeRowView(
-                    deviceName: device.name,
-                    volume: Binding(
-                        get: { viewModel.deviceVolumes[device.id] ?? 0.0 },
-                        set: { newValue in
-                            Task {
-                                await viewModel.setVolume(for: device.id, volume: newValue)
+        VStack(spacing: 12) {
+            if audioDeviceManager.compatibleDevices.isEmpty {
+                NoDevicesView()
+            } else {
+                ForEach(audioDeviceManager.compatibleDevices, id: \.id) { device in
+                    DeviceVolumeRowView(
+                        device: device,
+                        volume: Binding(
+                            get: { volumeManager.deviceVolumes[device.id] ?? volumeManager.getDefaultVolume(for: device) },
+                            set: { newValue in
+                                Task {
+                                    await volumeManager.setVolume(for: device.id, volume: newValue)
+                                }
                             }
-                        }
+                        )
                     )
-                )
-            }
-            
-            if viewModel.compatibleDevices.isEmpty {
-                Text("No Bluetooth audio devices connected")
-                    .foregroundColor(.secondary)
-                    .font(.caption)
-                    .padding(.top, 8)
+                }
             }
         }
-        .padding(.vertical, 8)
+        .animation(.easeInOut(duration: 0.2), value: audioDeviceManager.compatibleDevices.count)
         .onAppear {
             Task {
-                await viewModel.refreshDevices()
-                await viewModel.refreshAllVolumes()
+                await audioDeviceManager.refreshCompatibleDevices()
+                await volumeManager.refreshAllVolumes()
             }
         }
     }
 }
+
 struct DeviceVolumeRowView: View {
-    let deviceName: String
+    let device: AudioDevice
     @Binding var volume: Float
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(deviceName)
+                // Device icon based on type
+                Image(systemName: deviceIcon)
+                    .foregroundColor(.secondary)
+                
+                // Device name
+                Text(device.name)
                     .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
                 
                 Spacer()
                 
@@ -59,27 +64,59 @@ struct DeviceVolumeRowView: View {
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
+                    .frame(width: 40, alignment: .trailing)
             }
             
-            HStack(spacing: 8) {
-                // Volume low icon
-                Image(systemName: "speaker.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-                
-                CompactSlider(value: $volume)
-                    .frame(height: 16)
-                
-                // Volume high icon
-                Image(systemName: "speaker.wave.3.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-            }
+            // Volume slider
+            MenuVolumeSlider(
+                value: Binding<CGFloat>(
+                    get: { CGFloat(volume) },
+                    set: { volume = Float($0) }
+                )
+            )
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
+    }
+    
+    // Determine icon based on device type
+    private var deviceIcon: String {
+        let name = device.name.lowercased()
+        
+        if name.contains("airpod") {
+            if name.contains("max") {
+                return "airpodsmax"
+            } else if name.contains("pro") {
+                return "airpodspro"
+            } else {
+                return "airpods"
+            }
+        } else if name.contains("bluetooth") || name.contains("wireless") {
+            return "headphones"
+        } else {
+            return "speaker.wave.2"
+        }
     }
 }
-#Preview(body: {
-    DeviceVolumeView(viewModel: DeviceVolumeViewModel(audioDeviceManager: AudioDeviceManager()))
-})
+
+struct NoDevicesView: View {
+    var body: some View {
+        MenuCommand("Open Bluetooth Settings...") {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+        .padding(.horizontal, -14) // avoid unwanted padding
+    }
+}
+
+#Preview {
+    let deviceManager = AudioDeviceManager(shouldShowAlerts: false)
+    let volumeManager = AudioVolumeManager(audioDeviceManager: deviceManager)
+    
+    return DeviceVolumeView(
+        audioDeviceManager: deviceManager,
+        volumeManager: volumeManager
+    )
+    .frame(width: 270)
+    .padding()
+}

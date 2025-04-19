@@ -425,7 +425,6 @@ final class AudioDeviceManager: AudioDeviceManaging {
     // Setup a listener for volume changes
         private func setupVolumeChangeListener() {
             // Implementation would track volume changes from system
-            // This is a more complex addition that would require additional code
             logDebug("Volume change listener would be set up here")
         }
 }

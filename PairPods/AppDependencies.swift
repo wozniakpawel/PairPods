@@ -16,6 +16,7 @@ protocol AudioDeviceManaging: ObservableObject {
     func setupMultiOutputDevice() async throws
     func removeMultiOutputDevice() async
     func restoreOutputDevice() async
+    func refreshCompatibleDevices() async
     func cleanup() async
 }
 
@@ -31,6 +32,7 @@ protocol AudioSharingManaging: ObservableObject {
 protocol AppDependencies {
     var audioDeviceManager: any AudioDeviceManaging { get }
     var audioSharingManager: any AudioSharingManaging { get }
+    var audioVolumeManager: AudioVolumeManager { get }
 }
 
 @MainActor
@@ -39,11 +41,18 @@ final class LiveAppDependencies: ObservableObject, AppDependencies {
 
     let audioDeviceManager: any AudioDeviceManaging
     let audioSharingManager: any AudioSharingManaging
+    let audioVolumeManager: AudioVolumeManager
 
     init() {
-        audioDeviceManager = AudioDeviceManager(shouldShowAlerts: true)
+        let deviceManager = AudioDeviceManager(shouldShowAlerts: true)
+        audioDeviceManager = deviceManager
+        
         audioSharingManager = AudioSharingManager(
-            audioDeviceManager: audioDeviceManager
+            audioDeviceManager: deviceManager
+        )
+        
+        audioVolumeManager = AudioVolumeManager(
+            audioDeviceManager: deviceManager
         )
     }
 

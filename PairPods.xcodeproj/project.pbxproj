@@ -9,8 +9,7 @@
 /* Begin PBXBuildFile section */
 		0C3578DE2DB43E7D00354DE5 /* MacControlCenterUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0C3578DD2DB43E7D00354DE5 /* MacControlCenterUI */; };
 		0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */; };
-		0C9788BB2DB3A4F200CC5176 /* DeviceVolumeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788BA2DB3A4F200CC5176 /* DeviceVolumeViewModel.swift */; };
-		0C9788C22DB4314C00CC5176 /* CompactSlider in Frameworks */ = {isa = PBXBuildFile; productRef = 0C9788C12DB4314C00CC5176 /* CompactSlider */; };
+		0C9788BB2DB3A4F200CC5176 /* AudioVolumeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */; };
 		E914ED342D660ACB00624746 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E914ED332D660ACB00624746 /* AboutView.swift */; };
 		E958D9FA2CA96D4600A4FC9C /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */; };
 		E958DA002CAA93B200A4FC9C /* LoggingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */; };
@@ -39,7 +38,7 @@
 
 /* Begin PBXFileReference section */
 		0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceVolumeView.swift; sourceTree = "<group>"; };
-		0C9788BA2DB3A4F200CC5176 /* DeviceVolumeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceVolumeViewModel.swift; sourceTree = "<group>"; };
+		0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioVolumeManager.swift; sourceTree = "<group>"; };
 		E914ED332D660ACB00624746 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		E958D9E82CA961B700A4FC9C /* PairPodsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PairPodsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
@@ -79,7 +78,6 @@
 				0C3578DE2DB43E7D00354DE5 /* MacControlCenterUI in Frameworks */,
 				E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */,
 				E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */,
-				0C9788C22DB4314C00CC5176 /* CompactSlider in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,7 +114,7 @@
 				E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */,
 				E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */,
 				0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */,
-				0C9788BA2DB3A4F200CC5176 /* DeviceVolumeViewModel.swift */,
+				0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */,
 				E958DA092CAABF0D00A4FC9C /* AudioDevice.swift */,
 				E985A9C52B95975A005494FA /* AudioSharingManager.swift */,
 				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
@@ -185,7 +183,6 @@
 			packageProductDependencies = (
 				E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */,
 				E99A49F72D6C969A00F492A2 /* Sparkle */,
-				0C9788C12DB4314C00CC5176 /* CompactSlider */,
 				0C3578DD2DB43E7D00354DE5 /* MacControlCenterUI */,
 			);
 			productName = PairPods;
@@ -224,7 +221,6 @@
 			packageReferences = (
 				E9C177792C03EA950062C0E0 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */,
 				E99A49F62D6C969A00F492A2 /* XCRemoteSwiftPackageReference "Sparkle" */,
-				0C9788C02DB4311F00CC5176 /* XCRemoteSwiftPackageReference "CompactSlider" */,
 				0C3578DC2DB43E7D00354DE5 /* XCRemoteSwiftPackageReference "MacControlCenterUI" */,
 			);
 			productRefGroup = E985A9952B92F59F005494FA /* Products */;
@@ -272,7 +268,7 @@
 				E914ED342D660ACB00624746 /* AboutView.swift in Sources */,
 				E958D9FA2CA96D4600A4FC9C /* AppDependencies.swift in Sources */,
 				E958DA002CAA93B200A4FC9C /* LoggingService.swift in Sources */,
-				0C9788BB2DB3A4F200CC5176 /* DeviceVolumeViewModel.swift in Sources */,
+				0C9788BB2DB3A4F200CC5176 /* AudioVolumeManager.swift in Sources */,
 				E985A9C62B95975A005494FA /* AudioSharingManager.swift in Sources */,
 				0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
@@ -299,7 +295,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = VAH9WL9LJH;
+				DEVELOPMENT_TEAM = 99S39BNPYU;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				MARKETING_VERSION = 1.0;
@@ -319,7 +315,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = VAH9WL9LJH;
+				DEVELOPMENT_TEAM = 99S39BNPYU;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				MARKETING_VERSION = 1.0;
@@ -563,14 +559,6 @@
 				minimumVersion = 2.4.1;
 			};
 		};
-		0C9788C02DB4311F00CC5176 /* XCRemoteSwiftPackageReference "CompactSlider" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/buh/CompactSlider.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.9;
-			};
-		};
 		E99A49F62D6C969A00F492A2 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
@@ -594,11 +582,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0C3578DC2DB43E7D00354DE5 /* XCRemoteSwiftPackageReference "MacControlCenterUI" */;
 			productName = MacControlCenterUI;
-		};
-		0C9788C12DB4314C00CC5176 /* CompactSlider */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0C9788C02DB4311F00CC5176 /* XCRemoteSwiftPackageReference "CompactSlider" */;
-			productName = CompactSlider;
 		};
 		E99A49F72D6C969A00F492A2 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
