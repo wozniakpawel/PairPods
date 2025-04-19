@@ -1,6 +1,15 @@
 {
-  "originHash" : "695aa54fc8ab687e182a20e4b1f6721fb133f12851a23faf6df3631bc0587a6b",
+  "originHash" : "3aa3e0147d47d56dc9b0f161a79681e0aa7b8404d5ee79b27018743339bdb8a1",
   "pins" : [
+    {
+      "identity" : "compactslider",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/buh/CompactSlider.git",
+      "state" : {
+        "revision" : "f07c7a5d03a2d9541aae1b7ebff861b77561ee31",
+        "version" : "2.0.9"
+      }
+    },
     {
       "identity" : "launchatlogin-modern",
       "kind" : "remoteSourceControl",
@@ -8,6 +17,24 @@
       "state" : {
         "branch" : "main",
         "revision" : "a04ec1c363be3627734f6dad757d82f5d4fa8fcc"
+      }
+    },
+    {
+      "identity" : "maccontrolcenterui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/orchetect/MacControlCenterUI",
+      "state" : {
+        "revision" : "ee2003b6508de0997cbe6ebb238801f297a450ab",
+        "version" : "2.4.1"
+      }
+    },
+    {
+      "identity" : "menubarextraaccess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/orchetect/MenuBarExtraAccess",
+      "state" : {
+        "revision" : "e911e6454f8cbfe34a52136fc48e1ceb989a60e7",
+        "version" : "1.2.1"
       }
     },
     {

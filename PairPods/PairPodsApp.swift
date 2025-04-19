@@ -26,7 +26,7 @@ struct PairPodsApp: App {
                 audioSharingManager: dependencies.audioSharingManager
             )
         }
-        .menuBarExtraStyle(.menu)
+        .menuBarExtraStyle(.window)
     }
 }
 
@@ -41,11 +41,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct ContentView: View {
     @ObservedObject private var audioSharingManager: AudioSharingManager
     @ObservedObject private var audioDeviceManager: AudioDeviceManager
+    @StateObject private var volumeViewModel: DeviceVolumeViewModel
     @State private var aboutWindow: NSWindow?
 
     init(audioSharingManager: any AudioSharingManaging, audioDeviceManager: any AudioDeviceManaging) {
-        self.audioSharingManager = audioSharingManager as! AudioSharingManager
-        self.audioDeviceManager = audioDeviceManager as! AudioDeviceManager
+        let sharingManager = audioSharingManager as! AudioSharingManager
+        let deviceManager = audioDeviceManager as! AudioDeviceManager
+        _audioSharingManager = ObservedObject(wrappedValue: sharingManager)
+        _audioDeviceManager = ObservedObject(wrappedValue: deviceManager)
+        _volumeViewModel = StateObject(wrappedValue: DeviceVolumeViewModel(audioDeviceManager: deviceManager))
     }
 
     var body: some View {
@@ -62,6 +66,12 @@ struct ContentView: View {
             ))
             .accessibilityIdentifier("shareAudioToggle")
             .keyboardShortcut("s")
+            
+            // Volume controls section
+            GroupBox(label: Label("Device Volumes", systemImage: "speaker.wave.2")) {
+                DeviceVolumeView(viewModel: volumeViewModel)
+            }
+            .padding(.top, 4)
 
             Divider()
 
@@ -88,6 +98,18 @@ struct ContentView: View {
             .keyboardShortcut("q")
         }
         .padding()
+        .frame(minWidth: 240)
+        .onAppear {
+            Task {
+                // Refresh the list of devices when the view appears
+                await audioDeviceManager.refreshCompatibleDevices()
+            }
+        }
+        .onChange(of: audioSharingManager.isSharingAudio) { nowSharing in
+          if nowSharing {
+            Task { await audioDeviceManager.refreshCompatibleDevices() }
+          }
+        }
     }
 
     private func showAboutWindow() {
