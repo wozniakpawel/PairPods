@@ -5,9 +5,9 @@
 //  Created by Pawel Wozniak on 24/02/2025.
 //
 
+import LaunchAtLogin
 import Sparkle
 import SwiftUI
-import LaunchAtLogin
 
 struct AboutView: View {
     @StateObject private var updaterViewModel = UpdaterViewModel()
@@ -75,7 +75,7 @@ struct AboutView: View {
             }
 
             Divider()
-            
+
             HStack {
                 Section {
                     VStack(alignment: .leading, spacing: 16) {
@@ -87,7 +87,7 @@ struct AboutView: View {
                                 .toggleStyle(.switch)
                         }
                         .accessibilityIdentifier("launchAtLoginToggle")
-                        
+
                         HStack {
                             Text("Automatically check for updates")
                             Spacer()
@@ -103,7 +103,7 @@ struct AboutView: View {
                 }
                 .formStyle(.grouped)
             }
-            
+
             Divider()
 
             Button("Check for Updates...") {

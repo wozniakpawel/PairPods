@@ -5,13 +5,13 @@
 //  Created by m6511 on 19.04.2025.
 //
 
-import SwiftUI
 import MacControlCenterUI
+import SwiftUI
 
 struct DeviceVolumeView: View {
     @ObservedObject var audioDeviceManager: AudioDeviceManager
     @ObservedObject var volumeManager: AudioVolumeManager
-    
+
     var body: some View {
         VStack(spacing: 12) {
             if audioDeviceManager.compatibleDevices.isEmpty {
@@ -45,28 +45,28 @@ struct DeviceVolumeView: View {
 struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 // Device icon based on type
                 Image(systemName: deviceIcon)
                     .foregroundColor(.secondary)
-                
+
                 // Device name
                 Text(device.name)
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
-                
+
                 Spacer()
-                
+
                 // Volume percentage indicator
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .frame(width: 40, alignment: .trailing)
             }
-            
+
             // Volume slider
             MenuVolumeSlider(
                 value: Binding<CGFloat>(
@@ -77,11 +77,11 @@ struct DeviceVolumeRowView: View {
         }
         .padding(.vertical, 2)
     }
-    
+
     // Determine icon based on device type
     private var deviceIcon: String {
         let name = device.name.lowercased()
-        
+
         if name.contains("airpod") {
             if name.contains("max") {
                 return "airpodsmax"
@@ -112,7 +112,7 @@ struct NoDevicesView: View {
 #Preview {
     let deviceManager = AudioDeviceManager(shouldShowAlerts: false)
     let volumeManager = AudioVolumeManager(audioDeviceManager: deviceManager)
-    
+
     return DeviceVolumeView(
         audioDeviceManager: deviceManager,
         volumeManager: volumeManager

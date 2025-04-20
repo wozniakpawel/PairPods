@@ -6,17 +6,17 @@
 //
 
 import LaunchAtLogin
+import MacControlCenterUI
 import Sparkle
 import StoreKit
 import SwiftUI
-import MacControlCenterUI
 
 @main
 struct PairPodsApp: App {
     @StateObject private var dependencies = LiveAppDependencies.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var isMenuPresented: Bool = false
-    
+
     var body: some Scene {
         MenuBarExtra {
             PairPodsMenuView(
@@ -41,11 +41,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await LiveAppDependencies.shared.cleanup()
         }
     }
-    
-    func applicationDidFinishLaunching(_ notification: Notification) {
+
+    func applicationDidFinishLaunching(_: Notification) {
         // Register a global keyboard shortcut for settings
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "," {
+            if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "," {
                 // Post notification to show settings
                 NotificationCenter.default.post(name: NSNotification.Name("ShowSettings"), object: nil)
                 return nil
@@ -60,10 +60,10 @@ struct PairPodsMenuView: View {
     @ObservedObject var audioDeviceManager: AudioDeviceManager
     @ObservedObject var audioVolumeManager: AudioVolumeManager
     @Binding var isMenuPresented: Bool
-    
+
     @State private var settingsWindow: NSWindow?
     @State private var aboutWindow: NSWindow?
-    
+
     var body: some View {
         MacControlCenterMenu(isPresented: $isMenuPresented) {
             HStack {
@@ -86,39 +86,38 @@ struct PairPodsMenuView: View {
             }
             .accessibilityIdentifier("shareAudioToggle")
             .keyboardShortcut("s")
-            
+
             MenuSection(audioDeviceManager.compatibleDevices.isEmpty
-                        ? "No Connected Devices"
-                        : "Connected Devices"
+                ? "No Connected Devices"
+                : "Connected Devices"
             )
-            
+
             DeviceVolumeView(
                 audioDeviceManager: audioDeviceManager,
                 volumeManager: audioVolumeManager
             )
             .disabled(
                 !audioSharingManager.isSharingAudio &&
-                !audioDeviceManager.compatibleDevices.isEmpty
+                    !audioDeviceManager.compatibleDevices.isEmpty
             )
-            
+
             Divider()
-            
+
             MenuCommand {
                 showAboutWindow()
             } label: {
                 HStack {
-                        Text("Settings...")
-                        Spacer()
-                        Text("⌘ ,")
-                            .foregroundColor(.secondary)
-                            .font(.system(size: 13))
-                    }
+                    Text("Settings...")
+                    Spacer()
+                    Text("⌘ ,")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 13))
+                }
             }
             .accessibilityIdentifier("settingsButton")
             .keyboardShortcut("u")
             .padding(.horizontal, -14) // avoid unwanted padding
-            
-            
+
             MenuCommand {
                 Task {
                     audioSharingManager.stopSharing()
@@ -127,24 +126,23 @@ struct PairPodsMenuView: View {
                 }
             } label: {
                 HStack {
-                       Text("Quit")
-                       Spacer()
-                       Text("⌘ Q")
-                           .foregroundColor(.secondary)
-                           .font(.system(size: 13))
-                   }
+                    Text("Quit")
+                    Spacer()
+                    Text("⌘ Q")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 13))
+                }
             }
             .accessibilityIdentifier("quitButton")
             .keyboardShortcut("q")
             .padding(.horizontal, -14) // avoid unwanted padding
-
         }
         .onAppear {
             Task {
                 await audioDeviceManager.refreshCompatibleDevices()
                 await audioVolumeManager.refreshAllVolumes()
             }
-            
+
             // Add observer for settings shortcut notification
             NotificationCenter.default.addObserver(
                 forName: NSNotification.Name("ShowSettings"),
@@ -163,7 +161,7 @@ struct PairPodsMenuView: View {
             }
         }
     }
-    
+
     private func showAboutWindow() {
         if aboutWindow?.isVisible != true {
             let window = NSWindow(
@@ -178,7 +176,7 @@ struct PairPodsMenuView: View {
             window.isReleasedWhenClosed = false
             aboutWindow = window
         }
-        
+
         aboutWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -196,7 +194,7 @@ struct PairPodsMenuView: View {
 
 struct MenuBarIcon: View {
     @ObservedObject var audioSharingManager: AudioSharingManager
-    
+
     var body: some View {
         Image(systemName: "airpodspro.chargingcase.wireless.fill")
             .symbolRenderingMode(.palette)
@@ -207,4 +205,3 @@ struct MenuBarIcon: View {
             .accessibilityIdentifier("menuBarIcon")
     }
 }
-

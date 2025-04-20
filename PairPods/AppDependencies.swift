@@ -46,11 +46,11 @@ final class LiveAppDependencies: ObservableObject, AppDependencies {
     init() {
         let deviceManager = AudioDeviceManager(shouldShowAlerts: true)
         audioDeviceManager = deviceManager
-        
+
         audioSharingManager = AudioSharingManager(
             audioDeviceManager: deviceManager
         )
-        
+
         audioVolumeManager = AudioVolumeManager(
             audioDeviceManager: deviceManager
         )
