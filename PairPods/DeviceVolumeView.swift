@@ -13,8 +13,8 @@ struct DeviceVolumeView: View {
     @ObservedObject var volumeManager: AudioVolumeManager
 
     private var sortedDevices: [AudioDevice] {
-        // Sort devices by sample rate in descending order (same as in AudioDeviceManager)
-        audioDeviceManager.compatibleDevices.sorted { $0.sampleRate > $1.sampleRate }
+        // Sort devices by ID
+        audioDeviceManager.compatibleDevices.sorted { $0.id < $1.id }
     }
     
     var body: some View {
