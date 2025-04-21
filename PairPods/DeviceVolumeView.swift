@@ -16,6 +16,23 @@ struct DeviceVolumeView: View {
         VStack(spacing: 12) {
             if audioDeviceManager.compatibleDevices.isEmpty {
                 NoDevicesView()
+            } else if audioDeviceManager.compatibleDevices.count == 1 {
+                // Handle the case of exactly one device
+                let device = audioDeviceManager.compatibleDevices[0]
+                DeviceVolumeRowView(
+                    device: device,
+                    volume: Binding(
+                        get: { volumeManager.deviceVolumes[device.id] ?? volumeManager.getDefaultVolume(for: device) },
+                        set: { newValue in
+                            Task {
+                                await volumeManager.setVolume(for: device.id, volume: newValue)
+                            }
+                        }
+                    )
+                )
+                Text("Connect more devices to share audio")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
             } else {
                 ForEach(audioDeviceManager.compatibleDevices, id: \.id) { device in
                     DeviceVolumeRowView(

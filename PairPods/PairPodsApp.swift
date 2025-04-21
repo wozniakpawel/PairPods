@@ -95,11 +95,16 @@ struct ContentView: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
             }
+            .disabled(
+                audioDeviceManager.compatibleDevices.count < 2
+            )
             .accessibilityIdentifier("shareAudioToggle")
             .keyboardShortcut("s")
 
             MenuSection(audioDeviceManager.compatibleDevices.isEmpty
                 ? "No Connected Devices"
+                : audioDeviceManager.compatibleDevices.count == 1
+                ? "Connected Device"
                 : "Connected Devices"
             )
 
