@@ -29,32 +29,38 @@ protocol AudioSharingManaging: ObservableObject {
     func cleanup() async
 }
 
+protocol AudioVolumeManaging: ObservableObject {
+    var deviceVolumes: [AudioDeviceID: Float] { get }
+    var lastKnownVolumes: [String: Float] { get }
+    
+    func refreshAllVolumes() async
+    func setVolume(for deviceID: AudioDeviceID, volume: Float) async
+    func getDefaultVolume(for device: AudioDevice) -> Float
+}
+
 protocol AppDependencies {
     var audioDeviceManager: any AudioDeviceManaging { get }
     var audioSharingManager: any AudioSharingManaging { get }
-    var audioVolumeManager: AudioVolumeManager { get }
+    var audioVolumeManager: any AudioVolumeManaging { get }
 }
 
 @MainActor
 final class LiveAppDependencies: ObservableObject, AppDependencies {
     static let shared = LiveAppDependencies()
-
     let audioDeviceManager: any AudioDeviceManaging
     let audioSharingManager: any AudioSharingManaging
-    let audioVolumeManager: AudioVolumeManager
-
+    let audioVolumeManager: any AudioVolumeManaging
+    
     init() {
-        let deviceManager = AudioDeviceManager(shouldShowAlerts: true)
-        audioDeviceManager = deviceManager
-
-        audioSharingManager = AudioSharingManager(
-            audioDeviceManager: deviceManager
-        )
-
-        audioVolumeManager = AudioVolumeManager(
-            audioDeviceManager: deviceManager
-        )
-    }
+            let deviceManager = AudioDeviceManager(shouldShowAlerts: true)
+            audioDeviceManager = deviceManager
+            audioSharingManager = AudioSharingManager(
+                audioDeviceManager: deviceManager
+            )
+            audioVolumeManager = AudioVolumeManager(
+                audioDeviceManager: deviceManager as! AudioDeviceManager
+            )
+        }
 
     func cleanup() async {
         await audioDeviceManager.cleanup()

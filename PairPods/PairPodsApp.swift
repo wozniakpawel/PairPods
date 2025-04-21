@@ -22,7 +22,7 @@ struct PairPodsApp: App {
             PairPodsMenuView(
                 audioSharingManager: dependencies.audioSharingManager as! AudioSharingManager,
                 audioDeviceManager: dependencies.audioDeviceManager as! AudioDeviceManager,
-                audioVolumeManager: dependencies.audioVolumeManager,
+                audioVolumeManager: dependencies.audioVolumeManager as! AudioVolumeManager,
                 isMenuPresented: $isMenuPresented
             )
         } label: {
