@@ -2,6 +2,33 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.2.0] - 2025-04-21
+
+### Added
+- Display the status and volume level for each connected audio device
+- Individual volume controls for connected devices
+- Real-time volume monitoring that updates when volume changes (e.g. user changes volume via hardware buttons)
+
+### Changed
+- Multiple changes to the UI, the menu now has real-time device monitoring built-in
+- Switched from menuBarExtraStyle(.menu) to menuBarExtraStyle(.window) under the hood.
+
+### Fixed
+- Fixed all compiler warnings
+- Code simplifications and optimizations
+- UI consistency improvements
+
+### Known Issues
+- No functional issues are known
+- UI/UX might need more work in the future releases, due to the change to menuBarExtraStyle(.window).
+
+### Notes
+- This release adds the most requested feature: individual volume controls for each connected device!
+- Please report any issues or suggestions on the [GitHub repository](https://github.com/wozniakpawel/PairPods/issues).
+- PairPods is open source and contributions are welcome. Check out the [Contributing Guidelines](https://github.com/wozniakpawel/PairPods/blob/main/CONTRIBUTING.md) for more details.
+
+---
+
 ## [0.1.0] - Beta Release - 2025-02-26
 
 ### Added
