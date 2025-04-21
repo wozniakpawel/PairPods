@@ -10,6 +10,7 @@
 		0C3578DE2DB43E7D00354DE5 /* MacControlCenterUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0C3578DD2DB43E7D00354DE5 /* MacControlCenterUI */; };
 		0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */; };
 		0C9788BB2DB3A4F200CC5176 /* AudioVolumeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */; };
+		0CF7B1D52DB6DD0300EEB3B7 /* MenuToggleItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF7B1D42DB6DD0300EEB3B7 /* MenuToggleItem.swift */; };
 		E914ED342D660ACB00624746 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E914ED332D660ACB00624746 /* AboutView.swift */; };
 		E958D9FA2CA96D4600A4FC9C /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */; };
 		E958DA002CAA93B200A4FC9C /* LoggingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */; };
@@ -39,6 +40,7 @@
 /* Begin PBXFileReference section */
 		0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceVolumeView.swift; sourceTree = "<group>"; };
 		0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioVolumeManager.swift; sourceTree = "<group>"; };
+		0CF7B1D42DB6DD0300EEB3B7 /* MenuToggleItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuToggleItem.swift; sourceTree = "<group>"; };
 		E914ED332D660ACB00624746 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		E958D9E82CA961B700A4FC9C /* PairPodsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PairPodsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
@@ -108,6 +110,7 @@
 			children = (
 				E9B438DD2BA2C374005EB7A9 /* Info.plist */,
 				E985A9972B92F59F005494FA /* PairPodsApp.swift */,
+				0CF7B1D42DB6DD0300EEB3B7 /* MenuToggleItem.swift */,
 				E914ED332D660ACB00624746 /* AboutView.swift */,
 				E958D9F92CA96D4600A4FC9C /* AppDependencies.swift */,
 				E99A49F92D6CAA4900F492A2 /* SparkleUpdater.swift */,
@@ -273,6 +276,7 @@
 				0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
 				E99A49FA2D6CAA4900F492A2 /* SparkleUpdater.swift in Sources */,
+				0CF7B1D52DB6DD0300EEB3B7 /* MenuToggleItem.swift in Sources */,
 				E958DA0A2CAABF0D00A4FC9C /* AudioDevice.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -456,7 +460,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"PairPods/Preview Content\"";
 				DEVELOPMENT_TEAM = VAH9WL9LJH;
@@ -474,7 +478,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -491,7 +495,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"PairPods/Preview Content\"";
 				DEVELOPMENT_TEAM = VAH9WL9LJH;
@@ -509,7 +513,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
