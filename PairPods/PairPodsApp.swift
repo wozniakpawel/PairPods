@@ -103,11 +103,13 @@ struct PairPodsMenuView: View {
 
             Divider()
             
-            LaunchAtLogin.Toggle()
+            LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
+                .padding(.horizontal, -14) // avoid unwanted padding
 
             AutomaticUpdatesToggle()
                 .accessibilityIdentifier("automaticUpdatesToggle")
+                .padding(.horizontal, -14) // avoid unwanted padding
             
             Divider()
 
@@ -215,5 +217,18 @@ struct MenuBarIcon: View {
                 audioSharingManager.isSharingAudio ? Color.blue : Color.secondary
             )
             .accessibilityIdentifier("menuBarIcon")
+    }
+}
+
+struct LaunchAtLoginMenuToggle: View {
+    var body: some View {
+        let binding = Binding<Bool>(
+            get: { LaunchAtLogin.isEnabled },
+            set: { LaunchAtLogin.isEnabled = $0 }
+        )
+        
+        MenuToggle(isOn: binding, style: .checkmark()) {
+            Text("Launch at Login")
+        }
     }
 }

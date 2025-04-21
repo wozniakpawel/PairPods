@@ -7,6 +7,7 @@
 
 import Sparkle
 import SwiftUI
+import MacControlCenterUI
 
 final class SparkleUpdater {
     static let shared = SparkleUpdater()
@@ -54,10 +55,13 @@ struct AutomaticUpdatesToggle: View {
     @StateObject private var updaterViewModel = UpdaterViewModel()
 
     var body: some View {
-        Toggle(isOn: Binding(
+        MenuToggle(
+            isOn: Binding(
             get: { updaterViewModel.automaticallyChecksForUpdates },
             set: { updaterViewModel.toggleAutomaticChecks($0) }
-        )) {
+        ),
+            style: .checkmark()
+        ) {
             Text("Automatic Updates")
         }
     }
