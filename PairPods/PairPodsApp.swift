@@ -19,7 +19,7 @@ struct PairPodsApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PairPodsMenuView(
+            ContentView(
                 audioSharingManager: dependencies.audioSharingManager as! AudioSharingManager,
                 audioDeviceManager: dependencies.audioDeviceManager as! AudioDeviceManager,
                 audioVolumeManager: dependencies.audioVolumeManager as! AudioVolumeManager,
@@ -55,14 +55,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-struct PairPodsMenuView: View {
-    @ObservedObject var audioSharingManager: AudioSharingManager
-    @ObservedObject var audioDeviceManager: AudioDeviceManager
-    @ObservedObject var audioVolumeManager: AudioVolumeManager
-    @Binding var isMenuPresented: Bool
-
+struct ContentView: View {
+    @ObservedObject private var audioSharingManager: AudioSharingManager
+    @ObservedObject private var audioDeviceManager: AudioDeviceManager
+    @ObservedObject private var audioVolumeManager: AudioVolumeManager
+    @Binding private var isMenuPresented: Bool
     @State private var settingsWindow: NSWindow?
     @State private var aboutWindow: NSWindow?
+    
+    init(
+        audioSharingManager: any AudioSharingManaging,
+        audioDeviceManager: any AudioDeviceManaging,
+        audioVolumeManager: any AudioVolumeManaging,
+        isMenuPresented: Binding<Bool>
+    ) {
+        self.audioSharingManager = audioSharingManager as! AudioSharingManager
+        self.audioDeviceManager = audioDeviceManager as! AudioDeviceManager
+        self.audioVolumeManager = audioVolumeManager as! AudioVolumeManager
+        self._isMenuPresented = isMenuPresented
+    }
 
     var body: some View {
         MacControlCenterMenu(isPresented: $isMenuPresented) {
@@ -193,7 +204,7 @@ struct PairPodsMenuView: View {
 }
 
 #Preview {
-    PairPodsMenuView(
+    ContentView(
         audioSharingManager: AudioSharingManager(audioDeviceManager: AudioDeviceManager()),
         audioDeviceManager: AudioDeviceManager(),
         audioVolumeManager: AudioVolumeManager(audioDeviceManager: AudioDeviceManager()),
