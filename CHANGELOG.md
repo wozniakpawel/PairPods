@@ -2,6 +2,18 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.2.1] - 2025-04-21
+
+### Added
+- N/A
+
+### Fixed
+- Fix for the Sparkle updater issue ("error occurred while launching the installer")
+
+### Changed
+- Improved UI layout using a standardized toggle component
+- Removed brew cask update step from the build & release workflow
+
 ## [0.2.0] - 2025-04-21
 
 ### Added
