@@ -23,13 +23,18 @@ final class AudioDeviceManager: AudioDeviceManaging {
     private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
     private let shouldShowAlerts: Bool
 
+    @Published private(set) var compatibleDevices: [AudioDevice] = []
+
     var deviceStateDidChange: ((AudioDeviceState) -> Void)?
 
     init(shouldShowAlerts: Bool = true) {
         self.shouldShowAlerts = shouldShowAlerts
         logDebug("Initializing AudioDeviceManager")
         setupAudioDeviceMonitoring()
-        Task { await removeMultiOutputDevice() }
+        Task {
+            await removeMultiOutputDevice()
+            await initializeDevices()
+        }
     }
 
     // MARK: - Public Methods
@@ -122,6 +127,54 @@ final class AudioDeviceManager: AudioDeviceManaging {
         let devices = await (try? fetchAllAudioDevices()) ?? []
         return devices.contains(where: { $0.id == masterDevice.id }) &&
             devices.contains(where: { $0.id == secondDevice.id })
+    }
+
+    // Method to refresh the list of compatible devices
+    public func refreshCompatibleDevices() async {
+        do {
+            let devices = try await fetchAllAudioDevices()
+            compatibleDevices = devices.filter(\.isCompatibleOutputDevice)
+            logInfo("Found \(compatibleDevices.count) compatible audio devices")
+        } catch {
+            logError("Failed to refresh compatible devices", error: .systemError(error))
+        }
+    }
+
+    // Get volume for a specific device
+    public func getDeviceVolume(deviceID: AudioDeviceID) async -> Float {
+        if let device = compatibleDevices.first(where: { $0.id == deviceID }),
+           let volume = await device.getVolume()
+        {
+            return volume
+        }
+        return 0.0
+    }
+
+    // Set volume for a specific device
+    public func setDeviceVolume(deviceID: AudioDeviceID, volume: Float) async {
+        guard let device = compatibleDevices.first(where: { $0.id == deviceID }) else {
+            logError("Failed to set volume for device", error: .operationError("Device with ID \(deviceID) not found"))
+            return
+        }
+
+        logDebug("Setting volume for device: \(device.name) (ID: \(deviceID)) to \(volume)")
+
+        do {
+            try await device.setVolume(volume)
+            logInfo("Set volume for device \(device.name) to \(volume)")
+        } catch let error as AppError {
+            logError("Failed to set volume for device \(device.name)", error: error)
+        } catch {
+            let appError = AppError.systemError(error)
+            logError("Failed to set volume for device \(device.name)", error: appError)
+        }
+    }
+
+    // Initialize devices on startup
+    func initializeDevices() async {
+        await refreshCompatibleDevices()
+        // Setup listener for device property changes
+        setupVolumeChangeListener()
     }
 
     // MARK: - Private Methods
@@ -366,6 +419,12 @@ final class AudioDeviceManager: AudioDeviceManaging {
         if status != noErr {
             logError("Failed to remove property listener", error: .operationError("Status: \(status)"))
         }
+    }
+
+    // Setup a listener for volume changes
+    private func setupVolumeChangeListener() {
+        // Implementation would track volume changes from system
+        logDebug("Volume change listener would be set up here")
     }
 }
 

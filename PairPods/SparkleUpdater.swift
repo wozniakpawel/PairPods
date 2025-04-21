@@ -5,6 +5,7 @@
 //  Created by Pawel Wozniak on 24/02/2025.
 //
 
+import MacControlCenterUI
 import Sparkle
 import SwiftUI
 
@@ -54,13 +55,21 @@ struct AutomaticUpdatesToggle: View {
     @StateObject private var updaterViewModel = UpdaterViewModel()
 
     var body: some View {
-        Toggle(isOn: Binding(
-            get: { updaterViewModel.automaticallyChecksForUpdates },
-            set: { updaterViewModel.toggleAutomaticChecks($0) }
-        )) {
+        MenuToggle(
+            isOn: Binding(
+                get: { updaterViewModel.automaticallyChecksForUpdates },
+                set: { updaterViewModel.toggleAutomaticChecks($0) }
+            ),
+            style: .checkmark()
+        ) {
             Text("Automatic Updates")
         }
     }
+}
+
+#Preview {
+    AutomaticUpdatesToggle()
+        .frame(width: 300, height: 300)
 }
 
 extension UpdaterViewModel {
