@@ -16,6 +16,7 @@ struct DeviceVolumeView: View {
         // Sort devices by ID
         audioDeviceManager.compatibleDevices.sorted { $0.id < $1.id }
     }
+
     var body: some View {
         VStack(spacing: 12) {
             if audioDeviceManager.compatibleDevices.isEmpty {

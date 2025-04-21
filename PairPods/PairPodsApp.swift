@@ -71,7 +71,8 @@ struct ContentView: View {
     ) {
         if let sharingManager = audioSharingManager as? AudioSharingManager,
            let deviceManager = audioDeviceManager as? AudioDeviceManager,
-           let volumeManager = audioVolumeManager as? AudioVolumeManager {
+           let volumeManager = audioVolumeManager as? AudioVolumeManager
+        {
             self.audioSharingManager = sharingManager
             self.audioDeviceManager = deviceManager
             self.audioVolumeManager = volumeManager

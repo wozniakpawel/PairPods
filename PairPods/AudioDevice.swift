@@ -17,8 +17,8 @@ struct AudioDevice: Sendable {
     let sampleRate: Double
 
     var isCompatibleOutputDevice: Bool {
-        isOutputDevice && (transportType == kAudioDeviceTransportTypeBluetooth || 
-                           transportType == kAudioDeviceTransportTypeBluetoothLE)
+        isOutputDevice && (transportType == kAudioDeviceTransportTypeBluetooth ||
+            transportType == kAudioDeviceTransportTypeBluetoothLE)
     }
 
     init?(deviceID: AudioDeviceID) async {
@@ -54,8 +54,8 @@ struct AudioDevice: Sendable {
     }
 
     static func isOutputDevice(deviceID: AudioDeviceID) async -> Bool {
-        let streamConfiguration = await getStreamConfiguration(deviceID: deviceID, 
-                                                              scope: kAudioObjectPropertyScopeOutput)
+        let streamConfiguration = await getStreamConfiguration(deviceID: deviceID,
+                                                               scope: kAudioObjectPropertyScopeOutput)
         return streamConfiguration?.mNumberBuffers ?? 0 > 0
     }
 
@@ -63,8 +63,9 @@ struct AudioDevice: Sendable {
         await getFloat64Property(deviceID: deviceID, selector: kAudioDevicePropertyNominalSampleRate)
     }
 
-    private static func getStringProperty(deviceID: AudioDeviceID, 
-                                      selector: AudioObjectPropertySelector) async -> String? {
+    private static func getStringProperty(deviceID: AudioDeviceID,
+                                          selector: AudioObjectPropertySelector) async -> String?
+    {
         var address = AudioObjectPropertyAddress(
             mSelector: selector,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -81,8 +82,9 @@ struct AudioDevice: Sendable {
         return unwrapped as String
     }
 
-    private static func getUInt32Property(deviceID: AudioDeviceID, 
-                                     selector: AudioObjectPropertySelector) async -> UInt32? {
+    private static func getUInt32Property(deviceID: AudioDeviceID,
+                                          selector: AudioObjectPropertySelector) async -> UInt32?
+    {
         var address = AudioObjectPropertyAddress(
             mSelector: selector,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -99,8 +101,9 @@ struct AudioDevice: Sendable {
         return value
     }
 
-    private static func getFloat64Property(deviceID: AudioDeviceID, 
-                                      selector: AudioObjectPropertySelector) async -> Double? {
+    private static func getFloat64Property(deviceID: AudioDeviceID,
+                                           selector: AudioObjectPropertySelector) async -> Double?
+    {
         var address = AudioObjectPropertyAddress(
             mSelector: selector,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -117,8 +120,9 @@ struct AudioDevice: Sendable {
         return value
     }
 
-    private static func getStreamConfiguration(deviceID: AudioDeviceID, 
-                                          scope: AudioObjectPropertyScope) async -> AudioBufferList? {
+    private static func getStreamConfiguration(deviceID: AudioDeviceID,
+                                               scope: AudioObjectPropertyScope) async -> AudioBufferList?
+    {
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyStreamConfiguration,
             mScope: scope,

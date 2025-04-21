@@ -44,15 +44,17 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
             .sink { [weak self] notification in
                 logInfo("AudioVolumeManager received volume change notification")
                 if let deviceID = notification.userInfo?["deviceID"] as? AudioDeviceID,
-                   let volume = notification.userInfo?["volume"] as? Float {
+                   let volume = notification.userInfo?["volume"] as? Float
+                {
                     logInfo("AudioVolumeManager updating volume for device ID: \(deviceID) to \(volume)")
 
                     // Update the volume in our state
                     self?.deviceVolumes[deviceID] = volume
-                    
+
                     // Update persisted volume data if we have the device
                     if let concreteManager = self?.audioDeviceManager as? AudioDeviceManager,
-                       let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID }) {
+                       let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID })
+                    {
                         logInfo("AudioVolumeManager caching volume: \(volume) for device: \(device.name)")
                         self?.lastKnownVolumes[device.uid] = volume
                         self?.saveCachedVolumes()
@@ -87,7 +89,8 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
 
         // Find the device to get its UID for caching
         if let concreteManager = audioDeviceManager as? AudioDeviceManager,
-           let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID }) {
+           let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID })
+        {
             // Cache the volume by device UID (persistent identifier)
             lastKnownVolumes[device.uid] = volume
             saveCachedVolumes()
