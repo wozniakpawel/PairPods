@@ -140,7 +140,7 @@ struct ContentView: View {
                         .font(.system(size: 13))
                 }
             }
-            .accessibilityIdentifier("settingsButton")
+            .accessibilityIdentifier("aboutButton")
             .keyboardShortcut("a")
             .padding(.horizontal, -14) // avoid unwanted padding
 
