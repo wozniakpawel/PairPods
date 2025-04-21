@@ -12,13 +12,18 @@ struct DeviceVolumeView: View {
     @ObservedObject var audioDeviceManager: AudioDeviceManager
     @ObservedObject var volumeManager: AudioVolumeManager
 
+    private var sortedDevices: [AudioDevice] {
+        // Sort devices by sample rate in descending order (same as in AudioDeviceManager)
+        audioDeviceManager.compatibleDevices.sorted { $0.sampleRate > $1.sampleRate }
+    }
+    
     var body: some View {
         VStack(spacing: 12) {
             if audioDeviceManager.compatibleDevices.isEmpty {
                 NoDevicesView()
             } else if audioDeviceManager.compatibleDevices.count == 1 {
                 // Handle the case of exactly one device
-                let device = audioDeviceManager.compatibleDevices[0]
+                let device = sortedDevices[0]
                 DeviceVolumeRowView(
                     device: device,
                     volume: Binding(
@@ -34,7 +39,7 @@ struct DeviceVolumeView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             } else {
-                ForEach(audioDeviceManager.compatibleDevices, id: \.id) { device in
+                ForEach(sortedDevices, id: \.id) { device in
                     DeviceVolumeRowView(
                         device: device,
                         volume: Binding(
