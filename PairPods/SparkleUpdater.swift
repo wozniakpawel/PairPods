@@ -55,12 +55,18 @@ struct AutomaticUpdatesToggle: View {
     @StateObject private var updaterViewModel = UpdaterViewModel()
 
     var body: some View {
-        MenuToggle(
+        MenuToggleItem(
             isOn: Binding(
                 get: { updaterViewModel.automaticallyChecksForUpdates },
-                set: { updaterViewModel.toggleAutomaticChecks($0) }
+                set: {
+                    updaterViewModel.automaticallyChecksForUpdates = $0
+                    updaterViewModel.objectWillChange.send()
+                }
             ),
-            style: .checkmark()
+            action: {
+                updaterViewModel.automaticallyChecksForUpdates.toggle()
+                updaterViewModel.objectWillChange.send()
+            }
         ) {
             Text("Automatic Updates")
         }

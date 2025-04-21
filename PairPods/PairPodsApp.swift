@@ -128,12 +128,12 @@ struct ContentView: View {
 
             LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
-                .padding(.horizontal, -14)
+                .padding(.horizontal, -10)
                 .padding(.vertical, -4)
 
             AutomaticUpdatesToggle()
                 .accessibilityIdentifier("automaticUpdatesToggle")
-                .padding(.horizontal, -14)
+                .padding(.horizontal, -10)
                 .padding(.vertical, -4)
 
             Divider()
@@ -143,10 +143,12 @@ struct ContentView: View {
             } label: {
                 HStack {
                     Text("About")
+                        .foregroundColor(.primary)
                     Spacer()
                     Text("⌘ A")
                         .foregroundColor(.secondary)
                         .font(.system(size: 13))
+                        .padding(.trailing, -8)
                 }
             }
             .accessibilityIdentifier("aboutButton")
@@ -163,10 +165,12 @@ struct ContentView: View {
             } label: {
                 HStack {
                     Text("Quit")
+                        .foregroundColor(.primary)
                     Spacer()
                     Text("⌘ Q")
                         .foregroundColor(.secondary)
                         .font(.system(size: 13))
+                        .padding(.trailing, -8)
                 }
             }
             .accessibilityIdentifier("quitButton")
@@ -258,7 +262,10 @@ struct LaunchAtLoginMenuToggle: View {
             set: { LaunchAtLogin.isEnabled = $0 }
         )
 
-        MenuToggle(isOn: binding, style: .checkmark()) {
+        MenuToggleItem(
+            isOn: binding,
+            action: { LaunchAtLogin.isEnabled.toggle() }
+        ) {
             Text("Launch at Login")
         }
     }
