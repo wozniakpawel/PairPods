@@ -57,9 +57,13 @@ final class LiveAppDependencies: ObservableObject, AppDependencies {
         audioSharingManager = AudioSharingManager(
             audioDeviceManager: deviceManager
         )
-        audioVolumeManager = AudioVolumeManager(
-            audioDeviceManager: deviceManager as! AudioDeviceManager
-        )
+        if let typedDeviceManager = deviceManager as? AudioDeviceManager {
+            audioVolumeManager = AudioVolumeManager(
+                audioDeviceManager: typedDeviceManager
+            )
+        } else {
+            fatalError("Expected AudioDeviceManager instance but got something else")
+        }
     }
 
     func cleanup() async {

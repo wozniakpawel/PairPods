@@ -16,7 +16,6 @@ struct DeviceVolumeView: View {
         // Sort devices by ID
         audioDeviceManager.compatibleDevices.sorted { $0.id < $1.id }
     }
-    
     var body: some View {
         VStack(spacing: 12) {
             if audioDeviceManager.compatibleDevices.isEmpty {
@@ -35,7 +34,6 @@ struct DeviceVolumeView: View {
                         )
                     )
                 }
-                
                 if audioDeviceManager.compatibleDevices.count == 1 {
                     Text("Connect more devices to share audio")
                         .font(.system(size: 12))

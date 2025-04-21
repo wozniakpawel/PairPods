@@ -20,14 +20,14 @@ struct PairPodsApp: App {
     var body: some Scene {
         MenuBarExtra {
             ContentView(
-                audioSharingManager: dependencies.audioSharingManager as! AudioSharingManager,
-                audioDeviceManager: dependencies.audioDeviceManager as! AudioDeviceManager,
-                audioVolumeManager: dependencies.audioVolumeManager as! AudioVolumeManager,
+                audioSharingManager: dependencies.audioSharingManager,
+                audioDeviceManager: dependencies.audioDeviceManager,
+                audioVolumeManager: dependencies.audioVolumeManager,
                 isMenuPresented: $isMenuPresented
             )
         } label: {
             MenuBarIcon(
-                audioSharingManager: dependencies.audioSharingManager as! AudioSharingManager
+                audioSharingManager: dependencies.audioSharingManager
             )
         }
         .menuBarExtraStyle(.window)
@@ -69,9 +69,15 @@ struct ContentView: View {
         audioVolumeManager: any AudioVolumeManaging,
         isMenuPresented: Binding<Bool>
     ) {
-        self.audioSharingManager = audioSharingManager as! AudioSharingManager
-        self.audioDeviceManager = audioDeviceManager as! AudioDeviceManager
-        self.audioVolumeManager = audioVolumeManager as! AudioVolumeManager
+        if let sharingManager = audioSharingManager as? AudioSharingManager,
+           let deviceManager = audioDeviceManager as? AudioDeviceManager,
+           let volumeManager = audioVolumeManager as? AudioVolumeManager {
+            self.audioSharingManager = sharingManager
+            self.audioDeviceManager = deviceManager
+            self.audioVolumeManager = volumeManager
+        } else {
+            fatalError("Invalid manager types provided")
+        }
         _isMenuPresented = isMenuPresented
     }
 
@@ -128,7 +134,6 @@ struct ContentView: View {
                 .accessibilityIdentifier("automaticUpdatesToggle")
                 .padding(.horizontal, -14)
                 .padding(.vertical, -4)
-
 
             Divider()
 
@@ -227,7 +232,11 @@ struct MenuBarIcon: View {
     @ObservedObject private var audioSharingManager: AudioSharingManager
 
     init(audioSharingManager: any AudioSharingManaging) {
-        self.audioSharingManager = audioSharingManager as! AudioSharingManager
+        if let sharingManager = audioSharingManager as? AudioSharingManager {
+            self.audioSharingManager = sharingManager
+        } else {
+            fatalError("Invalid AudioSharingManager type provided")
+        }
     }
 
     var body: some View {

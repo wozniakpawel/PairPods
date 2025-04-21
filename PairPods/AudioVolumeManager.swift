@@ -37,7 +37,7 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
                 }
                 .store(in: &cancellables)
         }
-        
+
         // Listen for device volume changes (from device buttons)
         NotificationCenter.default.publisher(for: .audioDeviceVolumeChanged)
             .receive(on: RunLoop.main)
@@ -46,7 +46,7 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
                 if let deviceID = notification.userInfo?["deviceID"] as? AudioDeviceID,
                    let volume = notification.userInfo?["volume"] as? Float {
                     logInfo("AudioVolumeManager updating volume for device ID: \(deviceID) to \(volume)")
-                    
+
                     // Update the volume in our state
                     self?.deviceVolumes[deviceID] = volume
                     
@@ -87,8 +87,7 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
 
         // Find the device to get its UID for caching
         if let concreteManager = audioDeviceManager as? AudioDeviceManager,
-           let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID })
-        {
+           let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID }) {
             // Cache the volume by device UID (persistent identifier)
             lastKnownVolumes[device.uid] = volume
             saveCachedVolumes()
