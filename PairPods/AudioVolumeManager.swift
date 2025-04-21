@@ -28,15 +28,15 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
 
         // Subscribe to changes in compatible devices
         if let concreteManager = audioDeviceManager as? AudioDeviceManager {
-                   concreteManager.$compatibleDevices
-                       .receive(on: RunLoop.main)
-                       .sink { [weak self] devices in
-                           Task {
-                               await self?.refreshVolumesForDevices(devices)
-                           }
-                       }
-                       .store(in: &cancellables)
-               }
+            concreteManager.$compatibleDevices
+                .receive(on: RunLoop.main)
+                .sink { [weak self] devices in
+                    Task {
+                        await self?.refreshVolumesForDevices(devices)
+                    }
+                }
+                .store(in: &cancellables)
+        }
 
         // Initial volume refresh
         Task {
@@ -49,8 +49,8 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
     /// Refresh volumes for all compatible devices
     func refreshAllVolumes() async {
         if let concreteManager = audioDeviceManager as? AudioDeviceManager {
-                   await refreshVolumesForDevices(concreteManager.compatibleDevices)
-               }
+            await refreshVolumesForDevices(concreteManager.compatibleDevices)
+        }
     }
 
     /// Set volume for a specific device
@@ -59,17 +59,18 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
         deviceVolumes[deviceID] = volume
 
         // Find the device to get its UID for caching
-                if let concreteManager = audioDeviceManager as? AudioDeviceManager,
-                   let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID }) {
-                    // Cache the volume by device UID (persistent identifier)
-                    lastKnownVolumes[device.uid] = volume
-                    saveCachedVolumes()
-                }
+        if let concreteManager = audioDeviceManager as? AudioDeviceManager,
+           let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID })
+        {
+            // Cache the volume by device UID (persistent identifier)
+            lastKnownVolumes[device.uid] = volume
+            saveCachedVolumes()
+        }
 
         // Update the actual device volume
         if let concreteManager = audioDeviceManager as? AudioDeviceManager {
-                    await concreteManager.setDeviceVolume(deviceID: deviceID, volume: volume)
-                }
+            await concreteManager.setDeviceVolume(deviceID: deviceID, volume: volume)
+        }
     }
 
     /// Get default volume for a device (either cached or 0.75 as fallback)

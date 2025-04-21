@@ -62,7 +62,7 @@ struct ContentView: View {
     @Binding private var isMenuPresented: Bool
     @State private var settingsWindow: NSWindow?
     @State private var aboutWindow: NSWindow?
-    
+
     init(
         audioSharingManager: any AudioSharingManaging,
         audioDeviceManager: any AudioDeviceManaging,
@@ -72,7 +72,7 @@ struct ContentView: View {
         self.audioSharingManager = audioSharingManager as! AudioSharingManager
         self.audioDeviceManager = audioDeviceManager as! AudioDeviceManager
         self.audioVolumeManager = audioVolumeManager as! AudioVolumeManager
-        self._isMenuPresented = isMenuPresented
+        _isMenuPresented = isMenuPresented
     }
 
     var body: some View {
@@ -113,7 +113,7 @@ struct ContentView: View {
             )
 
             Divider()
-            
+
             LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
                 .padding(.horizontal, -14) // avoid unwanted padding
@@ -121,7 +121,7 @@ struct ContentView: View {
             AutomaticUpdatesToggle()
                 .accessibilityIdentifier("automaticUpdatesToggle")
                 .padding(.horizontal, -14) // avoid unwanted padding
-            
+
             Divider()
 
             MenuCommand {
@@ -215,11 +215,11 @@ struct ContentView: View {
 
 struct MenuBarIcon: View {
     @ObservedObject private var audioSharingManager: AudioSharingManager
-    
+
     init(audioSharingManager: any AudioSharingManaging) {
         self.audioSharingManager = audioSharingManager as! AudioSharingManager
     }
-    
+
     var body: some View {
         Image(systemName: "airpodspro.chargingcase.wireless.fill")
             .symbolRenderingMode(.palette)
@@ -237,7 +237,7 @@ struct LaunchAtLoginMenuToggle: View {
             get: { LaunchAtLogin.isEnabled },
             set: { LaunchAtLogin.isEnabled = $0 }
         )
-        
+
         MenuToggle(isOn: binding, style: .checkmark()) {
             Text("Launch at Login")
         }
