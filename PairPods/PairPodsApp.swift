@@ -45,9 +45,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         // Register a global keyboard shortcut for settings
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "," {
+            if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "a" {
                 // Post notification to show settings
-                NotificationCenter.default.post(name: NSNotification.Name("ShowSettings"), object: nil)
+                NotificationCenter.default.post(name: NSNotification.Name("ShowAboutWindow"), object: nil)
                 return nil
             }
             return event
@@ -102,20 +102,28 @@ struct PairPodsMenuView: View {
             )
 
             Divider()
+            
+            LaunchAtLogin.Toggle()
+                .accessibilityIdentifier("launchAtLoginToggle")
+
+            AutomaticUpdatesToggle()
+                .accessibilityIdentifier("automaticUpdatesToggle")
+            
+            Divider()
 
             MenuCommand {
                 showAboutWindow()
             } label: {
                 HStack {
-                    Text("Settings...")
+                    Text("About")
                     Spacer()
-                    Text("⌘ ,")
+                    Text("⌘ A")
                         .foregroundColor(.secondary)
                         .font(.system(size: 13))
                 }
             }
             .accessibilityIdentifier("settingsButton")
-            .keyboardShortcut("u")
+            .keyboardShortcut("a")
             .padding(.horizontal, -14) // avoid unwanted padding
 
             MenuCommand {
@@ -145,7 +153,7 @@ struct PairPodsMenuView: View {
 
             // Add observer for settings shortcut notification
             NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("ShowSettings"),
+                forName: NSNotification.Name("ShowAboutWindow"),
                 object: nil,
                 queue: .main
             ) { _ in
@@ -193,8 +201,12 @@ struct PairPodsMenuView: View {
 }
 
 struct MenuBarIcon: View {
-    @ObservedObject var audioSharingManager: AudioSharingManager
-
+    @ObservedObject private var audioSharingManager: AudioSharingManager
+    
+    init(audioSharingManager: any AudioSharingManaging) {
+        self.audioSharingManager = audioSharingManager as! AudioSharingManager
+    }
+    
     var body: some View {
         Image(systemName: "airpodspro.chargingcase.wireless.fill")
             .symbolRenderingMode(.palette)

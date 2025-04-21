@@ -5,7 +5,6 @@
 //  Created by Pawel Wozniak on 24/02/2025.
 //
 
-import LaunchAtLogin
 import Sparkle
 import SwiftUI
 
@@ -76,36 +75,6 @@ struct AboutView: View {
 
             Divider()
 
-            HStack {
-                Section {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Launch at login")
-                            Spacer()
-                            LaunchAtLogin.Toggle("")
-                                .labelsHidden()
-                                .toggleStyle(.switch)
-                        }
-                        .accessibilityIdentifier("launchAtLoginToggle")
-
-                        HStack {
-                            Text("Automatically check for updates")
-                            Spacer()
-                            Toggle("", isOn: Binding(
-                                get: { updaterViewModel.automaticallyChecksForUpdates },
-                                set: { updaterViewModel.toggleAutomaticChecks($0) }
-                            ))
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                        }
-                        .accessibilityIdentifier("automaticUpdatesToggle")
-                    }
-                }
-                .formStyle(.grouped)
-            }
-
-            Divider()
-
             Button("Check for Updates...") {
                 updaterViewModel.checkForUpdates()
             }
@@ -114,8 +83,4 @@ struct AboutView: View {
         .padding(20)
         .frame(width: 300)
     }
-}
-
-#Preview {
-    AboutView()
 }
