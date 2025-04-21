@@ -129,10 +129,12 @@ struct ContentView: View {
             LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
                 .padding(.horizontal, -10)
+                .padding(.vertical, -4)
 
             AutomaticUpdatesToggle()
                 .accessibilityIdentifier("automaticUpdatesToggle")
                 .padding(.horizontal, -10)
+                .padding(.vertical, -4)
 
             Divider()
 
