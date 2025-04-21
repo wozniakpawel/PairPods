@@ -121,11 +121,14 @@ struct ContentView: View {
 
             LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
-                .padding(.horizontal, -14) // avoid unwanted padding
+                .padding(.horizontal, -14)
+                .padding(.vertical, -4)
 
             AutomaticUpdatesToggle()
                 .accessibilityIdentifier("automaticUpdatesToggle")
-                .padding(.horizontal, -14) // avoid unwanted padding
+                .padding(.horizontal, -14)
+                .padding(.vertical, -4)
+
 
             Divider()
 
@@ -142,7 +145,8 @@ struct ContentView: View {
             }
             .accessibilityIdentifier("aboutButton")
             .keyboardShortcut("a")
-            .padding(.horizontal, -14) // avoid unwanted padding
+            .padding(.horizontal, -14)
+            .padding(.vertical, -4)
 
             MenuCommand {
                 Task {
@@ -161,7 +165,8 @@ struct ContentView: View {
             }
             .accessibilityIdentifier("quitButton")
             .keyboardShortcut("q")
-            .padding(.horizontal, -14) // avoid unwanted padding
+            .padding(.horizontal, -14)
+            .padding(.vertical, -4)
         }
         .onAppear {
             Task {
