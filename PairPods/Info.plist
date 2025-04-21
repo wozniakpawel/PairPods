@@ -19,5 +19,7 @@
     <string>5SiseWpgRKR7ZIt6fZetyzimwqdd6uJyT9TxyZyL7bc=</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
+    <key>SUEnableSystemAppCheck</key>
+    <true/>
 </dict>
 </plist>
