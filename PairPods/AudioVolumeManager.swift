@@ -37,6 +37,33 @@ class AudioVolumeManager: ObservableObject, AudioVolumeManaging {
                 }
                 .store(in: &cancellables)
         }
+        
+        // Listen for device volume changes (from device buttons)
+        NotificationCenter.default.publisher(for: .audioDeviceVolumeChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] notification in
+                logInfo("AudioVolumeManager received volume change notification")
+                if let deviceID = notification.userInfo?["deviceID"] as? AudioDeviceID,
+                   let volume = notification.userInfo?["volume"] as? Float {
+                    logInfo("AudioVolumeManager updating volume for device ID: \(deviceID) to \(volume)")
+                    
+                    // Update the volume in our state
+                    self?.deviceVolumes[deviceID] = volume
+                    
+                    // Update persisted volume data if we have the device
+                    if let concreteManager = self?.audioDeviceManager as? AudioDeviceManager,
+                       let device = concreteManager.compatibleDevices.first(where: { $0.id == deviceID }) {
+                        logInfo("AudioVolumeManager caching volume: \(volume) for device: \(device.name)")
+                        self?.lastKnownVolumes[device.uid] = volume
+                        self?.saveCachedVolumes()
+                    } else {
+                        logWarning("AudioVolumeManager could not find device with ID: \(deviceID)")
+                    }
+                } else {
+                    logWarning("AudioVolumeManager received invalid volume change notification")
+                }
+            }
+            .store(in: &cancellables)
 
         // Initial volume refresh
         Task {
