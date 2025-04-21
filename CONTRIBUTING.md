@@ -108,35 +108,25 @@ git merge develop
    git pull
    ```
 
-2. Create a release branch from `develop`:
-   ```bash
-   git checkout -b release/x.y.z develop
-   ```
-
-3. Update version and build number in Xcode:
+2. Update version and build number in Xcode:
    - Increment "Version" (CFBundleShortVersionString)
    - Increment "Build" (CFBundleVersion)
 
-4. Update `CHANGELOG.md`:
+3. Update `CHANGELOG.md`:
    - Add new version number and release date
    - List all new features, improvements, and bug fixes
    - Use the format: `## [x.y.z] - YYYY-MM-DD`
 
-5. Commit the version and changelog updates:
+4. Commit and push the version and changelog updates:
    ```bash
    git add .
    git commit -m "Bump version to x.y.z"
+   git push origin develop
    ```
 
-6. Push the release branch and create a PR to `develop`:
-   ```bash
-   git push origin release/x.y.z
-   # Create PR from release/x.y.z to develop
-   ```
+5. Create a PR from `develop` to `main`:
 
-7. After the PR is merged to `develop`, create a PR from `develop` to `main`
-   
-8. After the PR to `main` is merged, create and push a tag:
+6. After the PR to `main` is merged, create and push a tag:
    ```bash
    git checkout main
    git pull
@@ -144,7 +134,7 @@ git merge develop
    git push origin vx.y.z
    ```
 
-9. The GitHub Actions release workflow will automatically:
+7. The GitHub Actions release workflow will automatically:
    - Build the app
    - Sign it with the developer certificate
    - Notarize the app with Apple

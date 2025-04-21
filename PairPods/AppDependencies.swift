@@ -16,6 +16,7 @@ protocol AudioDeviceManaging: ObservableObject {
     func setupMultiOutputDevice() async throws
     func removeMultiOutputDevice() async
     func restoreOutputDevice() async
+    func refreshCompatibleDevices() async
     func cleanup() async
 }
 
@@ -28,23 +29,41 @@ protocol AudioSharingManaging: ObservableObject {
     func cleanup() async
 }
 
+protocol AudioVolumeManaging: ObservableObject {
+    var deviceVolumes: [AudioDeviceID: Float] { get }
+    var lastKnownVolumes: [String: Float] { get }
+
+    func refreshAllVolumes() async
+    func setVolume(for deviceID: AudioDeviceID, volume: Float) async
+    func getDefaultVolume(for device: AudioDevice) -> Float
+}
+
 protocol AppDependencies {
     var audioDeviceManager: any AudioDeviceManaging { get }
     var audioSharingManager: any AudioSharingManaging { get }
+    var audioVolumeManager: any AudioVolumeManaging { get }
 }
 
 @MainActor
 final class LiveAppDependencies: ObservableObject, AppDependencies {
     static let shared = LiveAppDependencies()
-
     let audioDeviceManager: any AudioDeviceManaging
     let audioSharingManager: any AudioSharingManaging
+    let audioVolumeManager: any AudioVolumeManaging
 
     init() {
-        audioDeviceManager = AudioDeviceManager(shouldShowAlerts: true)
+        let deviceManager = AudioDeviceManager(shouldShowAlerts: true)
+        audioDeviceManager = deviceManager
         audioSharingManager = AudioSharingManager(
-            audioDeviceManager: audioDeviceManager
+            audioDeviceManager: deviceManager
         )
+        if let typedDeviceManager = deviceManager as? AudioDeviceManager {
+            audioVolumeManager = AudioVolumeManager(
+                audioDeviceManager: typedDeviceManager
+            )
+        } else {
+            fatalError("Expected AudioDeviceManager instance but got something else")
+        }
     }
 
     func cleanup() async {

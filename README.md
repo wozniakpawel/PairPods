@@ -36,6 +36,7 @@ PairPods is a macOS menubar app that lets you share audio between two Bluetooth 
 - 🎵 Compatible with all macOS-supported Bluetooth audio devices
 - 🔌 Simple plug-and-play interface
 - ⚡️ Quick access from the menubar
+- 🎚️ Adjust volume levels for each device separately 
 - 🖥️ Native macOS app built with SwiftUI
 - 💯 Completely free and open source
 

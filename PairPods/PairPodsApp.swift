@@ -6,6 +6,7 @@
 //
 
 import LaunchAtLogin
+import MacControlCenterUI
 import Sparkle
 import StoreKit
 import SwiftUI
@@ -14,19 +15,23 @@ import SwiftUI
 struct PairPodsApp: App {
     @StateObject private var dependencies = LiveAppDependencies.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @State private var isMenuPresented: Bool = false
 
     var body: some Scene {
         MenuBarExtra {
             ContentView(
                 audioSharingManager: dependencies.audioSharingManager,
-                audioDeviceManager: dependencies.audioDeviceManager
+                audioDeviceManager: dependencies.audioDeviceManager,
+                audioVolumeManager: dependencies.audioVolumeManager,
+                isMenuPresented: $isMenuPresented
             )
         } label: {
             MenuBarIcon(
                 audioSharingManager: dependencies.audioSharingManager
             )
         }
-        .menuBarExtraStyle(.menu)
+        .menuBarExtraStyle(.window)
+        .menuBarExtraAccess(isPresented: $isMenuPresented)
     }
 }
 
@@ -36,58 +41,162 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await LiveAppDependencies.shared.cleanup()
         }
     }
+
+    func applicationDidFinishLaunching(_: Notification) {
+        // Register a global keyboard shortcut for settings
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "a" {
+                // Post notification to show settings
+                NotificationCenter.default.post(name: NSNotification.Name("ShowAboutWindow"), object: nil)
+                return nil
+            }
+            return event
+        }
+    }
 }
 
 struct ContentView: View {
     @ObservedObject private var audioSharingManager: AudioSharingManager
     @ObservedObject private var audioDeviceManager: AudioDeviceManager
+    @ObservedObject private var audioVolumeManager: AudioVolumeManager
+    @Binding private var isMenuPresented: Bool
+    @State private var settingsWindow: NSWindow?
     @State private var aboutWindow: NSWindow?
 
-    init(audioSharingManager: any AudioSharingManaging, audioDeviceManager: any AudioDeviceManaging) {
-        self.audioSharingManager = audioSharingManager as! AudioSharingManager
-        self.audioDeviceManager = audioDeviceManager as! AudioDeviceManager
+    init(
+        audioSharingManager: any AudioSharingManaging,
+        audioDeviceManager: any AudioDeviceManaging,
+        audioVolumeManager: any AudioVolumeManaging,
+        isMenuPresented: Binding<Bool>
+    ) {
+        if let sharingManager = audioSharingManager as? AudioSharingManager,
+           let deviceManager = audioDeviceManager as? AudioDeviceManager,
+           let volumeManager = audioVolumeManager as? AudioVolumeManager
+        {
+            self.audioSharingManager = sharingManager
+            self.audioDeviceManager = deviceManager
+            self.audioVolumeManager = volumeManager
+        } else {
+            fatalError("Invalid manager types provided")
+        }
+        _isMenuPresented = isMenuPresented
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            Toggle("Share Audio", isOn: Binding(
-                get: { audioSharingManager.isSharingAudio },
-                set: { newValue in
-                    if newValue {
-                        audioSharingManager.startSharing()
-                    } else {
-                        audioSharingManager.stopSharing()
+        MacControlCenterMenu(isPresented: $isMenuPresented) {
+            HStack {
+                Text("Share Audio")
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { audioSharingManager.isSharingAudio },
+                    set: { newValue in
+                        Task {
+                            if newValue {
+                                audioSharingManager.startSharing()
+                            } else {
+                                audioSharingManager.stopSharing()
+                            }
+                        }
                     }
-                }
-            ))
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+            }
+            .disabled(
+                audioDeviceManager.compatibleDevices.count < 2
+            )
             .accessibilityIdentifier("shareAudioToggle")
             .keyboardShortcut("s")
 
+            MenuSection(audioDeviceManager.compatibleDevices.isEmpty
+                ? "No Connected Devices"
+                : audioDeviceManager.compatibleDevices.count == 1
+                ? "Connected Device"
+                : "Connected Devices"
+            )
+
+            DeviceVolumeView(
+                audioDeviceManager: audioDeviceManager,
+                volumeManager: audioVolumeManager
+            )
+            .disabled(
+                !audioSharingManager.isSharingAudio &&
+                    !audioDeviceManager.compatibleDevices.isEmpty
+            )
+
             Divider()
 
-            LaunchAtLogin.Toggle()
+            LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
+                .padding(.horizontal, -14)
+                .padding(.vertical, -4)
 
             AutomaticUpdatesToggle()
                 .accessibilityIdentifier("automaticUpdatesToggle")
+                .padding(.horizontal, -14)
+                .padding(.vertical, -4)
 
-            Button("About") {
+            Divider()
+
+            MenuCommand {
                 showAboutWindow()
+            } label: {
+                HStack {
+                    Text("About")
+                    Spacer()
+                    Text("⌘ A")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 13))
+                }
             }
             .accessibilityIdentifier("aboutButton")
             .keyboardShortcut("a")
+            .padding(.horizontal, -14)
+            .padding(.vertical, -4)
 
-            Button("Quit") {
+            MenuCommand {
                 Task {
                     audioSharingManager.stopSharing()
-                    try? await Task.sleep(for: .seconds(1))
+                    try? await Task.sleep(for: .seconds(0.5))
                     NSApplication.shared.terminate(nil)
+                }
+            } label: {
+                HStack {
+                    Text("Quit")
+                    Spacer()
+                    Text("⌘ Q")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 13))
                 }
             }
             .accessibilityIdentifier("quitButton")
             .keyboardShortcut("q")
+            .padding(.horizontal, -14)
+            .padding(.vertical, -4)
         }
-        .padding()
+        .onAppear {
+            Task {
+                await audioDeviceManager.refreshCompatibleDevices()
+                await audioVolumeManager.refreshAllVolumes()
+            }
+
+            // Add observer for settings shortcut notification
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("ShowAboutWindow"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                showAboutWindow()
+            }
+        }
+        .onChange(of: audioSharingManager.isSharingAudio) { isSharing in
+            Task {
+                if isSharing {
+                    await audioDeviceManager.refreshCompatibleDevices()
+                    await audioVolumeManager.refreshAllVolumes()
+                }
+            }
+        }
     }
 
     private func showAboutWindow() {
@@ -110,11 +219,25 @@ struct ContentView: View {
     }
 }
 
+#Preview {
+    ContentView(
+        audioSharingManager: AudioSharingManager(audioDeviceManager: AudioDeviceManager()),
+        audioDeviceManager: AudioDeviceManager(),
+        audioVolumeManager: AudioVolumeManager(audioDeviceManager: AudioDeviceManager()),
+        isMenuPresented: .constant(true)
+    )
+    .frame(maxWidth: 270)
+}
+
 struct MenuBarIcon: View {
     @ObservedObject private var audioSharingManager: AudioSharingManager
 
     init(audioSharingManager: any AudioSharingManaging) {
-        self.audioSharingManager = audioSharingManager as! AudioSharingManager
+        if let sharingManager = audioSharingManager as? AudioSharingManager {
+            self.audioSharingManager = sharingManager
+        } else {
+            fatalError("Invalid AudioSharingManager type provided")
+        }
     }
 
     var body: some View {
@@ -125,5 +248,18 @@ struct MenuBarIcon: View {
                 audioSharingManager.isSharingAudio ? Color.blue : Color.secondary
             )
             .accessibilityIdentifier("menuBarIcon")
+    }
+}
+
+struct LaunchAtLoginMenuToggle: View {
+    var body: some View {
+        let binding = Binding<Bool>(
+            get: { LaunchAtLogin.isEnabled },
+            set: { LaunchAtLogin.isEnabled = $0 }
+        )
+
+        MenuToggle(isOn: binding, style: .checkmark()) {
+            Text("Launch at Login")
+        }
     }
 }

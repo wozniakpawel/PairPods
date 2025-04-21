@@ -34,7 +34,7 @@ struct AboutView: View {
                 // GitHub Repository
                 Button(action: {
                     NSWorkspace.shared.open(URL(string: "https://github.com/wozniakpawel/PairPods")!)
-                }) {
+                }, label: {
                     HStack {
                         Image(systemName: "chevron.left.forwardslash.chevron.right")
                             .imageScale(.large)
@@ -42,13 +42,13 @@ struct AboutView: View {
                         Text("View code on GitHub")
                     }
                     .frame(maxWidth: 200)
-                }
+                })
                 .buttonStyle(.link)
 
                 // GitHub Sponsor
                 Button(action: {
                     NSWorkspace.shared.open(URL(string: "https://github.com/sponsors/wozniakpawel")!)
-                }) {
+                }, label: {
                     HStack {
                         Image(systemName: "heart.fill")
                             .imageScale(.large)
@@ -56,20 +56,20 @@ struct AboutView: View {
                         Text("Sponsor on GitHub")
                     }
                     .frame(maxWidth: 200)
-                }
+                })
                 .buttonStyle(.link)
 
                 // Buy Me a Coffee
                 Button(action: {
                     NSWorkspace.shared.open(URL(string: "https://www.buymeacoffee.com/wozniakpawel")!)
-                }) {
+                }, label: {
                     HStack {
                         Text("☕")
                             .font(.title2)
                         Text("Buy me a coffee")
                     }
                     .frame(maxWidth: 200)
-                }
+                })
                 .buttonStyle(.link)
             }
 

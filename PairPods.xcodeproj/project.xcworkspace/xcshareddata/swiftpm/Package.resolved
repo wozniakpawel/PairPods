@@ -1,5 +1,5 @@
 {
-  "originHash" : "695aa54fc8ab687e182a20e4b1f6721fb133f12851a23faf6df3631bc0587a6b",
+  "originHash" : "6fc48ab4d40d69d805ddcf8e8e38cfd61845d7a274b62ec6ba416e083d2c4d31",
   "pins" : [
     {
       "identity" : "launchatlogin-modern",
@@ -8,6 +8,24 @@
       "state" : {
         "branch" : "main",
         "revision" : "a04ec1c363be3627734f6dad757d82f5d4fa8fcc"
+      }
+    },
+    {
+      "identity" : "maccontrolcenterui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/orchetect/MacControlCenterUI",
+      "state" : {
+        "revision" : "ee2003b6508de0997cbe6ebb238801f297a450ab",
+        "version" : "2.4.1"
+      }
+    },
+    {
+      "identity" : "menubarextraaccess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/orchetect/MenuBarExtraAccess",
+      "state" : {
+        "revision" : "e911e6454f8cbfe34a52136fc48e1ceb989a60e7",
+        "version" : "1.2.1"
       }
     },
     {
