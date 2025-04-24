@@ -3,6 +3,11 @@ name: Update Homebrew Cask
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to update (without v prefix)'
+        required: true
 
 jobs:
   update-cask:
@@ -14,7 +19,12 @@ jobs:
       - name: Get release info
         id: release
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          # Use the manually provided version if workflow_dispatch was used, otherwise get it from the release
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "download_url=https://github.com/wozniakpawel/PairPods/releases/download/v$VERSION/PairPods-$VERSION.app.zip" >> $GITHUB_OUTPUT
       
