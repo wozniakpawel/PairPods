@@ -21,5 +21,7 @@
     <true/>
     <key>SUEnableSystemAppCheck</key>
     <true/>
+    <key>SUEnableInstallerLauncherService</key>
+    <true/>
 </dict>
 </plist>
