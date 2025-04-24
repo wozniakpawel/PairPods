@@ -60,14 +60,22 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
       
-      - name: Setup GitHub CLI
+      - name: Setup GitHub CLI and Git credentials
         run: |
           echo "${{ secrets.HOMEBREW_GITHUB_TOKEN }}" | gh auth login --with-token
+          # Configure git to use the token for HTTPS authentication
+          git config --global credential.helper store
+          echo "https://x-access-token:${{ secrets.HOMEBREW_GITHUB_TOKEN }}@github.com" > ~/.git-credentials
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
       
       - name: Fork and clone Homebrew cask
         run: |
+          # Use HTTPS instead of SSH for the fork
           gh repo fork homebrew/homebrew-cask --clone=true
           cd homebrew-cask
+          
+          # Configure repository to use token authentication
+          git remote set-url origin https://x-access-token:${{ secrets.HOMEBREW_GITHUB_TOKEN }}@github.com/$(gh api user | jq -r .login)/homebrew-cask.git
           
           # Create a new branch
           git checkout -b update-pairpods-${{ steps.release.outputs.version }}
@@ -94,9 +102,13 @@ jobs:
       - name: Create PR
         working-directory: homebrew-cask
         run: |
+          # Get the default branch of Homebrew
+          DEFAULT_BRANCH=$(gh api repos/Homebrew/homebrew-cask | jq -r '.default_branch')
+          echo "Default branch is $DEFAULT_BRANCH"
+          
           gh pr create \
-            --title "Update PairPods to v${{ steps.release.outputs.version }}" \
-            --body "Update PairPods to v${{ steps.release.outputs.version }}" \
-            --base master
+            --title "pairpods: update to ${{ steps.release.outputs.version }}" \
+            --body "Created with \`brew bump-cask-pr\` by GitHub Actions workflow." \
+            --base $DEFAULT_BRANCH
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
