@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <img src=".github/showcase.png" width="50%" alt="PairPods App Screenshot">
+</p>
+
+<p align="center">
   <a href="https://pairpods.app">
     <img src="https://img.shields.io/badge/Website-pairpods.app-blue.svg" alt="PairPods Website">
   </a>

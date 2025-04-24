@@ -1,0 +1,92 @@
+name: Update Homebrew Cask
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-cask:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+
+      - name: Get release info
+        id: release
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "download_url=https://github.com/wozniakpawel/PairPods/releases/download/v$VERSION/PairPods-$VERSION.app.zip" >> $GITHUB_OUTPUT
+      
+      - name: Wait for release to be available
+        run: |
+          # Wait up to 60 seconds for the release to be available
+          timeout=60
+          while [ $timeout -gt 0 ]; do
+            if curl --output /dev/null --silent --head --fail "${{ steps.release.outputs.download_url }}"; then
+              echo "Release is available!"
+              break
+            fi
+            echo "Waiting for release to be available... ($timeout seconds left)"
+            sleep 5
+            timeout=$((timeout - 5))
+          done
+          
+          # Fail if release is not available after timeout
+          if ! curl --output /dev/null --silent --head --fail "${{ steps.release.outputs.download_url }}"; then
+            echo "Release file is not available after waiting. Please check your release asset URL."
+            exit 1
+          fi
+      
+      - name: Calculate SHA256
+        id: sha
+        run: |
+          curl -sL "${{ steps.release.outputs.download_url }}" -o release.zip
+          SHA=$(shasum -a 256 release.zip | awk '{print $1}')
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+      
+      - name: Set up Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      
+      - name: Setup GitHub CLI
+        run: |
+          echo "${{ secrets.HOMEBREW_GITHUB_TOKEN }}" | gh auth login --with-token
+      
+      - name: Fork and clone Homebrew cask
+        run: |
+          gh repo fork homebrew/homebrew-cask --clone=true
+          cd homebrew-cask
+          
+          # Create a new branch
+          git checkout -b update-pairpods-${{ steps.release.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+      
+      - name: Update cask formula
+        working-directory: homebrew-cask
+        run: |
+          # Path to the PairPods cask formula
+          CASK_PATH="Casks/p/pairpods.rb"
+          
+          # Update version - only need to update the version line
+          sed -i '' "s/version \".*\"/version \"${{ steps.release.outputs.version }}\"/" $CASK_PATH
+          
+          # Update sha256 - only need to update the sha256 line
+          sed -i '' "s/sha256 \".*\"/sha256 \"${{ steps.sha.outputs.sha256 }}\"/" $CASK_PATH
+          
+          # Commit changes
+          git add $CASK_PATH
+          git commit -m "Update PairPods to v${{ steps.release.outputs.version }}"
+          git push -u origin update-pairpods-${{ steps.release.outputs.version }}
+      
+      - name: Create PR
+        working-directory: homebrew-cask
+        run: |
+          gh pr create \
+            --title "Update PairPods to v${{ steps.release.outputs.version }}" \
+            --body "Update PairPods to v${{ steps.release.outputs.version }}" \
+            --base master
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
