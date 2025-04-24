@@ -2,6 +2,20 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.3.0] - 2025-04-24
+
+### Added
+- Added support for the Sparkle Installer XPC Service
+- Added necessary app entitlements for sandboxed update installation
+- Added automated workflow to update Homebrew cask on new releases
+
+### Fixed
+- Fixed and tested the update installation process
+- Fixed appcast.xml structure for checking available updates
+
+### Changed
+- N/A
+
 ## [0.2.1] - 2025-04-21
 
 ### Added
