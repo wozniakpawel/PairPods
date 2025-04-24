@@ -130,9 +130,6 @@ jobs:
             --ed-key-file "$(pwd)/sparkle_private_key" \
             --download-url-prefix "https://github.com/wozniakpawel/PairPods/releases/download/$TAG_NAME/" \
             ./build/export
-            
-          # Add installation type for sandboxed apps
-          sed -i '' 's/<enclosure url="/<enclosure sparkle:installationType="interactive" url="/' ./build/export/appcast.xml
 
       - name: Update appcast.xml
         run: |
