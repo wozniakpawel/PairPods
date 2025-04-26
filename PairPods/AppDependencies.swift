@@ -9,63 +9,20 @@ import CoreAudio
 import Foundation
 import SwiftUI
 
-protocol AudioDeviceManaging: ObservableObject {
-    var deviceStateDidChange: ((AudioDeviceState) -> Void)? { get set }
-    func isMultiOutputDeviceActive() async -> Bool
-    func isMultiOutputDeviceValid() async -> Bool
-    func setupMultiOutputDevice() async throws
-    func removeMultiOutputDevice() async
-    func restoreOutputDevice() async
-    func refreshCompatibleDevices() async
-    func cleanup() async
-}
-
-protocol AudioSharingManaging: ObservableObject {
-    var state: AudioSharingState { get }
-    var isSharingAudio: Bool { get }
-    var stateDidChange: ((AudioSharingState) -> Void)? { get set }
-    func startSharing()
-    func stopSharing()
-    func cleanup() async
-}
-
-protocol AudioVolumeManaging: ObservableObject {
-    var deviceVolumes: [AudioDeviceID: Float] { get }
-    var lastKnownVolumes: [String: Float] { get }
-
-    func refreshAllVolumes() async
-    func setVolume(for deviceID: AudioDeviceID, volume: Float) async
-    func getDefaultVolume(for device: AudioDevice) -> Float
-}
-
-protocol AppDependencies {
-    var audioDeviceManager: any AudioDeviceManaging { get }
-    var audioSharingManager: any AudioSharingManaging { get }
-    var audioVolumeManager: any AudioVolumeManaging { get }
-}
-
 @MainActor
-final class LiveAppDependencies: ObservableObject, AppDependencies {
-    static let shared = LiveAppDependencies()
-    let audioDeviceManager: any AudioDeviceManaging
-    let audioSharingManager: any AudioSharingManaging
-    let audioVolumeManager: any AudioVolumeManaging
-
+final class AppDependencies: ObservableObject {
+    static let shared = AppDependencies()
+    
+    let audioDeviceManager: AudioDeviceManager
+    let audioSharingManager: AudioSharingManager
+    let audioVolumeManager: AudioVolumeManager
+    
     init() {
-        let deviceManager = AudioDeviceManager(shouldShowAlerts: true)
-        audioDeviceManager = deviceManager
-        audioSharingManager = AudioSharingManager(
-            audioDeviceManager: deviceManager
-        )
-        if let typedDeviceManager = deviceManager as? AudioDeviceManager {
-            audioVolumeManager = AudioVolumeManager(
-                audioDeviceManager: typedDeviceManager
-            )
-        } else {
-            fatalError("Expected AudioDeviceManager instance but got something else")
-        }
+        audioDeviceManager = AudioDeviceManager(shouldShowAlerts: true)
+        audioSharingManager = AudioSharingManager(audioDeviceManager: audioDeviceManager)
+        audioVolumeManager = AudioVolumeManager(audioDeviceManager: audioDeviceManager)
     }
-
+    
     func cleanup() async {
         await audioDeviceManager.cleanup()
         await audioSharingManager.cleanup()

@@ -23,14 +23,14 @@ enum AppError: Error {
 final class LoggingService {
     static let shared = LoggingService()
     private let osLog: OSLog
-
+    
     private init() {
         osLog = OSLog(
             subsystem: Bundle.main.bundleIdentifier ?? "com.wozniakpawel.PairPods",
             category: "PairPods"
         )
     }
-
+    
     func log(
         _ message: String,
         level: LogLevel,
@@ -41,21 +41,21 @@ final class LoggingService {
     ) {
         let fileName = (file as NSString).lastPathComponent
         var logMessage = "[\(level.rawValue)] [\(fileName):\(line) \(function)] \(message)"
-
+        
         if let error {
             logMessage += " Error: \(errorDescription(for: error))"
         }
-
+        
         let type: OSLogType = switch level {
         case .debug: .debug
         case .info: .info
         case .warning: .default
         case .error: .error
         }
-
+        
         os_log(type, log: osLog, "%{public}@", logMessage)
     }
-
+    
     private func errorDescription(for error: AppError) -> String {
         switch error {
         case let .operationError(message):
@@ -80,4 +80,15 @@ func logWarning(_ message: String, file: String = #file, function: String = #fun
 
 func logError(_ message: String, error: AppError, file: String = #file, function: String = #function, line: Int = #line) {
     LoggingService.shared.log(message, level: .error, error: error, file: file, function: function, line: line)
+}
+
+// MARK: - Error Handling Helper
+
+func handleError(_ error: Error, context: String) -> AppError {
+    if let appError = error as? AppError {
+        return appError
+    } else {
+        logError(context, error: .systemError(error))
+        return AppError.systemError(error)
+    }
 }

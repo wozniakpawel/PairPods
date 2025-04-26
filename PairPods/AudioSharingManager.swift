@@ -13,8 +13,8 @@ enum AudioSharingState: String {
 }
 
 @MainActor
-final class AudioSharingManager: AudioSharingManaging {
-    private let audioDeviceManager: any AudioDeviceManaging
+final class AudioSharingManager: ObservableObject {
+    private let audioDeviceManager: AudioDeviceManager
     private var monitoringTask: Task<Void, Never>?
 
     var isSharingAudio: Bool { state == .active }
@@ -26,7 +26,7 @@ final class AudioSharingManager: AudioSharingManaging {
         }
     }
 
-    init(audioDeviceManager: any AudioDeviceManaging) {
+    init(audioDeviceManager: AudioDeviceManager) {
         logDebug("Initializing AudioSharingManager")
         self.audioDeviceManager = audioDeviceManager
         setupMonitoring()

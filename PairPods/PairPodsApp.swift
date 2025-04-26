@@ -11,9 +11,20 @@ import Sparkle
 import StoreKit
 import SwiftUI
 
+// MARK: - UI Notifications
+extension Notification.Name {
+    static let showAboutWindow = Notification.Name("ShowAboutWindow")
+}
+
+extension NotificationCenter {
+    func postShowAboutWindow() {
+        post(name: .showAboutWindow, object: nil)
+    }
+}
+
 @main
 struct PairPodsApp: App {
-    @StateObject private var dependencies = LiveAppDependencies.shared
+    @StateObject private var dependencies = AppDependencies.shared
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var isMenuPresented: Bool = false
 
@@ -38,7 +49,7 @@ struct PairPodsApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_: Notification) {
         Task {
-            await LiveAppDependencies.shared.cleanup()
+            await AppDependencies.shared.cleanup()
         }
     }
 
@@ -47,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if event.modifierFlags.contains(.command), event.charactersIgnoringModifiers == "a" {
                 // Post notification to show settings
-                NotificationCenter.default.post(name: NSNotification.Name("ShowAboutWindow"), object: nil)
+                NotificationCenter.default.postShowAboutWindow()
                 return nil
             }
             return event
@@ -64,21 +75,14 @@ struct ContentView: View {
     @State private var aboutWindow: NSWindow?
 
     init(
-        audioSharingManager: any AudioSharingManaging,
-        audioDeviceManager: any AudioDeviceManaging,
-        audioVolumeManager: any AudioVolumeManaging,
+        audioSharingManager: AudioSharingManager,
+        audioDeviceManager: AudioDeviceManager,
+        audioVolumeManager: AudioVolumeManager,
         isMenuPresented: Binding<Bool>
     ) {
-        if let sharingManager = audioSharingManager as? AudioSharingManager,
-           let deviceManager = audioDeviceManager as? AudioDeviceManager,
-           let volumeManager = audioVolumeManager as? AudioVolumeManager
-        {
-            self.audioSharingManager = sharingManager
-            self.audioDeviceManager = deviceManager
-            self.audioVolumeManager = volumeManager
-        } else {
-            fatalError("Invalid manager types provided")
-        }
+        self.audioSharingManager = audioSharingManager
+        self.audioDeviceManager = audioDeviceManager
+        self.audioVolumeManager = audioVolumeManager
         _isMenuPresented = isMenuPresented
     }
 
@@ -186,7 +190,7 @@ struct ContentView: View {
 
             // Add observer for settings shortcut notification
             NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("ShowAboutWindow"),
+                forName: .showAboutWindow,
                 object: nil,
                 queue: .main
             ) { _ in
@@ -236,12 +240,8 @@ struct ContentView: View {
 struct MenuBarIcon: View {
     @ObservedObject private var audioSharingManager: AudioSharingManager
 
-    init(audioSharingManager: any AudioSharingManaging) {
-        if let sharingManager = audioSharingManager as? AudioSharingManager {
-            self.audioSharingManager = sharingManager
-        } else {
-            fatalError("Invalid AudioSharingManager type provided")
-        }
+    init(audioSharingManager: AudioSharingManager) {
+        self.audioSharingManager = audioSharingManager
     }
 
     var body: some View {

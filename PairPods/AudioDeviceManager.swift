@@ -9,6 +9,26 @@ import CoreAudio
 import Foundation
 import SwiftUI
 
+// MARK: - Audio Device Notifications
+extension Notification.Name {
+    static let audioDeviceConfigurationChanged = Notification.Name("audioDeviceConfigurationChanged")
+    static let audioDeviceVolumeChanged = Notification.Name("audioDeviceVolumeChanged")
+}
+
+extension NotificationCenter {
+    func postDeviceVolumeChanged(deviceID: AudioDeviceID, volume: Float) {
+        post(
+            name: .audioDeviceVolumeChanged,
+            object: nil,
+            userInfo: ["deviceID": deviceID, "volume": volume]
+        )
+    }
+    
+    func postDeviceConfigurationChanged() {
+        post(name: .audioDeviceConfigurationChanged, object: nil)
+    }
+}
+
 public enum AudioDeviceState {
     case active
     case inactive
@@ -16,7 +36,7 @@ public enum AudioDeviceState {
 }
 
 @MainActor
-final class AudioDeviceManager: AudioDeviceManaging {
+final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
     private var originalOutputDeviceID: AudioDeviceID?
     private var sharedDevices: (master: AudioDevice, second: AudioDevice)?
@@ -160,12 +180,10 @@ final class AudioDeviceManager: AudioDeviceManaging {
         logDebug("Setting volume for device: \(device.name) (ID: \(deviceID)) to \(volume)")
 
         do {
-            try await device.setVolume(volume)
+            try device.setVolume(volume)
             logInfo("Set volume for device \(device.name) to \(volume)")
-        } catch let error as AppError {
-            logError("Failed to set volume for device \(device.name)", error: error)
         } catch {
-            let appError = AppError.systemError(error)
+            let appError = error as? AppError ?? AppError.systemError(error)
             logError("Failed to set volume for device \(device.name)", error: appError)
         }
     }
@@ -206,7 +224,7 @@ final class AudioDeviceManager: AudioDeviceManaging {
         if isActive, !isValid {
             logWarning("Multi-output device configuration is no longer valid")
             deviceStateDidChange?(.inactive)
-            NotificationCenter.default.post(name: .audioDeviceConfigurationChanged, object: nil)
+            NotificationCenter.default.postDeviceConfigurationChanged()
         }
     }
 
@@ -240,21 +258,18 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 
     private func fetchAllAudioDeviceIDs() async throws -> [AudioDeviceID] {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
 
         var propertySize: UInt32 = 0
-        let status = AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize)
+        let status = AudioObjectGetPropertyDataSize(systemObject, &propertyAddress, 0, nil, &propertySize)
         guard status == noErr else {
             throw AppError.operationError("Unable to get property data size for audio devices. Status: \(status)")
         }
 
         let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
         var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
-        let getStatus = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &deviceIDs)
+        let getStatus = AudioObjectGetPropertyData(systemObject, &propertyAddress, 0, nil, &propertySize, &deviceIDs)
         guard getStatus == noErr else {
             throw AppError.operationError("Unable to get audio device IDs. Status: \(getStatus)")
         }
@@ -342,15 +357,12 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 
     private func setDefaultOutputDevice(deviceID: AudioDeviceID) async throws {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDefaultOutputDevice)
 
         var mutableDeviceID = deviceID
         let status = AudioObjectSetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
+            systemObject,
             &propertyAddress,
             0,
             nil,
@@ -370,15 +382,12 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 
     private func findDefaultAudioDeviceID() async -> AudioDeviceID? {
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
         var defaultDeviceID = AudioDeviceID()
         var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDefaultOutputDevice)
 
-        let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &defaultDeviceID)
+        let status = AudioObjectGetPropertyData(systemObject, &propertyAddress, 0, nil, &propertySize, &defaultDeviceID)
         return status == noErr ? defaultDeviceID : nil
     }
 
@@ -392,18 +401,11 @@ final class AudioDeviceManager: AudioDeviceManaging {
         }
     }
 
-    private func audioObjectPropertyAddress() -> AudioObjectPropertyAddress {
-        AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-    }
-
     private func addPropertyListener(_ listener: @escaping AudioObjectPropertyListenerBlock) -> OSStatus {
-        var address = audioObjectPropertyAddress()
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
         return AudioObjectAddPropertyListenerBlock(
-            AudioObjectID(kAudioObjectSystemObject),
+            systemObject,
             &address,
             DispatchQueue.main,
             listener
@@ -412,9 +414,10 @@ final class AudioDeviceManager: AudioDeviceManaging {
 
     private func removePropertyListener() {
         guard let propertyListenerBlock else { return }
-        var address = audioObjectPropertyAddress()
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
         let status = AudioObjectRemovePropertyListenerBlock(
-            AudioObjectID(kAudioObjectSystemObject),
+            systemObject,
             &address,
             DispatchQueue.main,
             propertyListenerBlock
@@ -453,11 +456,7 @@ final class AudioDeviceManager: AudioDeviceManaging {
                                 logInfo("Volume for \(device.name): \(volume)")
 
                                 // Update the UI for all devices to ensure we're seeing changes
-                                NotificationCenter.default.post(
-                                    name: .audioDeviceVolumeChanged,
-                                    object: nil,
-                                    userInfo: ["deviceID": device.id, "volume": volume]
-                                )
+                                NotificationCenter.default.postDeviceVolumeChanged(deviceID: device.id, volume: volume)
                             } else {
                                 logInfo("Could not get volume for \(device.name)")
                             }
@@ -474,11 +473,7 @@ final class AudioDeviceManager: AudioDeviceManaging {
                         logInfo("New volume: \(newVolume)")
 
                         // Notify that volume has changed so UI can update
-                        NotificationCenter.default.post(
-                            name: .audioDeviceVolumeChanged,
-                            object: nil,
-                            userInfo: ["deviceID": inObjectID, "volume": newVolume]
-                        )
+                        NotificationCenter.default.postDeviceVolumeChanged(deviceID: inObjectID, volume: newVolume)
                         logInfo("Posted audioDeviceVolumeChanged notification")
                     } else {
                         logWarning("Failed to get new volume for device: \(device.name)")
@@ -498,88 +493,17 @@ final class AudioDeviceManager: AudioDeviceManaging {
 
                 for device in compatibleDevices {
                     logInfo("Setting up volume listener for device: \(device.name) (ID: \(device.id))")
-
-                    // First try with main element
-                    var volumeAddress = AudioObjectPropertyAddress(
-                        mSelector: kAudioDevicePropertyVolumeScalar,
-                        mScope: kAudioDevicePropertyScopeOutput,
-                        mElement: kAudioObjectPropertyElementMain
-                    )
-
-                    var propertyExists = AudioObjectHasProperty(device.id, &volumeAddress)
-
-                    // If main element property doesn't exist, try with element 1 (left/main channel)
-                    if !propertyExists {
-                        volumeAddress.mElement = 1 // Try left/main channel
-                        propertyExists = AudioObjectHasProperty(device.id, &volumeAddress)
-
-                        if propertyExists {
-                            logInfo("Device \(device.name) has volume property on channel 1")
-                        }
-                    } else {
-                        logInfo("Device \(device.name) has volume property on main element")
-                    }
-
-                    if propertyExists {
-                        // Add volume listener for this device
-                        let volumeStatus = AudioObjectAddPropertyListenerBlock(
-                            device.id,
-                            &volumeAddress,
-                            DispatchQueue.main,
-                            volumeListenerBlock
-                        )
-
-                        if volumeStatus != noErr {
-                            logError("Failed to add volume listener for device \(device.name)",
-                                     error: .operationError("Status: \(volumeStatus)"))
-                        } else {
-                            logInfo("Successfully added volume listener for device: \(device.name)")
-
-                            // If using channel-based volume, also listen to right channel
-                            if volumeAddress.mElement == 1 {
-                                var rightChannelAddress = volumeAddress
-                                rightChannelAddress.mElement = 2 // Right channel
-
-                                if AudioObjectHasProperty(device.id, &rightChannelAddress) {
-                                    let rightStatus = AudioObjectAddPropertyListenerBlock(
-                                        device.id,
-                                        &rightChannelAddress,
-                                        DispatchQueue.main,
-                                        volumeListenerBlock
-                                    )
-
-                                    if rightStatus != noErr {
-                                        logWarning("Failed to add right channel volume listener for device \(device.name)")
-                                    } else {
-                                        logInfo("Successfully added right channel volume listener for device: \(device.name)")
-                                    }
-                                }
-                            }
-                        }
+                    
+                    // Add volume listener
+                    if device.id.addVolumePropertyListener(listener: volumeListenerBlock) {
+                        logInfo("Successfully added volume listener for device: \(device.name)")
                     } else {
                         logWarning("Device \(device.name) does not support volume control")
                     }
-
+                    
                     // Also monitor mute property, which can affect volume indirectly
-                    var muteAddress = AudioObjectPropertyAddress(
-                        mSelector: kAudioDevicePropertyMute,
-                        mScope: kAudioDevicePropertyScopeOutput,
-                        mElement: kAudioObjectPropertyElementMain
-                    )
-
-                    if AudioObjectHasProperty(device.id, &muteAddress) {
-                        let muteStatus = AudioObjectAddPropertyListenerBlock(
-                            device.id,
-                            &muteAddress,
-                            DispatchQueue.main,
-                            volumeListenerBlock
-                        )
-
-                        if muteStatus != noErr {
-                            logWarning("Failed to add mute listener for device \(device.name)")
-                        } else {
-                            logInfo("Successfully added mute listener for device: \(device.name)")
-                        }
+                    if device.id.addMutePropertyListener(listener: volumeListenerBlock) {
+                        logInfo("Successfully added mute listener for device: \(device.name)")
                     }
                 }
             } catch {
@@ -589,7 +513,3 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 }
 
-extension Notification.Name {
-    static let audioDeviceConfigurationChanged = Notification.Name("audioDeviceConfigurationChanged")
-    static let audioDeviceVolumeChanged = Notification.Name("audioDeviceVolumeChanged")
-}
