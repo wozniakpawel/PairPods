@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - Audio Device Notifications
+
 extension Notification.Name {
     static let audioDeviceConfigurationChanged = Notification.Name("audioDeviceConfigurationChanged")
     static let audioDeviceVolumeChanged = Notification.Name("audioDeviceVolumeChanged")
@@ -23,7 +24,7 @@ extension NotificationCenter {
             userInfo: ["deviceID": deviceID, "volume": volume]
         )
     }
-    
+
     func postDeviceConfigurationChanged() {
         post(name: .audioDeviceConfigurationChanged, object: nil)
     }
@@ -493,14 +494,14 @@ final class AudioDeviceManager: ObservableObject {
 
                 for device in compatibleDevices {
                     logInfo("Setting up volume listener for device: \(device.name) (ID: \(device.id))")
-                    
+
                     // Add volume listener
                     if device.id.addVolumePropertyListener(listener: volumeListenerBlock) {
                         logInfo("Successfully added volume listener for device: \(device.name)")
                     } else {
                         logWarning("Device \(device.name) does not support volume control")
                     }
-                    
+
                     // Also monitor mute property, which can affect volume indirectly
                     if device.id.addMutePropertyListener(listener: volumeListenerBlock) {
                         logInfo("Successfully added mute listener for device: \(device.name)")
@@ -512,4 +513,3 @@ final class AudioDeviceManager: ObservableObject {
         }
     }
 }
-

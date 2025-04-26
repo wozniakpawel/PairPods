@@ -12,6 +12,7 @@ import StoreKit
 import SwiftUI
 
 // MARK: - UI Notifications
+
 extension Notification.Name {
     static let showAboutWindow = Notification.Name("ShowAboutWindow")
 }

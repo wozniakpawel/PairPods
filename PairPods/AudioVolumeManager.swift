@@ -50,12 +50,12 @@ class AudioVolumeManager: ObservableObject {
                     self?.deviceVolumes[deviceID] = volume
 
                     // Update persisted volume data if we have the device
-                    if let self = self,
+                    if let self,
                        let device = self.audioDeviceManager.compatibleDevices.first(where: { $0.id == deviceID })
                     {
                         logInfo("AudioVolumeManager caching volume: \(volume) for device: \(device.name)")
-                        self.lastKnownVolumes[device.uid] = volume
-                        self.saveCachedVolumes()
+                        lastKnownVolumes[device.uid] = volume
+                        saveCachedVolumes()
                     } else {
                         logWarning("AudioVolumeManager could not find device with ID: \(deviceID)")
                     }
