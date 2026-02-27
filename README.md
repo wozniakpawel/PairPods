@@ -92,6 +92,10 @@ git clone https://github.com/wozniakpawel/PairPods.git
 
 4. Build and run the project (⌘R)
 
+## Known Limitations
+
+- **Audio pitch shifting between devices with different sample rates**: When two Bluetooth devices have different native sample rates (e.g., 44,100 Hz vs 48,000 Hz), audio may sound pitch-shifted or warped on one device. PairPods attempts to synchronize sample rates before creating the shared audio device, but some Bluetooth devices may not support rate changes. If you experience this, try using two devices of the same model or brand, as they are more likely to share the same native sample rate.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
