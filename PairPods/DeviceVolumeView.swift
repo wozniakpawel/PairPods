@@ -88,7 +88,7 @@ struct DeviceVolumeRowView: View {
         .padding(.vertical, 2)
     }
 
-    // Determine icon based on device type
+    /// Determine icon based on device type
     private var deviceIcon: String {
         let name = device.name.lowercased()
 

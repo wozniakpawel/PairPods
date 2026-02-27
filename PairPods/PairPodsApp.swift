@@ -117,8 +117,7 @@ struct ContentView: View {
                 ? "No Connected Devices"
                 : audioDeviceManager.compatibleDevices.count == 1
                 ? "Connected Device"
-                : "Connected Devices"
-            )
+                : "Connected Devices")
 
             DeviceVolumeView(
                 audioDeviceManager: audioDeviceManager,

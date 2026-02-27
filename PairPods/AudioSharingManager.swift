@@ -17,7 +17,10 @@ final class AudioSharingManager: ObservableObject {
     private let audioDeviceManager: AudioDeviceManager
     private var monitoringTask: Task<Void, Never>?
 
-    var isSharingAudio: Bool { state == .active }
+    var isSharingAudio: Bool {
+        state == .active
+    }
+
     var stateDidChange: ((AudioSharingState) -> Void)?
 
     @Published private(set) var state: AudioSharingState = .inactive {
@@ -39,18 +42,18 @@ final class AudioSharingManager: ObservableObject {
 
     // MARK: - Public Methods
 
-    public func cleanup() async {
+    func cleanup() async {
         logInfo("Cleaning up AudioSharingManager")
     }
 
-    public func startSharing() {
+    func startSharing() {
         logInfo("Received request to start audio sharing")
         Task {
             await handleStateTransition(to: .starting)
         }
     }
 
-    public func stopSharing() {
+    func stopSharing() {
         logInfo("Received request to stop audio sharing")
         Task {
             await handleStateTransition(to: .stopping)
