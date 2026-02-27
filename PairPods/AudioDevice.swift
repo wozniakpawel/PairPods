@@ -82,7 +82,7 @@ extension AudioObjectID {
         return bufferList.pointee
     }
 
-    // Volume control methods
+    /// Volume control methods
     func getVolumePropertyAddress() -> AudioObjectPropertyAddress? {
         var address = getPropertyAddress(
             selector: kAudioDevicePropertyVolumeScalar,
