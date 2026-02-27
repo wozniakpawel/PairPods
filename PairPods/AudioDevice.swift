@@ -192,6 +192,39 @@ extension AudioObjectID {
         return value
     }
 
+    func setSampleRate(_ sampleRate: Double) -> Bool {
+        var address = getPropertyAddress(
+            selector: kAudioDevicePropertyNominalSampleRate,
+            scope: kAudioObjectPropertyScopeGlobal,
+            element: kAudioObjectPropertyElementMain
+        )
+
+        var isWritable: DarwinBoolean = false
+        let checkStatus = AudioObjectIsPropertySettable(self, &address, &isWritable)
+        guard checkStatus == noErr, isWritable.boolValue else {
+            logDebug("Sample rate is not settable for device ID: \(self)")
+            return false
+        }
+
+        var mutableRate = sampleRate
+        let status = AudioObjectSetPropertyData(
+            self,
+            &address,
+            0,
+            nil,
+            UInt32(MemoryLayout<Float64>.size),
+            &mutableRate
+        )
+
+        if status != noErr {
+            logDebug("Failed to set sample rate to \(sampleRate) for device ID: \(self). Status: \(status)")
+            return false
+        }
+
+        logDebug("Successfully set sample rate to \(sampleRate) for device ID: \(self)")
+        return true
+    }
+
     func setVolume(_ volume: Float) throws {
         logDebug("Attempting to set volume \(volume) for device ID: \(self)")
 

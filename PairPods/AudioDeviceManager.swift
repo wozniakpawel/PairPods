@@ -81,6 +81,16 @@ final class AudioDeviceManager: ObservableObject {
         let (masterDevice, secondDevice) = selectDevicesForSharing(compatibleDevices)
         sharedDevices = (master: masterDevice, second: secondDevice)
 
+        if masterDevice.sampleRate != secondDevice.sampleRate {
+            logInfo("Sample rate mismatch detected - Master: \(masterDevice.sampleRate)Hz, Second: \(secondDevice.sampleRate)Hz")
+            logInfo("Attempting to set second device '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz")
+            if secondDevice.id.setSampleRate(masterDevice.sampleRate) {
+                logInfo("Successfully set '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz")
+            } else {
+                logWarning("Failed to set '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz — proceeding with drift compensation only")
+            }
+        }
+
         let deviceID = try await createMultiOutputDevice(masterDevice: masterDevice, secondDevice: secondDevice)
         try await setDefaultOutputDevice(deviceID: deviceID)
         deviceStateDidChange?(.active)
@@ -325,7 +335,7 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     private func selectDevicesForSharing(_ devices: [AudioDevice]) -> (AudioDevice, AudioDevice) {
-        let sortedDevices = devices.sorted { $0.sampleRate > $1.sampleRate }
+        let sortedDevices = devices.sorted { $0.sampleRate < $1.sampleRate }
         let masterDevice = sortedDevices[0]
         let secondDevice = sortedDevices[1]
         logInfo("Selected devices for sharing - Master: \(masterDevice.name) (\(masterDevice.sampleRate)Hz), Second: \(secondDevice.name) (\(secondDevice.sampleRate)Hz)")
