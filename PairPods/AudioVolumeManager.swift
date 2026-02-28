@@ -15,7 +15,7 @@ class AudioVolumeManager: ObservableObject {
     // AudioDeviceManager reference for device access
     private let audioDeviceManager: AudioDeviceManager
     private var cancellables = Set<AnyCancellable>()
-    private let defaultVolume: Float = 0.75
+    private let defaultVolume: Float = 0.5
     private let volumeCacheKey = "PairPods.DeviceVolumes"
 
     // Published properties for UI binding
@@ -119,16 +119,11 @@ class AudioVolumeManager: ObservableObject {
                 // Update the persistent cache
                 lastKnownVolumes[device.uid] = volume
             } else {
-                // If volume can't be read, use cached/default value
-                let defaultVolume = getDefaultVolume(for: device)
-                deviceVolumes[device.id] = defaultVolume
-
-                // Try to set this default volume
-                do {
-                    try device.setVolume(defaultVolume)
-                } catch {
-                    logWarning("Failed to set default volume \(defaultVolume) for \(device.name): \(error.localizedDescription)")
-                }
+                // If volume can't be read, show cached/default in UI but don't
+                // write it to the device — the real volume is unknown
+                let fallbackVolume = getDefaultVolume(for: device)
+                deviceVolumes[device.id] = fallbackVolume
+                logWarning("Could not read volume for \(device.name), using fallback \(fallbackVolume)")
             }
         }
 
