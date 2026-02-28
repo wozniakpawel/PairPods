@@ -383,36 +383,16 @@ final class AudioDeviceManager: ObservableObject {
         logInfo("Volume change detected for device ID: \(deviceID)")
         logDebug("Property address: selector=\(propertyAddress.pointee.mSelector), scope=\(propertyAddress.pointee.mScope), element=\(propertyAddress.pointee.mElement)")
 
-        for device in compatibleDevices {
-            logDebug("Known device: \(device.name) (ID: \(device.id))")
-        }
-
-        let (defaultDevice, _) = await audioSystem.fetchDefaultOutputDevice()
-        if let defaultDevice {
-            logDebug("Current default device: \(defaultDevice.name) (ID: \(defaultDevice.id))")
-
-            logDebug("Checking volumes of all devices:")
-            for device in compatibleDevices {
-                if let volume = await device.getVolume() {
-                    logDebug("Volume for \(device.name): \(volume)")
-                    NotificationCenter.default.postDeviceVolumeChanged(deviceID: device.id, volume: volume)
-                } else {
-                    logDebug("Could not get volume for \(device.name)")
-                }
-            }
-        }
-
-        if let device = compatibleDevices.first(where: { $0.id == deviceID }) {
-            logDebug("Found matching device: \(device.name)")
-
-            if let newVolume = await device.getVolume() {
-                logInfo("New volume: \(newVolume)")
-                NotificationCenter.default.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
-            } else {
-                logWarning("Failed to get new volume for device: \(device.name)")
-            }
-        } else {
+        guard let device = compatibleDevices.first(where: { $0.id == deviceID }) else {
             logWarning("Device with ID \(deviceID) not found in compatible devices")
+            return
+        }
+
+        if let newVolume = await device.getVolume() {
+            logInfo("Volume for \(device.name): \(newVolume)")
+            NotificationCenter.default.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
+        } else {
+            logWarning("Failed to get volume for device: \(device.name)")
         }
     }
 
