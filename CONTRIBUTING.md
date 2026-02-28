@@ -21,7 +21,15 @@ By participating in this project, you agree to maintain a welcoming, inclusive, 
    git clone https://github.com/YOUR_USERNAME/PairPods.git
    cd PairPods
    ```
-3. Set up the upstream remote:
+3. Switch to the develop branch (all work happens on develop, not main):
+   ```bash
+   git checkout develop
+   ```
+   If the develop branch doesn't exist locally but exists remotely:
+   ```bash
+   git checkout -b develop origin/develop
+   ```
+4. Set up the upstream remote:
    ```bash
    git remote add upstream https://github.com/wozniakpawel/PairPods.git
    ```

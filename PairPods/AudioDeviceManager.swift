@@ -9,6 +9,27 @@ import CoreAudio
 import Foundation
 import SwiftUI
 
+// MARK: - Audio Device Notifications
+
+extension Notification.Name {
+    static let audioDeviceConfigurationChanged = Notification.Name("audioDeviceConfigurationChanged")
+    static let audioDeviceVolumeChanged = Notification.Name("audioDeviceVolumeChanged")
+}
+
+extension NotificationCenter {
+    func postDeviceVolumeChanged(deviceID: AudioDeviceID, volume: Float) {
+        post(
+            name: .audioDeviceVolumeChanged,
+            object: nil,
+            userInfo: ["deviceID": deviceID, "volume": volume]
+        )
+    }
+
+    func postDeviceConfigurationChanged() {
+        post(name: .audioDeviceConfigurationChanged, object: nil)
+    }
+}
+
 public enum AudioDeviceState {
     case active
     case inactive
@@ -16,7 +37,7 @@ public enum AudioDeviceState {
 }
 
 @MainActor
-final class AudioDeviceManager: AudioDeviceManaging {
+final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
     private var originalOutputDeviceID: AudioDeviceID?
     private var sharedDevices: (master: AudioDevice, second: AudioDevice)?
@@ -24,6 +45,11 @@ final class AudioDeviceManager: AudioDeviceManaging {
     private let shouldShowAlerts: Bool
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
+
+    var sharedDeviceUIDs: (master: String, second: String)? {
+        guard let devices = sharedDevices else { return nil }
+        return (master: devices.master.uid, second: devices.second.uid)
+    }
 
     var deviceStateDidChange: ((AudioDeviceState) -> Void)?
 
@@ -39,13 +65,13 @@ final class AudioDeviceManager: AudioDeviceManaging {
 
     // MARK: - Public Methods
 
-    public func cleanup() async {
+    func cleanup() async {
         logInfo("Cleaning up AudioDeviceManager")
         await removeMultiOutputDevice()
         removePropertyListener()
     }
 
-    public func setupMultiOutputDevice() async throws {
+    func setupMultiOutputDevice() async throws {
         logInfo("Starting setup of multi-output device")
         let (defaultDevice, originalID) = await fetchDefaultOutputDevice()
         originalOutputDeviceID = originalID
@@ -60,13 +86,23 @@ final class AudioDeviceManager: AudioDeviceManaging {
         let (masterDevice, secondDevice) = selectDevicesForSharing(compatibleDevices)
         sharedDevices = (master: masterDevice, second: secondDevice)
 
+        if masterDevice.sampleRate != secondDevice.sampleRate {
+            logInfo("Sample rate mismatch detected - Master: \(masterDevice.sampleRate)Hz, Second: \(secondDevice.sampleRate)Hz")
+            logInfo("Attempting to set second device '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz")
+            if secondDevice.id.setSampleRate(masterDevice.sampleRate) {
+                logInfo("Successfully set '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz")
+            } else {
+                logWarning("Failed to set '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz — proceeding with drift compensation only")
+            }
+        }
+
         let deviceID = try await createMultiOutputDevice(masterDevice: masterDevice, secondDevice: secondDevice)
         try await setDefaultOutputDevice(deviceID: deviceID)
         deviceStateDidChange?(.active)
         logInfo("Multi-output device setup completed successfully")
     }
 
-    public func restoreOutputDevice() async {
+    func restoreOutputDevice() async {
         logInfo("Restoring output device to previous state")
         do {
             let devices = try await fetchAllAudioDevices()
@@ -96,7 +132,7 @@ final class AudioDeviceManager: AudioDeviceManaging {
         sharedDevices = nil
     }
 
-    public func removeMultiOutputDevice() async {
+    func removeMultiOutputDevice() async {
         logInfo("Attempting to remove existing multi-output device")
         if let deviceID = await fetchDeviceID(deviceUID: multiOutputDeviceUID as CFString) {
             do {
@@ -113,24 +149,30 @@ final class AudioDeviceManager: AudioDeviceManaging {
         }
     }
 
-    public func isMultiOutputDeviceActive() async -> Bool {
+    func isMultiOutputDeviceActive() async -> Bool {
         let (defaultDevice, _) = await fetchDefaultOutputDevice()
         return defaultDevice?.uid == multiOutputDeviceUID
     }
 
-    public func isMultiOutputDeviceValid() async -> Bool {
+    func isMultiOutputDeviceValid() async -> Bool {
         guard let masterDevice = sharedDevices?.master,
               let secondDevice = sharedDevices?.second
         else {
             return false
         }
-        let devices = await (try? fetchAllAudioDevices()) ?? []
+        let devices: [AudioDevice]
+        do {
+            devices = try await fetchAllAudioDevices()
+        } catch {
+            logWarning("Failed to fetch audio devices for validation: \(error.localizedDescription)")
+            devices = []
+        }
         return devices.contains(where: { $0.id == masterDevice.id }) &&
             devices.contains(where: { $0.id == secondDevice.id })
     }
 
-    // Method to refresh the list of compatible devices
-    public func refreshCompatibleDevices() async {
+    /// Method to refresh the list of compatible devices
+    func refreshCompatibleDevices() async {
         do {
             let devices = try await fetchAllAudioDevices()
             compatibleDevices = devices.filter(\.isCompatibleOutputDevice)
@@ -140,8 +182,8 @@ final class AudioDeviceManager: AudioDeviceManaging {
         }
     }
 
-    // Get volume for a specific device
-    public func getDeviceVolume(deviceID: AudioDeviceID) async -> Float {
+    /// Get volume for a specific device
+    func getDeviceVolume(deviceID: AudioDeviceID) async -> Float {
         if let device = compatibleDevices.first(where: { $0.id == deviceID }),
            let volume = await device.getVolume()
         {
@@ -150,8 +192,8 @@ final class AudioDeviceManager: AudioDeviceManaging {
         return 0.0
     }
 
-    // Set volume for a specific device
-    public func setDeviceVolume(deviceID: AudioDeviceID, volume: Float) async {
+    /// Set volume for a specific device
+    func setDeviceVolume(deviceID: AudioDeviceID, volume: Float) async {
         guard let device = compatibleDevices.first(where: { $0.id == deviceID }) else {
             logError("Failed to set volume for device", error: .operationError("Device with ID \(deviceID) not found"))
             return
@@ -160,21 +202,19 @@ final class AudioDeviceManager: AudioDeviceManaging {
         logDebug("Setting volume for device: \(device.name) (ID: \(deviceID)) to \(volume)")
 
         do {
-            try await device.setVolume(volume)
+            try device.setVolume(volume)
             logInfo("Set volume for device \(device.name) to \(volume)")
-        } catch let error as AppError {
-            logError("Failed to set volume for device \(device.name)", error: error)
         } catch {
-            let appError = AppError.systemError(error)
+            let appError = error as? AppError ?? AppError.systemError(error)
             logError("Failed to set volume for device \(device.name)", error: appError)
         }
     }
 
-    // Initialize devices on startup
+    /// Initialize devices on startup
     func initializeDevices() async {
         await refreshCompatibleDevices()
         // Setup listener for device property changes
-        setupVolumeChangeListener()
+        setupVolumeChangeListeners()
     }
 
     // MARK: - Private Methods
@@ -206,7 +246,7 @@ final class AudioDeviceManager: AudioDeviceManaging {
         if isActive, !isValid {
             logWarning("Multi-output device configuration is no longer valid")
             deviceStateDidChange?(.inactive)
-            NotificationCenter.default.post(name: .audioDeviceConfigurationChanged, object: nil)
+            NotificationCenter.default.postDeviceConfigurationChanged()
         }
     }
 
@@ -240,21 +280,18 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 
     private func fetchAllAudioDeviceIDs() async throws -> [AudioDeviceID] {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
 
         var propertySize: UInt32 = 0
-        let status = AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize)
+        let status = AudioObjectGetPropertyDataSize(systemObject, &propertyAddress, 0, nil, &propertySize)
         guard status == noErr else {
             throw AppError.operationError("Unable to get property data size for audio devices. Status: \(status)")
         }
 
         let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
         var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
-        let getStatus = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &deviceIDs)
+        let getStatus = AudioObjectGetPropertyData(systemObject, &propertyAddress, 0, nil, &propertySize, &deviceIDs)
         guard getStatus == noErr else {
             throw AppError.operationError("Unable to get audio device IDs. Status: \(getStatus)")
         }
@@ -303,7 +340,7 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 
     private func selectDevicesForSharing(_ devices: [AudioDevice]) -> (AudioDevice, AudioDevice) {
-        let sortedDevices = devices.sorted { $0.sampleRate > $1.sampleRate }
+        let sortedDevices = devices.sorted { $0.sampleRate < $1.sampleRate }
         let masterDevice = sortedDevices[0]
         let secondDevice = sortedDevices[1]
         logInfo("Selected devices for sharing - Master: \(masterDevice.name) (\(masterDevice.sampleRate)Hz), Second: \(secondDevice.name) (\(secondDevice.sampleRate)Hz)")
@@ -342,15 +379,12 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 
     private func setDefaultOutputDevice(deviceID: AudioDeviceID) async throws {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDefaultOutputDevice)
 
         var mutableDeviceID = deviceID
         let status = AudioObjectSetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
+            systemObject,
             &propertyAddress,
             0,
             nil,
@@ -370,15 +404,12 @@ final class AudioDeviceManager: AudioDeviceManaging {
     }
 
     private func findDefaultAudioDeviceID() async -> AudioDeviceID? {
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
         var defaultDeviceID = AudioDeviceID()
         var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDefaultOutputDevice)
 
-        let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &propertyAddress, 0, nil, &propertySize, &defaultDeviceID)
+        let status = AudioObjectGetPropertyData(systemObject, &propertyAddress, 0, nil, &propertySize, &defaultDeviceID)
         return status == noErr ? defaultDeviceID : nil
     }
 
@@ -392,18 +423,11 @@ final class AudioDeviceManager: AudioDeviceManaging {
         }
     }
 
-    private func audioObjectPropertyAddress() -> AudioObjectPropertyAddress {
-        AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-    }
-
     private func addPropertyListener(_ listener: @escaping AudioObjectPropertyListenerBlock) -> OSStatus {
-        var address = audioObjectPropertyAddress()
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
         return AudioObjectAddPropertyListenerBlock(
-            AudioObjectID(kAudioObjectSystemObject),
+            systemObject,
             &address,
             DispatchQueue.main,
             listener
@@ -412,9 +436,10 @@ final class AudioDeviceManager: AudioDeviceManaging {
 
     private func removePropertyListener() {
         guard let propertyListenerBlock else { return }
-        var address = audioObjectPropertyAddress()
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
         let status = AudioObjectRemovePropertyListenerBlock(
-            AudioObjectID(kAudioObjectSystemObject),
+            systemObject,
             &address,
             DispatchQueue.main,
             propertyListenerBlock
@@ -424,172 +449,81 @@ final class AudioDeviceManager: AudioDeviceManaging {
         }
     }
 
-    // Setup a listener for volume changes
-    private func setupVolumeChangeListener() {
-        logInfo("Setting up volume change listeners using AudioDevice's approach")
+    /// Handle a volume change event for a specific device
+    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: UnsafePointer<AudioObjectPropertyAddress>) async {
+        logInfo("Volume change detected for device ID: \(deviceID)")
+        logDebug("Property address: selector=\(propertyAddress.pointee.mSelector), scope=\(propertyAddress.pointee.mScope), element=\(propertyAddress.pointee.mElement)")
 
-        // Create a property listener block specifically for volume changes
-        let volumeListenerBlock: AudioObjectPropertyListenerBlock = { [weak self] inObjectID, propertyAddress in
-            Task { @MainActor in
-                // This is a volume change for a specific device with ID inObjectID
-                logInfo("VOLUME CHANGE DETECTED for device ID: \(inObjectID)")
-                logInfo("Property address: selector=\(propertyAddress.pointee.mSelector), scope=\(propertyAddress.pointee.mScope), element=\(propertyAddress.pointee.mElement)")
+        for device in compatibleDevices {
+            logDebug("Known device: \(device.name) (ID: \(device.id))")
+        }
 
-                // Debug: Dump current known devices
-                if let self {
-                    for device in self.compatibleDevices {
-                        logInfo("Known device: \(device.name) (ID: \(device.id))")
-                    }
+        let (defaultDevice, _) = await fetchDefaultOutputDevice()
+        if let defaultDevice {
+            logDebug("Current default device: \(defaultDevice.name) (ID: \(defaultDevice.id))")
 
-                    // Check if it's the default device
-                    let (defaultDevice, _) = await self.fetchDefaultOutputDevice()
-                    if let defaultDevice {
-                        logInfo("Current default device: \(defaultDevice.name) (ID: \(defaultDevice.id))")
-
-                        // Get the current volume for all devices
-                        logInfo("Checking volumes of all devices:")
-                        for device in self.compatibleDevices {
-                            if let volume = await device.getVolume() {
-                                logInfo("Volume for \(device.name): \(volume)")
-
-                                // Update the UI for all devices to ensure we're seeing changes
-                                NotificationCenter.default.post(
-                                    name: .audioDeviceVolumeChanged,
-                                    object: nil,
-                                    userInfo: ["deviceID": device.id, "volume": volume]
-                                )
-                            } else {
-                                logInfo("Could not get volume for \(device.name)")
-                            }
-                        }
-                    }
-                }
-
-                // Find the device in our compatible devices list
-                if let device = self?.compatibleDevices.first(where: { $0.id == inObjectID }) {
-                    logInfo("Found matching device: \(device.name)")
-
-                    // Get the current volume from the device
-                    if let newVolume = await device.getVolume() {
-                        logInfo("New volume: \(newVolume)")
-
-                        // Notify that volume has changed so UI can update
-                        NotificationCenter.default.post(
-                            name: .audioDeviceVolumeChanged,
-                            object: nil,
-                            userInfo: ["deviceID": inObjectID, "volume": newVolume]
-                        )
-                        logInfo("Posted audioDeviceVolumeChanged notification")
-                    } else {
-                        logWarning("Failed to get new volume for device: \(device.name)")
-                    }
+            logDebug("Checking volumes of all devices:")
+            for device in compatibleDevices {
+                if let volume = await device.getVolume() {
+                    logDebug("Volume for \(device.name): \(volume)")
+                    NotificationCenter.default.postDeviceVolumeChanged(deviceID: device.id, volume: volume)
                 } else {
-                    logWarning("Device with ID \(inObjectID) not found in compatible devices")
+                    logDebug("Could not get volume for \(device.name)")
                 }
             }
         }
 
-        // We need to set up volume listeners for each compatible device
+        if let device = compatibleDevices.first(where: { $0.id == deviceID }) {
+            logDebug("Found matching device: \(device.name)")
+
+            if let newVolume = await device.getVolume() {
+                logInfo("New volume: \(newVolume)")
+                NotificationCenter.default.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
+            } else {
+                logWarning("Failed to get new volume for device: \(device.name)")
+            }
+        } else {
+            logWarning("Device with ID \(deviceID) not found in compatible devices")
+        }
+    }
+
+    /// Register CoreAudio property listeners for volume and mute on each device
+    private func registerVolumeListeners(for devices: [AudioDevice], listener: @escaping AudioObjectPropertyListenerBlock) {
+        logDebug("Setting up volume listeners for \(devices.count) compatible devices")
+
+        for device in devices {
+            logDebug("Setting up volume listener for device: \(device.name) (ID: \(device.id))")
+
+            if device.id.addVolumePropertyListener(listener: listener) {
+                logDebug("Successfully added volume listener for device: \(device.name)")
+            } else {
+                logWarning("Device \(device.name) does not support volume control")
+            }
+
+            if device.id.addMutePropertyListener(listener: listener) {
+                logDebug("Successfully added mute listener for device: \(device.name)")
+            }
+        }
+    }
+
+    /// Setup listeners for volume changes on all compatible devices
+    private func setupVolumeChangeListeners() {
+        logDebug("Setting up volume change listeners")
+
+        let volumeListenerBlock: AudioObjectPropertyListenerBlock = { [weak self] inObjectID, propertyAddress in
+            Task { @MainActor in
+                await self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: propertyAddress)
+            }
+        }
+
         Task {
             do {
                 let devices = try await fetchAllAudioDevices()
-                let compatibleDevices = devices.filter(\.isCompatibleOutputDevice)
-                logInfo("Setting up volume listeners for \(compatibleDevices.count) compatible devices")
-
-                for device in compatibleDevices {
-                    logInfo("Setting up volume listener for device: \(device.name) (ID: \(device.id))")
-
-                    // First try with main element
-                    var volumeAddress = AudioObjectPropertyAddress(
-                        mSelector: kAudioDevicePropertyVolumeScalar,
-                        mScope: kAudioDevicePropertyScopeOutput,
-                        mElement: kAudioObjectPropertyElementMain
-                    )
-
-                    var propertyExists = AudioObjectHasProperty(device.id, &volumeAddress)
-
-                    // If main element property doesn't exist, try with element 1 (left/main channel)
-                    if !propertyExists {
-                        volumeAddress.mElement = 1 // Try left/main channel
-                        propertyExists = AudioObjectHasProperty(device.id, &volumeAddress)
-
-                        if propertyExists {
-                            logInfo("Device \(device.name) has volume property on channel 1")
-                        }
-                    } else {
-                        logInfo("Device \(device.name) has volume property on main element")
-                    }
-
-                    if propertyExists {
-                        // Add volume listener for this device
-                        let volumeStatus = AudioObjectAddPropertyListenerBlock(
-                            device.id,
-                            &volumeAddress,
-                            DispatchQueue.main,
-                            volumeListenerBlock
-                        )
-
-                        if volumeStatus != noErr {
-                            logError("Failed to add volume listener for device \(device.name)",
-                                     error: .operationError("Status: \(volumeStatus)"))
-                        } else {
-                            logInfo("Successfully added volume listener for device: \(device.name)")
-
-                            // If using channel-based volume, also listen to right channel
-                            if volumeAddress.mElement == 1 {
-                                var rightChannelAddress = volumeAddress
-                                rightChannelAddress.mElement = 2 // Right channel
-
-                                if AudioObjectHasProperty(device.id, &rightChannelAddress) {
-                                    let rightStatus = AudioObjectAddPropertyListenerBlock(
-                                        device.id,
-                                        &rightChannelAddress,
-                                        DispatchQueue.main,
-                                        volumeListenerBlock
-                                    )
-
-                                    if rightStatus != noErr {
-                                        logWarning("Failed to add right channel volume listener for device \(device.name)")
-                                    } else {
-                                        logInfo("Successfully added right channel volume listener for device: \(device.name)")
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        logWarning("Device \(device.name) does not support volume control")
-                    }
-
-                    // Also monitor mute property, which can affect volume indirectly
-                    var muteAddress = AudioObjectPropertyAddress(
-                        mSelector: kAudioDevicePropertyMute,
-                        mScope: kAudioDevicePropertyScopeOutput,
-                        mElement: kAudioObjectPropertyElementMain
-                    )
-
-                    if AudioObjectHasProperty(device.id, &muteAddress) {
-                        let muteStatus = AudioObjectAddPropertyListenerBlock(
-                            device.id,
-                            &muteAddress,
-                            DispatchQueue.main,
-                            volumeListenerBlock
-                        )
-
-                        if muteStatus != noErr {
-                            logWarning("Failed to add mute listener for device \(device.name)")
-                        } else {
-                            logInfo("Successfully added mute listener for device: \(device.name)")
-                        }
-                    }
-                }
+                let compatible = devices.filter(\.isCompatibleOutputDevice)
+                registerVolumeListeners(for: compatible, listener: volumeListenerBlock)
             } catch {
                 logError("Failed to set up volume listeners", error: .systemError(error))
             }
         }
     }
-}
-
-extension Notification.Name {
-    static let audioDeviceConfigurationChanged = Notification.Name("audioDeviceConfigurationChanged")
-    static let audioDeviceVolumeChanged = Notification.Name("audioDeviceVolumeChanged")
 }

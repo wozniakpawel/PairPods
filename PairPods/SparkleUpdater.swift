@@ -16,7 +16,7 @@ final class SparkleUpdater {
     private init() {
         let driver = SPUStandardUserDriver(hostBundle: Bundle.main, delegate: nil)
         do {
-            updaterController = try SPUUpdater(
+            updaterController = SPUUpdater(
                 hostBundle: Bundle.main,
                 applicationBundle: Bundle.main,
                 userDriver: driver,

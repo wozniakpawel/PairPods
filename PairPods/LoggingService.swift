@@ -81,3 +81,14 @@ func logWarning(_ message: String, file: String = #file, function: String = #fun
 func logError(_ message: String, error: AppError, file: String = #file, function: String = #function, line: Int = #line) {
     LoggingService.shared.log(message, level: .error, error: error, file: file, function: function, line: line)
 }
+
+// MARK: - Error Handling Helper
+
+func handleError(_ error: Error, context: String) -> AppError {
+    if let appError = error as? AppError {
+        return appError
+    } else {
+        logError(context, error: .systemError(error))
+        return AppError.systemError(error)
+    }
+}
