@@ -318,6 +318,15 @@ struct AudioDevice: Sendable {
             transportType == kAudioDeviceTransportTypeBluetoothLE)
     }
 
+    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double) {
+        self.id = id
+        self.uid = uid
+        self.name = name
+        self.transportType = transportType
+        self.isOutputDevice = isOutputDevice
+        self.sampleRate = sampleRate
+    }
+
     init?(deviceID: AudioDeviceID) async {
         id = deviceID
         guard let uid = deviceID.getStringProperty(selector: kAudioDevicePropertyDeviceUID),

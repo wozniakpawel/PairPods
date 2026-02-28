@@ -44,6 +44,10 @@ jobs:
         run: |
           xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO
       
+      - name: Run Tests
+        run: |
+          xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES -destination 'platform=macOS'
+
       - name: Verify app architectures
         run: |
           lipo -info ./DerivedData/Build/Products/Debug/PairPods.app/Contents/MacOS/PairPods
