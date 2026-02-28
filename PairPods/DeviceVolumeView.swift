@@ -56,34 +56,32 @@ struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
 
+    private var cgFloatVolume: Binding<CGFloat> {
+        Binding(
+            get: { CGFloat(volume) },
+            set: { volume = Float($0) }
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                // Device icon based on type
                 Image(systemName: deviceIcon)
                     .foregroundColor(.secondary)
 
-                // Device name
                 Text(device.name)
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
 
                 Spacer()
 
-                // Volume percentage indicator
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .frame(width: 40, alignment: .trailing)
             }
 
-            // Volume slider
-            MenuVolumeSlider(
-                value: Binding<CGFloat>(
-                    get: { CGFloat(volume) },
-                    set: { volume = Float($0) }
-                )
-            )
+            MenuVolumeSlider(value: cgFloatVolume)
         }
         .padding(.vertical, 2)
     }
