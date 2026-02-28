@@ -184,15 +184,9 @@ struct ContentView: View {
                 await audioDeviceManager.refreshCompatibleDevices()
                 await audioVolumeManager.refreshAllVolumes()
             }
-
-            // Add observer for settings shortcut notification
-            NotificationCenter.default.addObserver(
-                forName: .showAboutWindow,
-                object: nil,
-                queue: .main
-            ) { _ in
-                showAboutWindow()
-            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showAboutWindow)) { _ in
+            showAboutWindow()
         }
         .onChange(of: audioSharingManager.isSharingAudio) { isSharing in
             Task {
