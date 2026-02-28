@@ -98,14 +98,11 @@ class AudioVolumeManager: ObservableObject {
         await audioDeviceManager.setDeviceVolume(deviceID: deviceID, volume: volume)
     }
 
-    /// Get default volume for a device (either cached or 0.75 as fallback)
+    /// Get default volume for a device (either cached or 50% as fallback)
     func getDefaultVolume(for device: AudioDevice) -> Float {
-        // Try to return cached volume by device UID
         if let cachedVolume = lastKnownVolumes[device.uid] {
             return cachedVolume
         }
-
-        // Default to 75% volume if no cached value
         return defaultVolume
     }
 
