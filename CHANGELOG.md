@@ -5,7 +5,7 @@ All notable changes to PairPods will be documented in this file.
 ## [0.4.0] - 2026-02-28
 
 ### Added
-- N/A
+- Auto-reconnect when a shared device disconnects — polls for 10 seconds and automatically resumes sharing if both devices come back
 
 ### Fixed
 - Fixed silent error swallowing — errors are now logged instead of silently discarded
@@ -13,6 +13,7 @@ All notable changes to PairPods will be documented in this file.
 - Fixed audio pitch shifting between Bluetooth devices
 
 ### Changed
+- Changed default fallback volume from 75% to 50%
 - Improved logging: verbose volume-change logs demoted to debug level for cleaner output
 - Extracted magic values into named constants for better maintainability
 - Refactored volume change listener into focused, testable sub-methods
