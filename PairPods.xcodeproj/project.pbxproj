@@ -28,6 +28,7 @@
 		AA0000012F000001000TESTS /* AudioSystemQuerying.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000012F000004000TESTS /* AudioSystemQuerying.swift */; };
 		AA0000022F000002000TESTS /* AudioSystemCommanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000022F000005000TESTS /* AudioSystemCommanding.swift */; };
 		AA0000032F000003000TESTS /* CoreAudioSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000032F000006000TESTS /* CoreAudioSystem.swift */; };
+		AA0000042F000007000PREVW /* PreviewAudioSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000042F00000A000PREVW /* PreviewAudioSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,6 +64,7 @@
 		AA0000012F000004000TESTS /* AudioSystemQuerying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSystemQuerying.swift; sourceTree = "<group>"; };
 		AA0000022F000005000TESTS /* AudioSystemCommanding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSystemCommanding.swift; sourceTree = "<group>"; };
 		AA0000032F000006000TESTS /* CoreAudioSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioSystem.swift; sourceTree = "<group>"; };
+		AA0000042F00000A000PREVW /* PreviewAudioSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewAudioSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -129,6 +131,7 @@
 				AA0000012F000004000TESTS /* AudioSystemQuerying.swift */,
 				AA0000022F000005000TESTS /* AudioSystemCommanding.swift */,
 				AA0000032F000006000TESTS /* CoreAudioSystem.swift */,
+				AA0000042F00000A000PREVW /* PreviewAudioSystem.swift */,
 				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
 				E985A9A02B92F5A0005494FA /* PairPods.entitlements */,
 				E985A99D2B92F5A0005494FA /* Preview Content */,
@@ -290,6 +293,7 @@
 				AA0000012F000001000TESTS /* AudioSystemQuerying.swift in Sources */,
 				AA0000022F000002000TESTS /* AudioSystemCommanding.swift in Sources */,
 				AA0000032F000003000TESTS /* CoreAudioSystem.swift in Sources */,
+				AA0000042F000007000PREVW /* PreviewAudioSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

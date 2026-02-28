@@ -222,10 +222,14 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(
-        audioSharingManager: AudioSharingManager(audioDeviceManager: AudioDeviceManager()),
-        audioDeviceManager: AudioDeviceManager(),
-        audioVolumeManager: AudioVolumeManager(audioDeviceManager: AudioDeviceManager()),
+    let deviceManager = AudioDeviceManager(audioSystem: PreviewAudioSystem(), shouldShowAlerts: false)
+    let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
+    let volumeManager = AudioVolumeManager(audioDeviceManager: deviceManager)
+
+    return ContentView(
+        audioSharingManager: sharingManager,
+        audioDeviceManager: deviceManager,
+        audioVolumeManager: volumeManager,
         isMenuPresented: .constant(true)
     )
     .frame(maxWidth: 270)

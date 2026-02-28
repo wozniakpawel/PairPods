@@ -120,7 +120,7 @@ struct NoDevicesView: View {
 }
 
 #Preview {
-    let deviceManager = AudioDeviceManager(shouldShowAlerts: false)
+    let deviceManager = AudioDeviceManager(audioSystem: PreviewAudioSystem(), shouldShowAlerts: false)
     let volumeManager = AudioVolumeManager(audioDeviceManager: deviceManager)
 
     return DeviceVolumeView(
