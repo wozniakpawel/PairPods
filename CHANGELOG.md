@@ -2,6 +2,22 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.4.0] - 2026-02-28
+
+### Added
+- N/A
+
+### Fixed
+- Fixed silent error swallowing — errors are now logged instead of silently discarded
+- Fixed quit handler reliability — app termination no longer depends on an arbitrary delay
+- Fixed audio pitch shifting between Bluetooth devices
+
+### Changed
+- Improved logging: verbose volume-change logs demoted to debug level for cleaner output
+- Extracted magic values into named constants for better maintainability
+- Refactored volume change listener into focused, testable sub-methods
+- Made audio sharing start/stop operations properly async
+
 ## [0.3.0] - 2025-04-24
 
 ### Added
