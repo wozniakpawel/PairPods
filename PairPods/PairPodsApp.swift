@@ -188,12 +188,11 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .showAboutWindow)) { _ in
             showAboutWindow()
         }
-        .onChange(of: audioSharingManager.isSharingAudio) { isSharing in
+        .onReceive(audioSharingManager.$state) { newState in
+            guard newState == .active else { return }
             Task {
-                if isSharing {
-                    await audioDeviceManager.refreshCompatibleDevices()
-                    await audioVolumeManager.refreshAllVolumes()
-                }
+                await audioDeviceManager.refreshCompatibleDevices()
+                await audioVolumeManager.refreshAllVolumes()
             }
         }
     }
