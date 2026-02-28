@@ -436,36 +436,36 @@ final class AudioDeviceManager: ObservableObject {
 
     /// Setup a listener for volume changes
     private func setupVolumeChangeListener() {
-        logInfo("Setting up volume change listeners using AudioDevice's approach")
+        logDebug("Setting up volume change listeners")
 
         // Create a property listener block specifically for volume changes
         let volumeListenerBlock: AudioObjectPropertyListenerBlock = { [weak self] inObjectID, propertyAddress in
             Task { @MainActor in
                 // This is a volume change for a specific device with ID inObjectID
-                logInfo("VOLUME CHANGE DETECTED for device ID: \(inObjectID)")
-                logInfo("Property address: selector=\(propertyAddress.pointee.mSelector), scope=\(propertyAddress.pointee.mScope), element=\(propertyAddress.pointee.mElement)")
+                logInfo("Volume change detected for device ID: \(inObjectID)")
+                logDebug("Property address: selector=\(propertyAddress.pointee.mSelector), scope=\(propertyAddress.pointee.mScope), element=\(propertyAddress.pointee.mElement)")
 
                 // Debug: Dump current known devices
                 if let self {
                     for device in self.compatibleDevices {
-                        logInfo("Known device: \(device.name) (ID: \(device.id))")
+                        logDebug("Known device: \(device.name) (ID: \(device.id))")
                     }
 
                     // Check if it's the default device
                     let (defaultDevice, _) = await self.fetchDefaultOutputDevice()
                     if let defaultDevice {
-                        logInfo("Current default device: \(defaultDevice.name) (ID: \(defaultDevice.id))")
+                        logDebug("Current default device: \(defaultDevice.name) (ID: \(defaultDevice.id))")
 
                         // Get the current volume for all devices
-                        logInfo("Checking volumes of all devices:")
+                        logDebug("Checking volumes of all devices:")
                         for device in self.compatibleDevices {
                             if let volume = await device.getVolume() {
-                                logInfo("Volume for \(device.name): \(volume)")
+                                logDebug("Volume for \(device.name): \(volume)")
 
                                 // Update the UI for all devices to ensure we're seeing changes
                                 NotificationCenter.default.postDeviceVolumeChanged(deviceID: device.id, volume: volume)
                             } else {
-                                logInfo("Could not get volume for \(device.name)")
+                                logDebug("Could not get volume for \(device.name)")
                             }
                         }
                     }
@@ -473,7 +473,7 @@ final class AudioDeviceManager: ObservableObject {
 
                 // Find the device in our compatible devices list
                 if let device = self?.compatibleDevices.first(where: { $0.id == inObjectID }) {
-                    logInfo("Found matching device: \(device.name)")
+                    logDebug("Found matching device: \(device.name)")
 
                     // Get the current volume from the device
                     if let newVolume = await device.getVolume() {
@@ -481,7 +481,7 @@ final class AudioDeviceManager: ObservableObject {
 
                         // Notify that volume has changed so UI can update
                         NotificationCenter.default.postDeviceVolumeChanged(deviceID: inObjectID, volume: newVolume)
-                        logInfo("Posted audioDeviceVolumeChanged notification")
+                        logDebug("Posted audioDeviceVolumeChanged notification")
                     } else {
                         logWarning("Failed to get new volume for device: \(device.name)")
                     }
@@ -496,21 +496,21 @@ final class AudioDeviceManager: ObservableObject {
             do {
                 let devices = try await fetchAllAudioDevices()
                 let compatibleDevices = devices.filter(\.isCompatibleOutputDevice)
-                logInfo("Setting up volume listeners for \(compatibleDevices.count) compatible devices")
+                logDebug("Setting up volume listeners for \(compatibleDevices.count) compatible devices")
 
                 for device in compatibleDevices {
-                    logInfo("Setting up volume listener for device: \(device.name) (ID: \(device.id))")
+                    logDebug("Setting up volume listener for device: \(device.name) (ID: \(device.id))")
 
                     // Add volume listener
                     if device.id.addVolumePropertyListener(listener: volumeListenerBlock) {
-                        logInfo("Successfully added volume listener for device: \(device.name)")
+                        logDebug("Successfully added volume listener for device: \(device.name)")
                     } else {
                         logWarning("Device \(device.name) does not support volume control")
                     }
 
                     // Also monitor mute property, which can affect volume indirectly
                     if device.id.addMutePropertyListener(listener: volumeListenerBlock) {
-                        logInfo("Successfully added mute listener for device: \(device.name)")
+                        logDebug("Successfully added mute listener for device: \(device.name)")
                     }
                 }
             } catch {
