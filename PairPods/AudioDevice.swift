@@ -149,6 +149,33 @@ extension AudioObjectID {
         return true
     }
 
+    func removeVolumePropertyListener(listener: @escaping AudioObjectPropertyListenerBlock) {
+        guard var address = getVolumePropertyAddress() else { return }
+
+        AudioObjectRemovePropertyListenerBlock(self, &address, DispatchQueue.main, listener)
+
+        if address.mElement == 1 {
+            var rightChannelAddress = getPropertyAddress(
+                selector: kAudioDevicePropertyVolumeScalar,
+                scope: kAudioDevicePropertyScopeOutput,
+                element: 2
+            )
+            if AudioObjectHasProperty(self, &rightChannelAddress) {
+                AudioObjectRemovePropertyListenerBlock(self, &rightChannelAddress, DispatchQueue.main, listener)
+            }
+        }
+    }
+
+    func removeMutePropertyListener(listener: @escaping AudioObjectPropertyListenerBlock) {
+        var address = getPropertyAddress(
+            selector: kAudioDevicePropertyMute,
+            scope: kAudioDevicePropertyScopeOutput,
+            element: kAudioObjectPropertyElementMain
+        )
+        guard AudioObjectHasProperty(self, &address) else { return }
+        AudioObjectRemovePropertyListenerBlock(self, &address, DispatchQueue.main, listener)
+    }
+
     func addMutePropertyListener(listener: @escaping AudioObjectPropertyListenerBlock) -> Bool {
         var address = getPropertyAddress(
             selector: kAudioDevicePropertyMute,

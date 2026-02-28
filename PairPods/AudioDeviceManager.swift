@@ -42,6 +42,8 @@ final class AudioDeviceManager: ObservableObject {
     private var originalOutputDeviceID: AudioDeviceID?
     private var sharedDevices: (master: AudioDevice, second: AudioDevice)?
     private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
+    private var volumeListenerBlock: AudioObjectPropertyListenerBlock?
+    private var volumeListenerDeviceIDs: [AudioDeviceID] = []
     private let shouldShowAlerts: Bool
     private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
 
@@ -414,8 +416,15 @@ final class AudioDeviceManager: ObservableObject {
         }
     }
 
-    /// Register CoreAudio property listeners for volume and mute on each device
+    /// Remove previously registered volume/mute listeners and add them for the given devices.
     private func registerVolumeListeners(for devices: [AudioDevice], listener: @escaping AudioObjectPropertyListenerBlock) {
+        // Remove old listeners first
+        for oldDeviceID in volumeListenerDeviceIDs {
+            oldDeviceID.removeVolumePropertyListener(listener: listener)
+            oldDeviceID.removeMutePropertyListener(listener: listener)
+        }
+        volumeListenerDeviceIDs.removeAll()
+
         logDebug("Setting up volume listeners for \(devices.count) compatible devices")
 
         for device in devices {
@@ -430,6 +439,8 @@ final class AudioDeviceManager: ObservableObject {
             if device.id.addMutePropertyListener(listener: listener) {
                 logDebug("Successfully added mute listener for device: \(device.name)")
             }
+
+            volumeListenerDeviceIDs.append(device.id)
         }
     }
 
@@ -437,11 +448,15 @@ final class AudioDeviceManager: ObservableObject {
     private func setupVolumeChangeListeners() {
         logDebug("Setting up volume change listeners")
 
-        let volumeListenerBlock: AudioObjectPropertyListenerBlock = { [weak self] inObjectID, propertyAddress in
-            Task { @MainActor in
-                await self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: propertyAddress)
+        if volumeListenerBlock == nil {
+            volumeListenerBlock = { [weak self] inObjectID, propertyAddress in
+                Task { @MainActor in
+                    await self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: propertyAddress)
+                }
             }
         }
+
+        guard let volumeListenerBlock else { return }
 
         Task {
             do {
