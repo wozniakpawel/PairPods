@@ -22,7 +22,7 @@ struct DeviceVolumeView: View {
             if audioDeviceManager.compatibleDevices.isEmpty {
                 NoDevicesView()
             } else {
-                ForEach(sortedDevices, id: \.id) { device in
+                ForEach(sortedDevices) { device in
                     DeviceVolumeRowView(
                         device: device,
                         volume: Binding(

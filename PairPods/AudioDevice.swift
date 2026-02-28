@@ -332,7 +332,7 @@ extension AudioObjectID {
 
 // MARK: - AudioDevice Model
 
-struct AudioDevice: Sendable {
+struct AudioDevice: Sendable, Identifiable {
     let id: AudioDeviceID
     let uid: String
     let name: String
