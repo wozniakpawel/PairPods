@@ -16,6 +16,8 @@ enum AudioSharingState: String {
 final class AudioSharingManager: ObservableObject {
     private let audioDeviceManager: AudioDeviceManager
     private var monitoringTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
+    private let reconnectTimeout: TimeInterval = 10
 
     var isSharingAudio: Bool {
         state == .active
@@ -38,21 +40,28 @@ final class AudioSharingManager: ObservableObject {
     deinit {
         logDebug("AudioSharingManager deinitializing")
         monitoringTask?.cancel()
+        reconnectTask?.cancel()
     }
 
     // MARK: - Public Methods
 
     func cleanup() async {
         logInfo("Cleaning up AudioSharingManager")
+        reconnectTask?.cancel()
+        reconnectTask = nil
     }
 
     func startSharing() async {
         logInfo("Received request to start audio sharing")
+        reconnectTask?.cancel()
+        reconnectTask = nil
         await handleStateTransition(to: .starting)
     }
 
     func stopSharing() async {
         logInfo("Received request to stop audio sharing")
+        reconnectTask?.cancel()
+        reconnectTask = nil
         await handleStateTransition(to: .stopping)
     }
 
@@ -64,11 +73,49 @@ final class AudioSharingManager: ObservableObject {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { [weak self] in
                     for await _ in NotificationCenter.default.notifications(named: .audioDeviceConfigurationChanged) {
-                        logWarning("Audio device configuration changed, stopping sharing")
-                        await self?.stopSharing()
+                        logWarning("Audio device configuration changed, handling disconnect")
+                        await self?.handleDeviceDisconnect()
                     }
                 }
             }
+        }
+    }
+
+    private func handleDeviceDisconnect() async {
+        guard state == .active else { return }
+
+        let savedUIDs = audioDeviceManager.sharedDeviceUIDs
+        await stopSharing()
+
+        guard let uids = savedUIDs else {
+            logInfo("No shared device UIDs to watch for reconnection")
+            return
+        }
+
+        logInfo("Watching for reconnection of devices: \(uids.master), \(uids.second)")
+        reconnectTask?.cancel()
+        reconnectTask = Task {
+            let deadline = Date().addingTimeInterval(reconnectTimeout)
+            while Date() < deadline {
+                guard !Task.isCancelled else {
+                    logInfo("Reconnect watch cancelled")
+                    return
+                }
+
+                await audioDeviceManager.refreshCompatibleDevices()
+                let devices = audioDeviceManager.compatibleDevices
+                let bothPresent = devices.contains(where: { $0.uid == uids.master })
+                    && devices.contains(where: { $0.uid == uids.second })
+
+                if bothPresent {
+                    logInfo("Both devices reconnected, restarting audio sharing")
+                    await startSharing()
+                    return
+                }
+
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+            logInfo("Reconnect timeout expired, giving up")
         }
     }
 

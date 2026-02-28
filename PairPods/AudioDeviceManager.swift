@@ -46,6 +46,11 @@ final class AudioDeviceManager: ObservableObject {
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
 
+    var sharedDeviceUIDs: (master: String, second: String)? {
+        guard let devices = sharedDevices else { return nil }
+        return (master: devices.master.uid, second: devices.second.uid)
+    }
+
     var deviceStateDidChange: ((AudioDeviceState) -> Void)?
 
     init(shouldShowAlerts: Bool = true) {
