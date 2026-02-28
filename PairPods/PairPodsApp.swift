@@ -49,9 +49,7 @@ struct PairPodsApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_: Notification) {
-        Task {
-            await AppDependencies.shared.cleanup()
-        }
+        AppDependencies.shared.cleanupSync()
     }
 
     func applicationDidFinishLaunching(_: Notification) {
