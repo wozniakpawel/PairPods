@@ -124,7 +124,11 @@ class AudioVolumeManager: ObservableObject {
                 deviceVolumes[device.id] = defaultVolume
 
                 // Try to set this default volume
-                try? device.setVolume(defaultVolume)
+                do {
+                    try device.setVolume(defaultVolume)
+                } catch {
+                    logWarning("Failed to set default volume \(defaultVolume) for \(device.name): \(error.localizedDescription)")
+                }
             }
         }
 

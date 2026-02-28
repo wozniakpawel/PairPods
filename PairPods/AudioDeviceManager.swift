@@ -145,7 +145,13 @@ final class AudioDeviceManager: ObservableObject {
         else {
             return false
         }
-        let devices = await (try? fetchAllAudioDevices()) ?? []
+        let devices: [AudioDevice]
+        do {
+            devices = try await fetchAllAudioDevices()
+        } catch {
+            logWarning("Failed to fetch audio devices for validation: \(error.localizedDescription)")
+            devices = []
+        }
         return devices.contains(where: { $0.id == masterDevice.id }) &&
             devices.contains(where: { $0.id == secondDevice.id })
     }

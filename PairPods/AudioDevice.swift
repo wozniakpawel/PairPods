@@ -230,7 +230,11 @@ extension AudioObjectID {
 
         // If we're using a channel-based approach, also set the right channel
         if address.mElement == 1 {
-            try? setRightChannelVolume(volume: volume)
+            do {
+                try setRightChannelVolume(volume: volume)
+            } catch {
+                logDebug("Right channel volume not set for device \(self) (expected on mono devices): \(error.localizedDescription)")
+            }
         }
     }
 
