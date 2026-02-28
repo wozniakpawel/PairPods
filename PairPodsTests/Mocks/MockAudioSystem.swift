@@ -50,7 +50,7 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         return defaultDevice
     }
 
-    func fetchDeviceID(deviceUID: String) async -> AudioDeviceID? {
+    func fetchDeviceID(deviceUID _: String) async -> AudioDeviceID? {
         deviceIDToReturn
     }
 

@@ -4,8 +4,8 @@
 //
 
 import CoreAudio
-import Testing
 @testable import PairPods
+import Testing
 
 @Suite("AudioSharingManager Reconnect")
 struct AudioSharingManagerReconnectTests {

@@ -3,8 +3,8 @@
 //  PairPodsTests
 //
 
-import Testing
 @testable import PairPods
+import Testing
 
 @Suite("AppError")
 struct AppErrorTests {

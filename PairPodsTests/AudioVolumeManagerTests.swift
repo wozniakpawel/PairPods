@@ -4,8 +4,8 @@
 //
 
 import CoreAudio
-import Testing
 @testable import PairPods
+import Testing
 
 @Suite("AudioVolumeManager")
 struct AudioVolumeManagerTests {
@@ -38,9 +38,9 @@ struct AudioVolumeManagerTests {
     }
 
     @Test("Returns cached volume when available")
-    @MainActor func returnsCachedVolume() async {
+    @MainActor func returnsCachedVolume() async throws {
         let suiteName = "PairPodsTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
         // Pre-populate the cache in UserDefaults
         defaults.set(["cached-uid": Float(0.75)], forKey: "PairPods.DeviceVolumes")
 
@@ -74,11 +74,11 @@ struct AudioVolumeManagerTests {
     }
 
     @Test("Volume persistence survives UserDefaults round-trip")
-    @MainActor func volumePersistenceRoundTrip() async {
+    @MainActor func volumePersistenceRoundTrip() async throws {
         let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "roundtrip-uid")
 
         let suiteName = "PairPodsTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
 
         let mock = MockAudioSystem()
         mock.devicesToReturn = [bt1]
