@@ -15,6 +15,8 @@ class AudioVolumeManager: ObservableObject {
     // AudioDeviceManager reference for device access
     private let audioDeviceManager: AudioDeviceManager
     private var cancellables = Set<AnyCancellable>()
+    private let defaultVolume: Float = 0.75
+    private let volumeCacheKey = "PairPods.DeviceVolumes"
 
     // Published properties for UI binding
     @Published private(set) var deviceVolumes: [AudioDeviceID: Float] = [:]
@@ -102,7 +104,7 @@ class AudioVolumeManager: ObservableObject {
         }
 
         // Default to 75% volume if no cached value
-        return 0.75
+        return defaultVolume
     }
 
     // MARK: - Private Methods
@@ -132,12 +134,12 @@ class AudioVolumeManager: ObservableObject {
 
     /// Save volume cache to UserDefaults
     private func saveCachedVolumes() {
-        UserDefaults.standard.set(lastKnownVolumes, forKey: "PairPods.DeviceVolumes")
+        UserDefaults.standard.set(lastKnownVolumes, forKey: volumeCacheKey)
     }
 
     /// Load volume cache from UserDefaults
     private func loadCachedVolumes() {
-        if let savedVolumes = UserDefaults.standard.dictionary(forKey: "PairPods.DeviceVolumes") as? [String: Float] {
+        if let savedVolumes = UserDefaults.standard.dictionary(forKey: volumeCacheKey) as? [String: Float] {
             lastKnownVolumes = savedVolumes
         }
     }
