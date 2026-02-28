@@ -97,9 +97,9 @@ struct ContentView: View {
                     set: { newValue in
                         Task {
                             if newValue {
-                                audioSharingManager.startSharing()
+                                await audioSharingManager.startSharing()
                             } else {
-                                audioSharingManager.stopSharing()
+                                await audioSharingManager.stopSharing()
                             }
                         }
                     }
@@ -162,8 +162,7 @@ struct ContentView: View {
 
             MenuCommand {
                 Task {
-                    audioSharingManager.stopSharing()
-                    try? await Task.sleep(for: .seconds(0.5))
+                    await audioSharingManager.stopSharing()
                     NSApplication.shared.terminate(nil)
                 }
             } label: {

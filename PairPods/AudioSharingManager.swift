@@ -46,18 +46,14 @@ final class AudioSharingManager: ObservableObject {
         logInfo("Cleaning up AudioSharingManager")
     }
 
-    func startSharing() {
+    func startSharing() async {
         logInfo("Received request to start audio sharing")
-        Task {
-            await handleStateTransition(to: .starting)
-        }
+        await handleStateTransition(to: .starting)
     }
 
-    func stopSharing() {
+    func stopSharing() async {
         logInfo("Received request to stop audio sharing")
-        Task {
-            await handleStateTransition(to: .stopping)
-        }
+        await handleStateTransition(to: .stopping)
     }
 
     // MARK: - Private Methods
