@@ -282,11 +282,11 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     private func handleAudioDeviceChange() async {
-        let isActive = await isMultiOutputDeviceActive()
-        let isValid = await isMultiOutputDeviceValid()
-
         // Reinitialize devices when configuration changes
         await initializeDevices()
+
+        let isActive = await isMultiOutputDeviceActive()
+        let isValid = await isMultiOutputDeviceValid()
 
         if isActive, !isValid {
             logWarning("Multi-output device configuration is no longer valid")
