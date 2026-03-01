@@ -145,11 +145,11 @@ final class AudioDeviceManager: ObservableObject {
             let masterDevice = sharedDevices?.master
             let secondDevice = sharedDevices?.second
 
-            if let master = masterDevice, devices.contains(where: { $0.id == master.id }) {
-                try await audioSystem.setDefaultOutputDevice(deviceID: master.id)
+            if let master = masterDevice, let current = devices.first(where: { $0.uid == master.uid }) {
+                try await audioSystem.setDefaultOutputDevice(deviceID: current.id)
                 logInfo("Restored to master device: \(master.name)")
-            } else if let second = secondDevice, devices.contains(where: { $0.id == second.id }) {
-                try await audioSystem.setDefaultOutputDevice(deviceID: second.id)
+            } else if let second = secondDevice, let current = devices.first(where: { $0.uid == second.uid }) {
+                try await audioSystem.setDefaultOutputDevice(deviceID: current.id)
                 logInfo("Restored to second device: \(second.name)")
             } else {
                 try await restoreToBuiltInSpeakers()
