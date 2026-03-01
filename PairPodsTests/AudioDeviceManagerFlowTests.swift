@@ -118,24 +118,4 @@ struct AudioDeviceManagerFlowTests {
         #expect(mock.setDefaultOutputCalls.first == builtIn.id)
     }
 
-    @Test("State callbacks fire correctly")
-    @MainActor func stateCallbacksFire() async throws {
-        let (mock, manager) = makeMockAndManager()
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
-        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
-        mock.devicesToReturn = [bt1, bt2]
-        mock.createAggregateResult = .success(999)
-
-        var states: [String] = []
-        manager.deviceStateDidChange = { state in
-            switch state {
-            case .active: states.append("active")
-            case .inactive: states.append("inactive")
-            case .error: states.append("error")
-            }
-        }
-
-        try await manager.setupMultiOutputDevice()
-        #expect(states.contains("active"))
-    }
 }

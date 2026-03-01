@@ -30,12 +30,6 @@ extension NotificationCenter {
     }
 }
 
-public enum AudioDeviceState {
-    case active
-    case inactive
-    case error(Error)
-}
-
 @MainActor
 final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
@@ -53,8 +47,6 @@ final class AudioDeviceManager: ObservableObject {
         guard let devices = sharedDevices else { return nil }
         return (master: devices.master.uid, second: devices.second.uid)
     }
-
-    var deviceStateDidChange: ((AudioDeviceState) -> Void)?
 
     convenience init(shouldShowAlerts: Bool = true) {
         self.init(audioSystem: CoreAudioSystem(), shouldShowAlerts: shouldShowAlerts)
@@ -139,7 +131,6 @@ final class AudioDeviceManager: ObservableObject {
             secondUID: secondDevice.uid
         )
         try await audioSystem.setDefaultOutputDevice(deviceID: deviceID)
-        deviceStateDidChange?(.active)
         logInfo("Multi-output device setup completed successfully")
     }
 
@@ -152,20 +143,16 @@ final class AudioDeviceManager: ObservableObject {
 
             if let master = masterDevice, devices.contains(where: { $0.id == master.id }) {
                 try await audioSystem.setDefaultOutputDevice(deviceID: master.id)
-                deviceStateDidChange?(.inactive)
                 logInfo("Restored to master device: \(master.name)")
             } else if let second = secondDevice, devices.contains(where: { $0.id == second.id }) {
                 try await audioSystem.setDefaultOutputDevice(deviceID: second.id)
-                deviceStateDidChange?(.inactive)
                 logInfo("Restored to second device: \(second.name)")
             } else {
                 try await restoreToBuiltInSpeakers()
-                deviceStateDidChange?(.inactive)
                 logInfo("Restored to built-in speakers")
             }
         } catch {
             let appError = AppError.systemError(error)
-            deviceStateDidChange?(.error(appError))
             logError("Failed to restore output device", error: appError)
         }
 
@@ -178,11 +165,9 @@ final class AudioDeviceManager: ObservableObject {
         if let deviceID = await audioSystem.fetchDeviceID(deviceUID: multiOutputDeviceUID) {
             do {
                 try await audioSystem.destroyAggregateDevice(deviceID: deviceID)
-                deviceStateDidChange?(.inactive)
                 logInfo("Successfully removed multi-output device")
             } catch {
                 let appError = AppError.systemError(error)
-                deviceStateDidChange?(.error(appError))
                 logError("Failed to remove multi-output device", error: appError)
             }
         } else {
@@ -292,7 +277,6 @@ final class AudioDeviceManager: ObservableObject {
         let status = addPropertyListener(propertyListenerBlock)
         if status != noErr {
             let error = AppError.operationError("Status code: \(status)")
-            deviceStateDidChange?(.error(error))
             logError("Failed to add audio device change listener", error: error)
         }
     }
@@ -306,7 +290,6 @@ final class AudioDeviceManager: ObservableObject {
 
         if isActive, !isValid {
             logWarning("Multi-output device configuration is no longer valid")
-            deviceStateDidChange?(.inactive)
             NotificationCenter.default.postDeviceConfigurationChanged()
         }
     }
