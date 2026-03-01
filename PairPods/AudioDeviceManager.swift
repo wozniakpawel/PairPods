@@ -379,9 +379,9 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     /// Handle a volume change event for a specific device
-    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: UnsafePointer<AudioObjectPropertyAddress>) async {
+    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: AudioObjectPropertyAddress) async {
         logInfo("Volume change detected for device ID: \(deviceID)")
-        logDebug("Property address: selector=\(propertyAddress.pointee.mSelector), scope=\(propertyAddress.pointee.mScope), element=\(propertyAddress.pointee.mElement)")
+        logDebug("Property address: selector=\(propertyAddress.mSelector), scope=\(propertyAddress.mScope), element=\(propertyAddress.mElement)")
 
         guard let device = compatibleDevices.first(where: { $0.id == deviceID }) else {
             logWarning("Device with ID \(deviceID) not found in compatible devices")
@@ -430,8 +430,9 @@ final class AudioDeviceManager: ObservableObject {
 
         if volumeListenerBlock == nil {
             volumeListenerBlock = { [weak self] inObjectID, propertyAddress in
+                let address = propertyAddress.pointee
                 Task { @MainActor in
-                    await self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: propertyAddress)
+                    await self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: address)
                 }
             }
         }
