@@ -260,6 +260,17 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     func selectDevicesForSharing(_ devices: [AudioDevice]) -> (AudioDevice, AudioDevice) {
+        // Prefer a pair that shares the same sample rate to avoid pitch-shifting
+        for i in 0 ..< devices.count {
+            for j in (i + 1) ..< devices.count {
+                if devices[i].sampleRate == devices[j].sampleRate {
+                    let pair = [devices[i], devices[j]].sorted { $0.sampleRate < $1.sampleRate }
+                    logInfo("Selected devices for sharing - Master: \(pair[0].name) (\(pair[0].sampleRate)Hz), Second: \(pair[1].name) (\(pair[1].sampleRate)Hz)")
+                    return (pair[0], pair[1])
+                }
+            }
+        }
+
         let sortedDevices = devices.sorted { $0.sampleRate < $1.sampleRate }
         let masterDevice = sortedDevices[0]
         let secondDevice = sortedDevices[1]

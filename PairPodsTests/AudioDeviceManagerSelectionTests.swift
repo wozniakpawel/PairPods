@@ -87,4 +87,17 @@ struct AudioDeviceManagerSelectionTests {
 
         try manager.validateCompatibleDevices(devices)
     }
+
+    @Test("Prefers same-sample-rate pair over lower rates")
+    @MainActor func prefersSameSampleRatePair() {
+        let manager = makeManager()
+        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "a", sampleRate: 44100)
+        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "b", sampleRate: 48000)
+        let bt3 = AudioDeviceFixtures.bluetoothDevice(id: 3, uid: "c", sampleRate: 48000)
+
+        let (master, second) = manager.selectDevicesForSharing([bt1, bt2, bt3])
+        #expect(master.sampleRate == 48000)
+        #expect(second.sampleRate == 48000)
+        #expect(master.id != second.id)
+    }
 }
