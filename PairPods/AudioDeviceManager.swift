@@ -38,6 +38,8 @@ final class AudioDeviceManager: ObservableObject {
     private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
     private var volumeListenerBlock: AudioObjectPropertyListenerBlock?
     private var volumeListenerDeviceIDs: [AudioDeviceID] = []
+    private var initTask: Task<Void, Never>?
+    private var volumeListenerTask: Task<Void, Never>?
     private let shouldShowAlerts: Bool
     private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
 
@@ -57,7 +59,7 @@ final class AudioDeviceManager: ObservableObject {
         self.shouldShowAlerts = shouldShowAlerts
         logDebug("Initializing AudioDeviceManager")
         setupAudioDeviceMonitoring()
-        Task {
+        initTask = Task {
             await removeMultiOutputDevice()
             await initializeDevices()
         }
@@ -67,6 +69,8 @@ final class AudioDeviceManager: ObservableObject {
 
     func cleanup() async {
         logInfo("Cleaning up AudioDeviceManager")
+        initTask?.cancel()
+        volumeListenerTask?.cancel()
         await removeMultiOutputDevice()
         removePropertyListener()
     }
@@ -422,7 +426,8 @@ final class AudioDeviceManager: ObservableObject {
 
         guard let volumeListenerBlock else { return }
 
-        Task {
+        volumeListenerTask?.cancel()
+        volumeListenerTask = Task {
             do {
                 let devices = try await audioSystem.fetchAllAudioDevices()
                 let compatible = devices.filter(\.isCompatibleOutputDevice)
