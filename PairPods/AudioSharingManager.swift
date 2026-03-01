@@ -161,18 +161,13 @@ final class AudioSharingManager: ObservableObject {
     }
 
     private func stopAudioSharing() async {
-        guard state == .active else {
-            logDebug("Stop request ignored - audio sharing not active (current state: \(state))")
-            return
-        }
-
         logInfo("Stopping audio sharing")
         state = .stopping
 
         await audioDeviceManager.restoreOutputDevice()
         await audioDeviceManager.removeMultiOutputDevice()
 
-        state = .inactive
+        await handleStateTransition(to: .inactive)
         logInfo("Audio sharing stopped successfully")
     }
 }
