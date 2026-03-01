@@ -33,8 +33,9 @@ extension NotificationCenter {
 @MainActor
 final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
+    private static let excludedDeviceUIDsKey = "excludedDeviceUIDs"
     private var originalOutputDeviceID: AudioDeviceID?
-    private var sharedDevices: (master: AudioDevice, second: AudioDevice)?
+    private var sharedDevices: [AudioDevice]?
     private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
     private var volumeListenerBlock: AudioObjectPropertyListenerBlock?
     private var volumeListenerDeviceIDs: [AudioDeviceID] = []
@@ -44,10 +45,14 @@ final class AudioDeviceManager: ObservableObject {
     private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
+    @Published var excludedDeviceUIDs: Set<String> = []
 
-    var sharedDeviceUIDs: (master: String, second: String)? {
-        guard let devices = sharedDevices else { return nil }
-        return (master: devices.master.uid, second: devices.second.uid)
+    var sharedDeviceUIDs: [String]? {
+        sharedDevices?.map(\.uid)
+    }
+
+    var selectedDevices: [AudioDevice] {
+        compatibleDevices.filter { !excludedDeviceUIDs.contains($0.uid) }
     }
 
     convenience init(shouldShowAlerts: Bool = true) {
@@ -57,12 +62,37 @@ final class AudioDeviceManager: ObservableObject {
     init(audioSystem: AudioSystemQuerying & AudioSystemCommanding, shouldShowAlerts: Bool = true) {
         self.audioSystem = audioSystem
         self.shouldShowAlerts = shouldShowAlerts
+        excludedDeviceUIDs = Self.loadExcludedDeviceUIDs()
         logDebug("Initializing AudioDeviceManager")
         setupAudioDeviceMonitoring()
         initTask = Task {
             await removeMultiOutputDevice()
             await initializeDevices()
         }
+    }
+
+    // MARK: - Device Exclusion
+
+    func setDeviceExcluded(_ uid: String, excluded: Bool) {
+        if excluded {
+            excludedDeviceUIDs.insert(uid)
+        } else {
+            excludedDeviceUIDs.remove(uid)
+        }
+        saveExcludedDeviceUIDs()
+    }
+
+    func isDeviceSelected(_ uid: String) -> Bool {
+        !excludedDeviceUIDs.contains(uid)
+    }
+
+    private static func loadExcludedDeviceUIDs() -> Set<String> {
+        let array = UserDefaults.standard.stringArray(forKey: excludedDeviceUIDsKey) ?? []
+        return Set(array)
+    }
+
+    private func saveExcludedDeviceUIDs() {
+        UserDefaults.standard.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
     }
 
     // MARK: - Public Methods
@@ -112,19 +142,20 @@ final class AudioDeviceManager: ObservableObject {
         let devices = try await audioSystem.fetchAllAudioDevices()
         logDevices(allDevices: devices, defaultDevice: defaultDevice)
 
-        let compatibleDevices = devices.filter(\.isCompatibleOutputDevice)
-        try validateCompatibleDevices(compatibleDevices)
+        let compatible = devices.filter(\.isCompatibleOutputDevice)
+        let selected = compatible.filter { !excludedDeviceUIDs.contains($0.uid) }
+        try validateSelectedDevices(selected)
 
-        let (masterDevice, secondDevice) = selectDevicesForSharing(compatibleDevices)
-        sharedDevices = (master: masterDevice, second: secondDevice)
+        let sorted = selectDevicesForSharing(selected)
+        sharedDevices = sorted
 
-        if masterDevice.sampleRate != secondDevice.sampleRate {
-            logInfo("Sample rate mismatch detected - Master: \(masterDevice.sampleRate)Hz, Second: \(secondDevice.sampleRate)Hz")
-            logInfo("Attempting to set second device '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz")
-            if audioSystem.setSampleRate(on: secondDevice.id, to: masterDevice.sampleRate) {
-                logInfo("Successfully set '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz")
+        let masterDevice = sorted[0]
+        for device in sorted.dropFirst() where device.sampleRate != masterDevice.sampleRate {
+            logInfo("Sample rate mismatch - syncing '\(device.name)' from \(device.sampleRate)Hz to \(masterDevice.sampleRate)Hz")
+            if audioSystem.setSampleRate(on: device.id, to: masterDevice.sampleRate) {
+                logInfo("Successfully set '\(device.name)' sample rate to \(masterDevice.sampleRate)Hz")
             } else {
-                logWarning("Failed to set '\(secondDevice.name)' sample rate to \(masterDevice.sampleRate)Hz — proceeding with drift compensation only")
+                logWarning("Failed to set '\(device.name)' sample rate to \(masterDevice.sampleRate)Hz — proceeding with drift compensation only")
             }
         }
 
@@ -132,7 +163,7 @@ final class AudioDeviceManager: ObservableObject {
             name: "PairPods Output Device",
             uid: multiOutputDeviceUID,
             masterUID: masterDevice.uid,
-            secondUID: secondDevice.uid
+            subDeviceUIDs: sorted.map(\.uid)
         )
         try await audioSystem.setDefaultOutputDevice(deviceID: deviceID)
         logInfo("Multi-output device setup completed successfully")
@@ -142,16 +173,20 @@ final class AudioDeviceManager: ObservableObject {
         logInfo("Restoring output device to previous state")
         do {
             let devices = try await audioSystem.fetchAllAudioDevices()
-            let masterDevice = sharedDevices?.master
-            let secondDevice = sharedDevices?.second
+            var restored = false
 
-            if let master = masterDevice, let current = devices.first(where: { $0.uid == master.uid }) {
-                try await audioSystem.setDefaultOutputDevice(deviceID: current.id)
-                logInfo("Restored to master device: \(master.name)")
-            } else if let second = secondDevice, let current = devices.first(where: { $0.uid == second.uid }) {
-                try await audioSystem.setDefaultOutputDevice(deviceID: current.id)
-                logInfo("Restored to second device: \(second.name)")
-            } else {
+            if let shared = sharedDevices {
+                for sharedDevice in shared {
+                    if let current = devices.first(where: { $0.uid == sharedDevice.uid }) {
+                        try await audioSystem.setDefaultOutputDevice(deviceID: current.id)
+                        logInfo("Restored to device: \(sharedDevice.name)")
+                        restored = true
+                        break
+                    }
+                }
+            }
+
+            if !restored {
                 try await restoreToBuiltInSpeakers()
                 logInfo("Restored to built-in speakers")
             }
@@ -185,9 +220,7 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     func isMultiOutputDeviceValid() async -> Bool {
-        guard let masterDevice = sharedDevices?.master,
-              let secondDevice = sharedDevices?.second
-        else {
+        guard let shared = sharedDevices, !shared.isEmpty else {
             return false
         }
         let devices: [AudioDevice]
@@ -197,8 +230,9 @@ final class AudioDeviceManager: ObservableObject {
             logWarning("Failed to fetch audio devices for validation: \(error.localizedDescription)")
             devices = []
         }
-        return devices.contains(where: { $0.id == masterDevice.id }) &&
-            devices.contains(where: { $0.id == secondDevice.id })
+        return shared.allSatisfy { sharedDevice in
+            devices.contains(where: { $0.uid == sharedDevice.uid })
+        }
     }
 
     /// Method to refresh the list of compatible devices
@@ -249,33 +283,41 @@ final class AudioDeviceManager: ObservableObject {
 
     // MARK: - Internal Methods (exposed for testing)
 
-    func validateCompatibleDevices(_ devices: [AudioDevice]) throws {
-        logInfo("Found \(devices.count) compatible devices")
+    func validateSelectedDevices(_ devices: [AudioDevice]) throws {
+        logInfo("Found \(devices.count) selected devices")
         guard devices.count >= 2 else {
-            let error = AppError.operationError("Not enough compatible devices connected")
+            let error = AppError.operationError("Not enough compatible devices selected")
             logError("Device validation failed", error: error)
             showBluetoothSettingsAlert()
             throw error
         }
     }
 
-    func selectDevicesForSharing(_ devices: [AudioDevice]) -> (AudioDevice, AudioDevice) {
-        // Prefer a pair that shares the same sample rate to avoid pitch-shifting
-        for i in 0 ..< devices.count {
-            for j in (i + 1) ..< devices.count {
-                if devices[i].sampleRate == devices[j].sampleRate {
-                    let pair = [devices[i], devices[j]].sorted { $0.sampleRate < $1.sampleRate }
-                    logInfo("Selected devices for sharing - Master: \(pair[0].name) (\(pair[0].sampleRate)Hz), Second: \(pair[1].name) (\(pair[1].sampleRate)Hz)")
-                    return (pair[0], pair[1])
+    func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
+        // Find the most common sample rate among the devices
+        var rateCount: [Double: Int] = [:]
+        for device in devices {
+            rateCount[device.sampleRate, default: 0] += 1
+        }
+        let maxCount = rateCount.values.max() ?? 0
+        let hasClearMajority = rateCount.values.count(where: { $0 == maxCount }) == 1
+        let majorityRate = hasClearMajority ? rateCount.first(where: { $0.value == maxCount })?.key : nil
+
+        // Sort: when a clear majority exists, those devices go first; otherwise sort ascending by rate
+        let sorted = devices.sorted { a, b in
+            if let majorityRate {
+                let aMatches = a.sampleRate == majorityRate
+                let bMatches = b.sampleRate == majorityRate
+                if aMatches != bMatches {
+                    return aMatches
                 }
             }
+            return a.sampleRate < b.sampleRate
         }
 
-        let sortedDevices = devices.sorted { $0.sampleRate < $1.sampleRate }
-        let masterDevice = sortedDevices[0]
-        let secondDevice = sortedDevices[1]
-        logInfo("Selected devices for sharing - Master: \(masterDevice.name) (\(masterDevice.sampleRate)Hz), Second: \(secondDevice.name) (\(secondDevice.sampleRate)Hz)")
-        return (masterDevice, secondDevice)
+        let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
+        logInfo("Selected devices for sharing - \(names)")
+        return sorted
     }
 
     // MARK: - Private Methods
@@ -336,7 +378,7 @@ final class AudioDeviceManager: ObservableObject {
 
         let alert = NSAlert()
         alert.messageText = "Not enough devices connected"
-        alert.informativeText = "Please make sure at least two Bluetooth audio devices are paired and connected to your Mac."
+        alert.informativeText = "Please make sure at least two Bluetooth audio devices are selected and connected to your Mac."
         alert.alertStyle = .warning
 
         alert.addButton(withTitle: "Open Bluetooth Settings")

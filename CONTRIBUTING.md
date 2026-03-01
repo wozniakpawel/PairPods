@@ -10,7 +10,7 @@ By participating in this project, you agree to maintain a welcoming, inclusive, 
 
 - macOS 15.0 (Sequoia) or later
 - Xcode 16.0 or later (required for project format compatibility)
-- Two compatible Bluetooth audio devices for testing
+- Two or more compatible Bluetooth audio devices for testing
 - [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) for code formatting
 
 ## Getting Started

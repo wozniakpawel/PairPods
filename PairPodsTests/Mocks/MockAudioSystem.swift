@@ -23,7 +23,7 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         let name: String
         let uid: String
         let masterUID: String
-        let secondUID: String
+        let subDeviceUIDs: [String]
     }
 
     struct SetSampleRateCall {
@@ -57,10 +57,10 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
     // MARK: - AudioSystemCommanding
 
     func createAggregateDevice(name: String, uid: String,
-                               masterUID: String, secondUID: String) async throws -> AudioDeviceID
+                               masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID
     {
         createAggregateCalls.append(CreateAggregateCall(
-            name: name, uid: uid, masterUID: masterUID, secondUID: secondUID
+            name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs
         ))
         return try createAggregateResult.get()
     }

@@ -85,15 +85,17 @@ final class AudioSharingManager: ObservableObject {
     private func handleDeviceDisconnect() async {
         guard state == .active else { return }
 
-        let savedUIDs = audioDeviceManager.sharedDeviceUIDs
         await stopSharing()
 
-        guard let uids = savedUIDs else {
-            logInfo("No shared device UIDs to watch for reconnection")
+        // Check if enough selected devices remain to immediately restart
+        await audioDeviceManager.refreshCompatibleDevices()
+        if audioDeviceManager.selectedDevices.count >= 2 {
+            logInfo("2+ selected devices still available, restarting sharing immediately")
+            await startSharing()
             return
         }
 
-        logInfo("Watching for reconnection of devices: \(uids.master), \(uids.second)")
+        logInfo("Watching for reconnection of selected devices")
         reconnectTask?.cancel()
         reconnectTask = Task {
             let deadline = Date().addingTimeInterval(reconnectTimeout)
@@ -104,12 +106,8 @@ final class AudioSharingManager: ObservableObject {
                 }
 
                 await audioDeviceManager.refreshCompatibleDevices()
-                let devices = audioDeviceManager.compatibleDevices
-                let bothPresent = devices.contains(where: { $0.uid == uids.master })
-                    && devices.contains(where: { $0.uid == uids.second })
-
-                if bothPresent {
-                    logInfo("Both devices reconnected, restarting audio sharing")
+                if audioDeviceManager.selectedDevices.count >= 2 {
+                    logInfo("Enough selected devices reconnected, restarting audio sharing")
                     await startSharing()
                     return
                 }

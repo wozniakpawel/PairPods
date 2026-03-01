@@ -10,6 +10,7 @@ import Testing
 @Suite("AudioDeviceManager Flow")
 struct AudioDeviceManagerFlowTests {
     @MainActor private func makeMockAndManager() -> (MockAudioSystem, AudioDeviceManager) {
+        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
         let mock = MockAudioSystem()
         let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
         return (mock, manager)

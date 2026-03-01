@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Share audio between two Bluetooth devices on your Mac with a single click
+  Share audio between multiple Bluetooth devices on your Mac with a single click
 </p>
 
 <p align="center">
@@ -32,15 +32,17 @@
 
 ## About
 
-PairPods is a macOS menubar app that lets you share audio between two Bluetooth devices simultaneously. Whether you're watching a movie with a friend on a train or sharing your favorite music, PairPods makes it easy to create shared listening experiences.
+PairPods is a macOS menubar app that lets you share audio between multiple Bluetooth devices simultaneously. Whether you're watching a movie with a friend on a train or sharing your favorite music, PairPods makes it easy to create shared listening experiences.
 
 ## Features
 
-- 🎧 Share audio between any two Bluetooth devices
+- 🎧 Share audio between two or more Bluetooth devices
+- 🎛️ Per-device toggles to choose which devices participate
 - 🎵 Compatible with all macOS-supported Bluetooth audio devices
 - 🔌 Simple plug-and-play interface
 - ⚡️ Quick access from the menubar
-- 🎚️ Adjust volume levels for each device separately 
+- 🎚️ Adjust volume levels for each device separately
+- 🔄 Auto-reconnect when devices disconnect
 - 🖥️ Native macOS app built with SwiftUI
 - 💯 Completely free and open source
 
@@ -48,7 +50,7 @@ PairPods is a macOS menubar app that lets you share audio between two Bluetooth 
 
 - macOS 13.5 (Ventura) or later
 - Both Apple and Intel silicon are supported
-- Two compatible Bluetooth audio devices
+- Two or more compatible Bluetooth audio devices
 
 ## Installation
 
@@ -72,10 +74,11 @@ Please note that PairPods uses Sparkle to check for and notify you of new update
 
 ## Usage
 
-1. Connect two Bluetooth devices to your Mac
+1. Connect two or more Bluetooth devices to your Mac
 2. Click on the PairPods menubar icon
-3. Toggle "Share Audio" to start sharing
-4. Toggle again to stop sharing
+3. Use the checkboxes to select which devices to include
+4. Toggle "Share Audio" to start sharing
+5. Toggle again to stop sharing
 
 ## Building from Source
 

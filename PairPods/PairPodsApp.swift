@@ -106,7 +106,7 @@ struct ContentView: View {
                 .toggleStyle(.switch)
             }
             .disabled(
-                audioDeviceManager.compatibleDevices.count < 2
+                audioDeviceManager.selectedDevices.count < 2
             )
             .accessibilityIdentifier("shareAudioToggle")
             .keyboardShortcut("s")
@@ -119,7 +119,8 @@ struct ContentView: View {
 
             DeviceVolumeView(
                 audioDeviceManager: audioDeviceManager,
-                volumeManager: audioVolumeManager
+                volumeManager: audioVolumeManager,
+                isSharingActive: audioSharingManager.isSharingAudio
             )
 
             Divider()

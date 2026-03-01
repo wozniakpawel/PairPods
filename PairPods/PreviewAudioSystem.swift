@@ -21,7 +21,7 @@ struct PreviewAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
     }
 
     func createAggregateDevice(name _: String, uid _: String,
-                               masterUID _: String, secondUID _: String) async throws -> AudioDeviceID
+                               masterUID _: String, subDeviceUIDs _: [String]) async throws -> AudioDeviceID
     {
         0
     }
