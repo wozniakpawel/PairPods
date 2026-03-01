@@ -3,12 +3,12 @@
     <channel>
         <title>PairPods</title>
         <item>
-            <title>0.4.0</title>
-            <pubDate>Sat, 28 Feb 2026 10:01:23 +0000</pubDate>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
+            <title>0.4.1</title>
+            <pubDate>Sun, 01 Mar 2026 12:07:14 +0000</pubDate>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.5</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/wozniakpawel/PairPods/releases/download/v0.4.0/PairPods-0.4.0.app.zip" length="2250944" type="application/octet-stream" sparkle:edSignature="16svlsl7Cby94tnloSQTtaLFmif6JM963AGnLi12Zmb6jBzsZmvl4qjXsBCb9fCdf7hHpvivWbD6kNcDanxpDw=="/>
+            <enclosure url="https://github.com/wozniakpawel/PairPods/releases/download/v0.4.1/PairPods-0.4.1.app.zip" length="2243256" type="application/octet-stream" sparkle:edSignature="CIPdVXkXF1kXFcmWyARo0pTFrfRDMvoN61ZTSOolHBe7Hja5h0T1GIhIk46vTlpF24qRC3Jn8lO4dRmQwe9mAA=="/>
         </item>
     </channel>
 </rss>
