@@ -121,10 +121,6 @@ struct ContentView: View {
                 audioDeviceManager: audioDeviceManager,
                 volumeManager: audioVolumeManager
             )
-            .disabled(
-                !audioSharingManager.isSharingAudio &&
-                    !audioDeviceManager.compatibleDevices.isEmpty
-            )
 
             Divider()
 
