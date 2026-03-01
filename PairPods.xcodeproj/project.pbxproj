@@ -25,6 +25,10 @@
 		E99A49F82D6C969A00F492A2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E99A49F72D6C969A00F492A2 /* Sparkle */; };
 		E99A49FA2D6CAA4900F492A2 /* SparkleUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = E99A49F92D6CAA4900F492A2 /* SparkleUpdater.swift */; };
 		E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = E9C1777A2C03EA950062C0E0 /* LaunchAtLogin */; };
+		AA0000012F000001000TESTS /* AudioSystemQuerying.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000012F000004000TESTS /* AudioSystemQuerying.swift */; };
+		AA0000022F000002000TESTS /* AudioSystemCommanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000022F000005000TESTS /* AudioSystemCommanding.swift */; };
+		AA0000032F000003000TESTS /* CoreAudioSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000032F000006000TESTS /* CoreAudioSystem.swift */; };
+		AA0000042F000007000PREVW /* PreviewAudioSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000042F00000A000PREVW /* PreviewAudioSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +61,10 @@
 		E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceManager.swift; sourceTree = "<group>"; };
 		E99A49F92D6CAA4900F492A2 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
 		E9B438DD2BA2C374005EB7A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AA0000012F000004000TESTS /* AudioSystemQuerying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSystemQuerying.swift; sourceTree = "<group>"; };
+		AA0000022F000005000TESTS /* AudioSystemCommanding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSystemCommanding.swift; sourceTree = "<group>"; };
+		AA0000032F000006000TESTS /* CoreAudioSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioSystem.swift; sourceTree = "<group>"; };
+		AA0000042F00000A000PREVW /* PreviewAudioSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewAudioSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -120,6 +128,10 @@
 				0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */,
 				E958DA092CAABF0D00A4FC9C /* AudioDevice.swift */,
 				E985A9C52B95975A005494FA /* AudioSharingManager.swift */,
+				AA0000012F000004000TESTS /* AudioSystemQuerying.swift */,
+				AA0000022F000005000TESTS /* AudioSystemCommanding.swift */,
+				AA0000032F000006000TESTS /* CoreAudioSystem.swift */,
+				AA0000042F00000A000PREVW /* PreviewAudioSystem.swift */,
 				E985A99B2B92F5A0005494FA /* Assets.xcassets */,
 				E985A9A02B92F5A0005494FA /* PairPods.entitlements */,
 				E985A99D2B92F5A0005494FA /* Preview Content */,
@@ -278,6 +290,10 @@
 				E99A49FA2D6CAA4900F492A2 /* SparkleUpdater.swift in Sources */,
 				0CF7B1D52DB6DD0300EEB3B7 /* MenuToggleItem.swift in Sources */,
 				E958DA0A2CAABF0D00A4FC9C /* AudioDevice.swift in Sources */,
+				AA0000012F000001000TESTS /* AudioSystemQuerying.swift in Sources */,
+				AA0000022F000002000TESTS /* AudioSystemCommanding.swift in Sources */,
+				AA0000032F000003000TESTS /* CoreAudioSystem.swift in Sources */,
+				AA0000042F000007000PREVW /* PreviewAudioSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -460,7 +476,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"PairPods/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
@@ -477,7 +493,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -494,7 +510,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"PairPods/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
@@ -511,7 +527,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

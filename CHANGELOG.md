@@ -2,6 +2,31 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.4.1] - 2026-02-28
+
+### Added
+- Automated test suite using Swift Testing framework
+- Same-sample-rate device pair preference to avoid pitch-shifting
+- Volume control now works without active sharing
+
+### Fixed
+- Fixed aggregate device cleanup on app termination
+- Fixed NotificationCenter observer leak in ContentView
+- Fixed volume listeners accumulating without removal
+- Fixed duplicate volume change notifications
+- Fixed use-after-free in volume change listener callback
+- Fixed incorrect comment about default volume fallback
+- Replaced fatalError with graceful fallback in SparkleUpdater
+- Match devices by UID instead of ID when restoring output
+
+### Changed
+- Cancel in-flight tasks on cleanup and re-entry for safer state transitions
+- Route stop transition through state machine for consistency
+- Use mock audio system in SwiftUI previews
+- Replaced deprecated APIs (onChange, NSApp.activate)
+- Conformed AudioDevice to Identifiable
+- Removed unused device state callback
+
 ## [0.4.0] - 2026-02-28
 
 ### Added

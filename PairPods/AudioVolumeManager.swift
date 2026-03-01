@@ -17,13 +17,15 @@ class AudioVolumeManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let defaultVolume: Float = 0.5
     private let volumeCacheKey = "PairPods.DeviceVolumes"
+    private let userDefaults: UserDefaults
 
     // Published properties for UI binding
     @Published private(set) var deviceVolumes: [AudioDeviceID: Float] = [:]
     @Published private(set) var lastKnownVolumes: [String: Float] = [:] // Cache by device UID
 
-    init(audioDeviceManager: AudioDeviceManager) {
+    init(audioDeviceManager: AudioDeviceManager, userDefaults: UserDefaults = .standard) {
         self.audioDeviceManager = audioDeviceManager
+        self.userDefaults = userDefaults
 
         // Load cached volumes from UserDefaults
         loadCachedVolumes()
@@ -96,14 +98,11 @@ class AudioVolumeManager: ObservableObject {
         await audioDeviceManager.setDeviceVolume(deviceID: deviceID, volume: volume)
     }
 
-    /// Get default volume for a device (either cached or 0.75 as fallback)
+    /// Get default volume for a device (either cached or 50% as fallback)
     func getDefaultVolume(for device: AudioDevice) -> Float {
-        // Try to return cached volume by device UID
         if let cachedVolume = lastKnownVolumes[device.uid] {
             return cachedVolume
         }
-
-        // Default to 75% volume if no cached value
         return defaultVolume
     }
 
@@ -133,12 +132,12 @@ class AudioVolumeManager: ObservableObject {
 
     /// Save volume cache to UserDefaults
     private func saveCachedVolumes() {
-        UserDefaults.standard.set(lastKnownVolumes, forKey: volumeCacheKey)
+        userDefaults.set(lastKnownVolumes, forKey: volumeCacheKey)
     }
 
     /// Load volume cache from UserDefaults
     private func loadCachedVolumes() {
-        if let savedVolumes = UserDefaults.standard.dictionary(forKey: volumeCacheKey) as? [String: Float] {
+        if let savedVolumes = userDefaults.dictionary(forKey: volumeCacheKey) as? [String: Float] {
             lastKnownVolumes = savedVolumes
         }
     }

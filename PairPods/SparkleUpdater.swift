@@ -11,30 +11,32 @@ import SwiftUI
 
 final class SparkleUpdater {
     static let shared = SparkleUpdater()
-    let updaterController: SPUUpdater
+    let updaterController: SPUUpdater?
 
     private init() {
         let driver = SPUStandardUserDriver(hostBundle: Bundle.main, delegate: nil)
         do {
-            updaterController = SPUUpdater(
+            let updater = SPUUpdater(
                 hostBundle: Bundle.main,
                 applicationBundle: Bundle.main,
                 userDriver: driver,
                 delegate: nil
             )
-            try updaterController.start()
+            try updater.start()
+            updaterController = updater
         } catch {
-            fatalError("Failed to initialize SPUUpdater: \(error)")
+            logError("Failed to initialize SPUUpdater", error: .systemError(error))
+            updaterController = nil
         }
     }
 
     func checkForUpdates() {
-        updaterController.checkForUpdates()
+        updaterController?.checkForUpdates()
     }
 
     var automaticallyChecksForUpdates: Bool {
-        get { updaterController.automaticallyChecksForUpdates }
-        set { updaterController.automaticallyChecksForUpdates = newValue }
+        get { updaterController?.automaticallyChecksForUpdates ?? false }
+        set { updaterController?.automaticallyChecksForUpdates = newValue }
     }
 }
 
@@ -81,7 +83,6 @@ struct AutomaticUpdatesToggle: View {
 extension UpdaterViewModel {
     func toggleAutomaticChecks(_ newValue: Bool) {
         automaticallyChecksForUpdates = newValue
-        // Notify any observers that the state has changed
         objectWillChange.send()
     }
 }

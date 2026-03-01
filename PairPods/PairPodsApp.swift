@@ -49,9 +49,7 @@ struct PairPodsApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_: Notification) {
-        Task {
-            await AppDependencies.shared.cleanup()
-        }
+        AppDependencies.shared.cleanupSync()
     }
 
     func applicationDidFinishLaunching(_: Notification) {
@@ -123,10 +121,6 @@ struct ContentView: View {
                 audioDeviceManager: audioDeviceManager,
                 volumeManager: audioVolumeManager
             )
-            .disabled(
-                !audioSharingManager.isSharingAudio &&
-                    !audioDeviceManager.compatibleDevices.isEmpty
-            )
 
             Divider()
 
@@ -186,22 +180,15 @@ struct ContentView: View {
                 await audioDeviceManager.refreshCompatibleDevices()
                 await audioVolumeManager.refreshAllVolumes()
             }
-
-            // Add observer for settings shortcut notification
-            NotificationCenter.default.addObserver(
-                forName: .showAboutWindow,
-                object: nil,
-                queue: .main
-            ) { _ in
-                showAboutWindow()
-            }
         }
-        .onChange(of: audioSharingManager.isSharingAudio) { isSharing in
+        .onReceive(NotificationCenter.default.publisher(for: .showAboutWindow)) { _ in
+            showAboutWindow()
+        }
+        .onReceive(audioSharingManager.$state) { newState in
+            guard newState == .active else { return }
             Task {
-                if isSharing {
-                    await audioDeviceManager.refreshCompatibleDevices()
-                    await audioVolumeManager.refreshAllVolumes()
-                }
+                await audioDeviceManager.refreshCompatibleDevices()
+                await audioVolumeManager.refreshAllVolumes()
             }
         }
     }
@@ -222,15 +209,23 @@ struct ContentView: View {
         }
 
         aboutWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }
 
 #Preview {
-    ContentView(
-        audioSharingManager: AudioSharingManager(audioDeviceManager: AudioDeviceManager()),
-        audioDeviceManager: AudioDeviceManager(),
-        audioVolumeManager: AudioVolumeManager(audioDeviceManager: AudioDeviceManager()),
+    let deviceManager = AudioDeviceManager(audioSystem: PreviewAudioSystem(), shouldShowAlerts: false)
+    let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
+    let volumeManager = AudioVolumeManager(audioDeviceManager: deviceManager)
+
+    return ContentView(
+        audioSharingManager: sharingManager,
+        audioDeviceManager: deviceManager,
+        audioVolumeManager: volumeManager,
         isMenuPresented: .constant(true)
     )
     .frame(maxWidth: 270)

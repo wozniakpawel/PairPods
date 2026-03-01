@@ -17,7 +17,7 @@ final class AudioSharingManager: ObservableObject {
     private let audioDeviceManager: AudioDeviceManager
     private var monitoringTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
-    private let reconnectTimeout: TimeInterval = 10
+    private let reconnectTimeout: TimeInterval
 
     var isSharingAudio: Bool {
         state == .active
@@ -31,9 +31,10 @@ final class AudioSharingManager: ObservableObject {
         }
     }
 
-    init(audioDeviceManager: AudioDeviceManager) {
+    init(audioDeviceManager: AudioDeviceManager, reconnectTimeout: TimeInterval = 10) {
         logDebug("Initializing AudioSharingManager")
         self.audioDeviceManager = audioDeviceManager
+        self.reconnectTimeout = reconnectTimeout
         setupMonitoring()
     }
 
@@ -160,18 +161,13 @@ final class AudioSharingManager: ObservableObject {
     }
 
     private func stopAudioSharing() async {
-        guard state == .active else {
-            logDebug("Stop request ignored - audio sharing not active (current state: \(state))")
-            return
-        }
-
         logInfo("Stopping audio sharing")
         state = .stopping
 
         await audioDeviceManager.restoreOutputDevice()
         await audioDeviceManager.removeMultiOutputDevice()
 
-        state = .inactive
+        await handleStateTransition(to: .inactive)
         logInfo("Audio sharing stopped successfully")
     }
 }

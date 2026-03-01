@@ -149,6 +149,33 @@ extension AudioObjectID {
         return true
     }
 
+    func removeVolumePropertyListener(listener: @escaping AudioObjectPropertyListenerBlock) {
+        guard var address = getVolumePropertyAddress() else { return }
+
+        AudioObjectRemovePropertyListenerBlock(self, &address, DispatchQueue.main, listener)
+
+        if address.mElement == 1 {
+            var rightChannelAddress = getPropertyAddress(
+                selector: kAudioDevicePropertyVolumeScalar,
+                scope: kAudioDevicePropertyScopeOutput,
+                element: 2
+            )
+            if AudioObjectHasProperty(self, &rightChannelAddress) {
+                AudioObjectRemovePropertyListenerBlock(self, &rightChannelAddress, DispatchQueue.main, listener)
+            }
+        }
+    }
+
+    func removeMutePropertyListener(listener: @escaping AudioObjectPropertyListenerBlock) {
+        var address = getPropertyAddress(
+            selector: kAudioDevicePropertyMute,
+            scope: kAudioDevicePropertyScopeOutput,
+            element: kAudioObjectPropertyElementMain
+        )
+        guard AudioObjectHasProperty(self, &address) else { return }
+        AudioObjectRemovePropertyListenerBlock(self, &address, DispatchQueue.main, listener)
+    }
+
     func addMutePropertyListener(listener: @escaping AudioObjectPropertyListenerBlock) -> Bool {
         var address = getPropertyAddress(
             selector: kAudioDevicePropertyMute,
@@ -305,7 +332,7 @@ extension AudioObjectID {
 
 // MARK: - AudioDevice Model
 
-struct AudioDevice: Sendable {
+struct AudioDevice: Sendable, Identifiable {
     let id: AudioDeviceID
     let uid: String
     let name: String
@@ -316,6 +343,15 @@ struct AudioDevice: Sendable {
     var isCompatibleOutputDevice: Bool {
         isOutputDevice && (transportType == kAudioDeviceTransportTypeBluetooth ||
             transportType == kAudioDeviceTransportTypeBluetoothLE)
+    }
+
+    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double) {
+        self.id = id
+        self.uid = uid
+        self.name = name
+        self.transportType = transportType
+        self.isOutputDevice = isOutputDevice
+        self.sampleRate = sampleRate
     }
 
     init?(deviceID: AudioDeviceID) async {
