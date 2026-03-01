@@ -117,5 +117,4 @@ struct AudioDeviceManagerFlowTests {
         #expect(mock.setDefaultOutputCalls.count == 1)
         #expect(mock.setDefaultOutputCalls.first == builtIn.id)
     }
-
 }
