@@ -44,16 +44,20 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
     }
 
     func createAggregateDevice(name: String, uid: String,
-                               masterUID: String, secondUID: String) async throws -> AudioDeviceID
+                               masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID
     {
         logDebug("Creating aggregate device")
+        let subDeviceList: [[String: Any]] = subDeviceUIDs.map { uid in
+            if uid == masterUID {
+                [kAudioSubDeviceUIDKey: uid]
+            } else {
+                [kAudioSubDeviceUIDKey: uid, kAudioSubDeviceDriftCompensationKey as String: 1]
+            }
+        }
         let desc: [String: Any] = [
             kAudioAggregateDeviceNameKey: name,
             kAudioAggregateDeviceUIDKey: uid,
-            kAudioAggregateDeviceSubDeviceListKey: [
-                [kAudioSubDeviceUIDKey: masterUID],
-                [kAudioSubDeviceUIDKey: secondUID, kAudioSubDeviceDriftCompensationKey as String: 1],
-            ],
+            kAudioAggregateDeviceSubDeviceListKey: subDeviceList,
             kAudioAggregateDeviceMasterSubDeviceKey: masterUID,
             kAudioAggregateDeviceIsStackedKey: 1,
         ]

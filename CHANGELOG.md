@@ -2,12 +2,25 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.5.0] - 2026-03-01
+
+### Added
+- Per-device share toggles — checkboxes next to each device let you choose which devices participate in sharing
+- N-device audio sharing — share audio between 2 or more Bluetooth devices simultaneously (no longer limited to exactly two)
+- Auto-rebuild when a device is toggled during active sharing
+- Automatic reconnection when enough selected devices remain after a disconnect (2+ selected devices restart sharing immediately without waiting for timeout)
+- Exclusion preferences persist across app launches
+
+### Changed
+- "Share Audio" toggle now disables when fewer than 2 devices are selected (previously checked compatible device count)
+- Device selection sorting now prioritizes the majority sample rate group to minimize pitch-shifting across multiple devices
+- Alert text updated to reference "selected" devices instead of "paired"
+
 ## [0.4.1] - 2026-02-28
 
 ### Added
 - Automated test suite using Swift Testing framework
 - Same-sample-rate device pair preference to avoid pitch-shifting
-- Volume control now works without active sharing
 
 ### Fixed
 - Fixed aggregate device cleanup on app termination
@@ -17,7 +30,6 @@ All notable changes to PairPods will be documented in this file.
 - Fixed use-after-free in volume change listener callback
 - Fixed incorrect comment about default volume fallback
 - Replaced fatalError with graceful fallback in SparkleUpdater
-- Match devices by UID instead of ID when restoring output
 
 ### Changed
 - Cancel in-flight tasks on cleanup and re-entry for safer state transitions
@@ -26,6 +38,8 @@ All notable changes to PairPods will be documented in this file.
 - Replaced deprecated APIs (onChange, NSApp.activate)
 - Conformed AudioDevice to Identifiable
 - Removed unused device state callback
+- Volume control now works without active sharing
+- Match devices by UID instead of ID when restoring output
 
 ## [0.4.0] - 2026-02-28
 

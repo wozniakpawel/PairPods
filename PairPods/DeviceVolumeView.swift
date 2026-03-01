@@ -11,9 +11,9 @@ import SwiftUI
 struct DeviceVolumeView: View {
     @ObservedObject var audioDeviceManager: AudioDeviceManager
     @ObservedObject var volumeManager: AudioVolumeManager
+    var isSharingActive: Bool = false
 
     private var sortedDevices: [AudioDevice] {
-        // Sort devices by ID
         audioDeviceManager.compatibleDevices.sorted { $0.id < $1.id }
     }
 
@@ -30,6 +30,15 @@ struct DeviceVolumeView: View {
                             set: { newValue in
                                 Task {
                                     await volumeManager.setVolume(for: device.id, volume: newValue)
+                                }
+                            }
+                        ),
+                        isSelected: Binding(
+                            get: { audioDeviceManager.isDeviceSelected(device.uid) },
+                            set: { newValue in
+                                audioDeviceManager.setDeviceExcluded(device.uid, excluded: !newValue)
+                                if isSharingActive {
+                                    NotificationCenter.default.postDeviceConfigurationChanged()
                                 }
                             }
                         )
@@ -55,6 +64,7 @@ struct DeviceVolumeView: View {
 struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
+    @Binding var isSelected: Bool
 
     private var cgFloatVolume: Binding<CGFloat> {
         Binding(
@@ -66,6 +76,10 @@ struct DeviceVolumeRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
+                Toggle("", isOn: $isSelected)
+                    .toggleStyle(.checkbox)
+                    .labelsHidden()
+
                 Image(systemName: deviceIcon)
                     .foregroundColor(.secondary)
 
@@ -123,7 +137,8 @@ struct NoDevicesView: View {
 
     return DeviceVolumeView(
         audioDeviceManager: deviceManager,
-        volumeManager: volumeManager
+        volumeManager: volumeManager,
+        isSharingActive: false
     )
     .frame(width: 270)
     .padding()
