@@ -2,6 +2,15 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.5.1] - 2026-03-02
+
+### Fixed
+- Fixed audio cutting out after a few seconds on some Bluetooth devices (e.g. AirPods 4) when sharing with a device at a different sample rate
+- Stopped forcing sample rate changes on Bluetooth devices — CoreAudio drift compensation handles rate differences more reliably
+
+### Changed
+- Master device (clock source) for the aggregate device is now the highest sample rate device, matching pre-v0.4 behavior
+
 ## [0.5.0] - 2026-03-01
 
 ### Added

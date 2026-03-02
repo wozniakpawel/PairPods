@@ -150,14 +150,6 @@ final class AudioDeviceManager: ObservableObject {
         sharedDevices = sorted
 
         let masterDevice = sorted[0]
-        for device in sorted.dropFirst() where device.sampleRate != masterDevice.sampleRate {
-            logInfo("Sample rate mismatch - syncing '\(device.name)' from \(device.sampleRate)Hz to \(masterDevice.sampleRate)Hz")
-            if audioSystem.setSampleRate(on: device.id, to: masterDevice.sampleRate) {
-                logInfo("Successfully set '\(device.name)' sample rate to \(masterDevice.sampleRate)Hz")
-            } else {
-                logWarning("Failed to set '\(device.name)' sample rate to \(masterDevice.sampleRate)Hz — proceeding with drift compensation only")
-            }
-        }
 
         let deviceID = try await audioSystem.createAggregateDevice(
             name: "PairPods Output Device",
@@ -303,7 +295,7 @@ final class AudioDeviceManager: ObservableObject {
         let hasClearMajority = rateCount.values.count(where: { $0 == maxCount }) == 1
         let majorityRate = hasClearMajority ? rateCount.first(where: { $0.value == maxCount })?.key : nil
 
-        // Sort: when a clear majority exists, those devices go first; otherwise sort ascending by rate
+        // Sort: when a clear majority exists, those devices go first; otherwise sort descending by rate
         let sorted = devices.sorted { a, b in
             if let majorityRate {
                 let aMatches = a.sampleRate == majorityRate
@@ -312,7 +304,7 @@ final class AudioDeviceManager: ObservableObject {
                     return aMatches
                 }
             }
-            return a.sampleRate < b.sampleRate
+            return a.sampleRate > b.sampleRate
         }
 
         let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
