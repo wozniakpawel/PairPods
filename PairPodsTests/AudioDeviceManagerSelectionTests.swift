@@ -15,16 +15,16 @@ struct AudioDeviceManagerSelectionTests {
         return AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
     }
 
-    @Test("Selects lowest sample rate device as master")
-    @MainActor func selectsLowestSampleRateAsMaster() {
+    @Test("Selects highest sample rate device as master")
+    @MainActor func selectsHighestSampleRateAsMaster() {
         let manager = makeManager()
         let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, sampleRate: 48000)
         let bt2 = AudioDeviceFixtures.bluetoothLEDevice(id: 2, sampleRate: 44100)
 
         let result = manager.selectDevicesForSharing([bt1, bt2])
         #expect(result.count == 2)
-        // With 2 devices at different rates, each rate has count 1 — ties broken by ascending rate
-        #expect(result[0].sampleRate <= result[1].sampleRate)
+        // With 2 devices at different rates, each rate has count 1 — ties broken by descending rate
+        #expect(result[0].sampleRate >= result[1].sampleRate)
     }
 
     @Test("Equal sample rates returns two distinct devices")

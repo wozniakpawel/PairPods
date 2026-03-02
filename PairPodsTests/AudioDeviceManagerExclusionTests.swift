@@ -178,8 +178,8 @@ struct AudioDeviceManagerExclusionTests {
         #expect(mock.setDefaultOutputCalls.contains(999))
     }
 
-    @Test("Setup with 3 devices syncs sample rates for non-master devices")
-    @MainActor func setupSyncsSampleRatesForMultipleDevices() async throws {
+    @Test("Setup with 3 devices does not force sample rate changes")
+    @MainActor func setupDoesNotForceSampleRateChangesForMultipleDevices() async throws {
         let (mock, manager) = makeMockAndManager()
         let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
         let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
@@ -189,8 +189,7 @@ struct AudioDeviceManagerExclusionTests {
 
         try await manager.setupMultiOutputDevice()
 
-        // The 44100 device should be synced to the master's rate (48000, the majority)
-        #expect(mock.setSampleRateCalls.count == 1)
-        #expect(mock.setSampleRateCalls.first?.sampleRate == 48000)
+        // No sample rate changes should be forced — drift compensation handles differences
+        #expect(mock.setSampleRateCalls.isEmpty)
     }
 }

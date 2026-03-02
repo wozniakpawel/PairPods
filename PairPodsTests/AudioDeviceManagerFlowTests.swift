@@ -30,8 +30,8 @@ struct AudioDeviceManagerFlowTests {
         #expect(mock.setDefaultOutputCalls.contains(999))
     }
 
-    @Test("Setup syncs sample rates when they differ")
-    @MainActor func setupSyncsSampleRates() async throws {
+    @Test("Setup does not force sample rate changes on Bluetooth devices")
+    @MainActor func setupDoesNotForceSampleRateChanges() async throws {
         let (mock, manager) = makeMockAndManager()
         let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 44100)
         let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
@@ -40,8 +40,7 @@ struct AudioDeviceManagerFlowTests {
 
         try await manager.setupMultiOutputDevice()
 
-        #expect(mock.setSampleRateCalls.count == 1)
-        #expect(mock.setSampleRateCalls.first?.sampleRate == 44100)
+        #expect(mock.setSampleRateCalls.isEmpty)
     }
 
     @Test("Setup skips sync when rates match")
@@ -83,7 +82,7 @@ struct AudioDeviceManagerFlowTests {
     @Test("Restore falls back to master device")
     @MainActor func restoreFallsBackToMaster() async throws {
         let (mock, manager) = makeMockAndManager()
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
+        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 44100)
         let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
         mock.devicesToReturn = [bt1, bt2]
         mock.createAggregateResult = .success(999)
@@ -94,8 +93,8 @@ struct AudioDeviceManagerFlowTests {
         await manager.restoreOutputDevice()
 
         #expect(mock.setDefaultOutputCalls.count == 1)
-        // Should restore to master (lowest rate, sorted first)
-        #expect(mock.setDefaultOutputCalls.first == bt1.id)
+        // Should restore to master (highest rate, sorted first)
+        #expect(mock.setDefaultOutputCalls.first == bt2.id)
     }
 
     @Test("Restore falls back to built-in speakers when shared devices gone")
