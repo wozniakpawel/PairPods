@@ -7,39 +7,44 @@ import CoreAudio
 @testable import PairPods
 import Testing
 
+private let blackHoleRequired = ConditionTrait.enabled(
+    if: BlackHoleHelper.isAvailable,
+    "BlackHole 2ch and 16ch must be installed (brew install --cask blackhole-2ch blackhole-16ch)"
+)
+
 @Suite("Audio Regression Tests")
 struct AudioRegressionTests {
-    @Test("Same-rate BT Classic — AirPods Pro 2 + Sony XM5")
+    @Test("Same-rate BT Classic — AirPods Pro 2 + Sony XM5", blackHoleRequired)
     @MainActor func sameRateBTClassic() async throws {
         try await runDevicePairTest(profileA: .airPodsPro2, profileB: .sonyXM5)
     }
 
-    @Test("Mixed-rate BLE slave — AirPods Pro 2 + Generic BLE earbuds")
+    @Test("Mixed-rate BLE slave — AirPods Pro 2 + Generic BLE earbuds", blackHoleRequired)
     @MainActor func mixedRateBLESlave() async throws {
         try await runDevicePairTest(profileA: .airPodsPro2, profileB: .genericBLEEarbuds)
     }
 
-    @Test("Mixed-rate BLE master — AirPods 4 + Cheap BT earbuds")
+    @Test("Mixed-rate BLE master — AirPods 4 + Cheap BT earbuds", blackHoleRequired)
     @MainActor func mixedRateBLEMaster() async throws {
         try await runDevicePairTest(profileA: .airPods4, profileB: .cheapBTEarbuds)
     }
 
-    @Test("Both BLE same rate — AirPods 4 + AirPods 4")
+    @Test("Both BLE same rate — AirPods 4 + AirPods 4", blackHoleRequired)
     @MainActor func bothBLESameRate() async throws {
         try await runDevicePairTest(profileA: .airPods4, profileB: .airPods4)
     }
 
-    @Test("Both BLE diff rate — AirPods 4 + Generic BLE earbuds")
+    @Test("Both BLE diff rate — AirPods 4 + Generic BLE earbuds", blackHoleRequired)
     @MainActor func bothBLEDiffRate() async throws {
         try await runDevicePairTest(profileA: .airPods4, profileB: .genericBLEEarbuds)
     }
 
-    @Test("BT Classic mixed rate — AirPods 1 + Cheap BT earbuds")
+    @Test("BT Classic mixed rate — AirPods 1 + Cheap BT earbuds", blackHoleRequired)
     @MainActor func btClassicMixedRate() async throws {
         try await runDevicePairTest(profileA: .airPods1, profileB: .cheapBTEarbuds)
     }
 
-    @Test("Three devices — Pro 2 + AirPods 4 + Generic BLE")
+    @Test("Three devices — Pro 2 + AirPods 4 + Generic BLE", blackHoleRequired)
     @MainActor func threeDevices() async throws {
         // Limited by having only 2 BlackHole drivers — test the most critical pair
         try await runDevicePairTest(profileA: .airPodsPro2, profileB: .airPods4)
@@ -49,11 +54,8 @@ struct AudioRegressionTests {
 
     @MainActor
     private func runDevicePairTest(profileA: DeviceProfile, profileB: DeviceProfile) async throws {
-        // 1. Skip if BlackHole unavailable
-        let blackHoleDevices = try #require(
-            await BlackHoleHelper.discoverDevices(),
-            "BlackHole 2ch and 16ch must be installed (brew install --cask blackhole-2ch blackhole-16ch)"
-        )
+        // 1. Discover BlackHole devices
+        let blackHoleDevices = try #require(await BlackHoleHelper.discoverDevices())
 
         // 2. Configure BlackHole devices to match profile sample rates
         let rateSetA = BlackHoleHelper.setSampleRate(on: blackHoleDevices.device2ch.id, to: profileA.nominalSampleRate)
@@ -80,7 +82,6 @@ struct AudioRegressionTests {
         defer {
             Task { @MainActor in
                 await manager.cleanup()
-                // Restore original output device
                 if let originalID = originalDefaultID {
                     try? await CoreAudioSystem().setDefaultOutputDevice(deviceID: originalID)
                 }
@@ -99,7 +100,6 @@ struct AudioRegressionTests {
             for violation in simulatedSystem.rateChangeViolations {
                 Issue.record(Comment(rawValue: violation))
             }
-            // Clean up before returning
             await manager.removeMultiOutputDevice()
             if let originalID = originalDefaultID {
                 try? await CoreAudioSystem().setDefaultOutputDevice(deviceID: originalID)
