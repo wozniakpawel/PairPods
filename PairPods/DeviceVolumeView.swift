@@ -7,14 +7,23 @@
 
 import MacControlCenterUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DeviceVolumeView: View {
     @ObservedObject var audioDeviceManager: AudioDeviceManager
     @ObservedObject var volumeManager: AudioVolumeManager
     var isSharingActive: Bool = false
 
+    @State private var draggingUID: String? = nil
+
     private var sortedDevices: [AudioDevice] {
-        audioDeviceManager.compatibleDevices.sorted { $0.name < $1.name }
+        let order = audioDeviceManager.loadDeviceOrder()
+        return audioDeviceManager.compatibleDevices.sorted { a, b in
+            let ai = order.firstIndex(of: a.uid) ?? Int.max
+            let bi = order.firstIndex(of: b.uid) ?? Int.max
+            if ai != bi { return ai < bi }
+            return a.name < b.name
+        }
     }
 
     var body: some View {
@@ -41,6 +50,25 @@ struct DeviceVolumeView: View {
                                     NotificationCenter.default.postDeviceConfigurationChanged()
                                 }
                             }
+                        ),
+                        isDragging: draggingUID == device.uid
+                    )
+                    .onDrag {
+                        draggingUID = device.uid
+                        return NSItemProvider(object: device.uid as NSString)
+                    }
+                    .onDrop(
+                        of: [.plainText],
+                        delegate: DeviceDropDelegate(
+                            targetUID: device.uid,
+                            draggingUID: $draggingUID,
+                            devices: sortedDevices,
+                            onReorder: { newOrder in
+                                audioDeviceManager.saveDeviceOrder(newOrder.map(\.uid))
+                                if isSharingActive {
+                                    NotificationCenter.default.postDeviceConfigurationChanged()
+                                }
+                            }
                         )
                     )
                 }
@@ -55,10 +83,52 @@ struct DeviceVolumeView: View {
     }
 }
 
+// MARK: - Drop Delegate
+
+private struct DeviceDropDelegate: DropDelegate {
+    let targetUID: String
+    @Binding var draggingUID: String?
+    let devices: [AudioDevice]
+    let onReorder: ([AudioDevice]) -> Void
+
+    func performDrop(info _: DropInfo) -> Bool {
+        guard let dragging = draggingUID, dragging != targetUID else {
+            draggingUID = nil
+            return false
+        }
+        var reordered = devices
+        guard
+            let fromIndex = reordered.firstIndex(where: { $0.uid == dragging }),
+            let toIndex = reordered.firstIndex(where: { $0.uid == targetUID })
+        else {
+            draggingUID = nil
+            return false
+        }
+        let item = reordered.remove(at: fromIndex)
+        reordered.insert(item, at: toIndex)
+        onReorder(reordered)
+        draggingUID = nil
+        return true
+    }
+
+    func dropEntered(info _: DropInfo) {}
+
+    func dropUpdated(info _: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func validateDrop(info _: DropInfo) -> Bool {
+        draggingUID != nil
+    }
+}
+
+// MARK: - Device Row
+
 struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
     @Binding var isSelected: Bool
+    var isDragging: Bool = false
 
     private var cgFloatVolume: Binding<CGFloat> {
         Binding(
@@ -70,6 +140,11 @@ struct DeviceVolumeRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .padding(.trailing, 2)
+
                 Toggle("", isOn: $isSelected)
                     .toggleStyle(.checkbox)
                     .labelsHidden()
@@ -104,6 +179,7 @@ struct DeviceVolumeRowView: View {
             MenuVolumeSlider(value: cgFloatVolume)
         }
         .padding(.vertical, 2)
+        .opacity(isDragging ? 0.5 : 1.0)
     }
 
     /// Determine icon based on device type

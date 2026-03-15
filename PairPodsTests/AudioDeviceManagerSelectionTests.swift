@@ -7,10 +7,10 @@ import CoreAudio
 @testable import PairPods
 import Testing
 
-@Suite("AudioDeviceManager Selection")
 struct AudioDeviceManagerSelectionTests {
     @MainActor private func makeManager() -> AudioDeviceManager {
         UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
+        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
         let mock = MockAudioSystem()
         return AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
     }
@@ -102,5 +102,75 @@ struct AudioDeviceManagerSelectionTests {
         #expect(result[0].sampleRate == 48000)
         #expect(result[1].sampleRate == 48000)
         #expect(result[0].id != result[1].id)
+    }
+
+    // MARK: - Device Order
+
+    @Test("saveDeviceOrder persists to UserDefaults")
+    @MainActor func saveDeviceOrderPersists() {
+        let manager = makeManager()
+        manager.saveDeviceOrder(["uid-b", "uid-a", "uid-c"])
+        let stored = UserDefaults.standard.stringArray(forKey: "PairPods.DeviceOrder") ?? []
+        #expect(stored == ["uid-b", "uid-a", "uid-c"])
+        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+    }
+
+    @Test("loadDeviceOrder returns empty array when nothing saved")
+    @MainActor func loadDeviceOrderReturnsEmptyWhenNotSet() {
+        let manager = makeManager()
+        #expect(manager.loadDeviceOrder() == [])
+    }
+
+    @Test("loadDeviceOrder returns saved order")
+    @MainActor func loadDeviceOrderReturnsSavedOrder() {
+        UserDefaults.standard.set(["uid-z", "uid-x"], forKey: "PairPods.DeviceOrder")
+        let mock = MockAudioSystem()
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        #expect(manager.loadDeviceOrder() == ["uid-z", "uid-x"])
+        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+    }
+
+    @Test("selectDevicesForSharing uses user order when saved")
+    @MainActor func selectDevicesForSharingUsesUserOrder() {
+        let manager = makeManager()
+        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "uid-a", sampleRate: 48000)
+        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "uid-b", sampleRate: 96000)
+        let bt3 = AudioDeviceFixtures.bluetoothDevice(id: 3, uid: "uid-c", sampleRate: 44100)
+        // Save order: c, a, b  — should override the sample-rate smart sort
+        manager.saveDeviceOrder(["uid-c", "uid-a", "uid-b"])
+
+        let result = manager.selectDevicesForSharing([bt1, bt2, bt3])
+        #expect(result[0].uid == "uid-c")
+        #expect(result[1].uid == "uid-a")
+        #expect(result[2].uid == "uid-b")
+        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+    }
+
+    @Test("selectDevicesForSharing falls back to sample rate sort when no user order")
+    @MainActor func selectDevicesForSharingFallsBackToSampleRateSort() {
+        let manager = makeManager()
+        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "uid-a", sampleRate: 44100)
+        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "uid-b", sampleRate: 96000)
+
+        let result = manager.selectDevicesForSharing([bt1, bt2])
+        // No user order: highest sample rate first
+        #expect(result[0].uid == "uid-b")
+        #expect(result[1].uid == "uid-a")
+    }
+
+    @Test("selectDevicesForSharing places unknown-order devices last")
+    @MainActor func selectDevicesForSharingPlacesUnknownDevicesLast() {
+        let manager = makeManager()
+        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "uid-a", sampleRate: 48000)
+        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "uid-b", sampleRate: 48000)
+        let bt3 = AudioDeviceFixtures.bluetoothDevice(id: 3, uid: "uid-new", sampleRate: 48000)
+        // Only a and b are in the saved order; uid-new is a new device
+        manager.saveDeviceOrder(["uid-b", "uid-a"])
+
+        let result = manager.selectDevicesForSharing([bt1, bt2, bt3])
+        #expect(result[0].uid == "uid-b")
+        #expect(result[1].uid == "uid-a")
+        #expect(result[2].uid == "uid-new")
+        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
     }
 }

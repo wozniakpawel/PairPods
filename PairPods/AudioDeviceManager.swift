@@ -34,6 +34,7 @@ extension NotificationCenter {
 final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
     private static let excludedDeviceUIDsKey = "excludedDeviceUIDs"
+    private static let deviceOrderKey = "PairPods.DeviceOrder"
     private var originalOutputDeviceID: AudioDeviceID?
     private var sharedDevices: [AudioDevice]?
     private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
@@ -93,6 +94,17 @@ final class AudioDeviceManager: ObservableObject {
 
     private func saveExcludedDeviceUIDs() {
         UserDefaults.standard.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
+    }
+
+    // MARK: - Device Order
+
+    func saveDeviceOrder(_ uids: [String]) {
+        UserDefaults.standard.set(uids, forKey: Self.deviceOrderKey)
+        logDebug("Saved device order: \(uids)")
+    }
+
+    func loadDeviceOrder() -> [String] {
+        UserDefaults.standard.stringArray(forKey: Self.deviceOrderKey) ?? []
     }
 
     // MARK: - Public Methods
@@ -286,7 +298,21 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
-        // Find the most common sample rate among the devices
+        // If user has defined a preferred order, use it (first device = master clock)
+        let userOrder = loadDeviceOrder()
+        if !userOrder.isEmpty {
+            let sorted = devices.sorted { a, b in
+                let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
+                let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
+                if ai != bi { return ai < bi }
+                return a.name < b.name
+            }
+            let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
+            logInfo("Selected devices for sharing (user order) - \(names)")
+            return sorted
+        }
+
+        // Fallback: find the most common sample rate among the devices
         var rateCount: [Double: Int] = [:]
         for device in devices {
             rateCount[device.sampleRate, default: 0] += 1
