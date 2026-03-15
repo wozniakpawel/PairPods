@@ -19,7 +19,7 @@ struct DeviceVolumeView: View {
 
     private var masterUID: String? {
         let order = audioDeviceManager.loadDeviceOrder()
-        return order.first
+        return order.first ?? sortedDevices.first?.uid
     }
 
     var body: some View {
@@ -53,6 +53,9 @@ struct DeviceVolumeView: View {
                             order.removeAll { $0 == device.uid }
                             order.insert(device.uid, at: 0)
                             audioDeviceManager.saveDeviceOrder(order)
+                            if isSharingActive {
+                                NotificationCenter.default.postDeviceConfigurationChanged()
+                            }
                         }
                     )
                 }
