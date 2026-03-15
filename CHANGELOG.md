@@ -5,7 +5,7 @@ All notable changes to PairPods will be documented in this file.
 ## [0.6.0] - 2026-03-15
 
 ### Added
-- Configurable reconnect timeout — choose Off, 5 s, 10 s, 30 s or 60 s in the menu
+- Configurable reconnect timeout — choose Off, 5 s, 10 s or 30 s in the menu
 - Per-device sample rate badge — see each device's nominal sample rate (e.g. 44.1 kHz) in the device list to understand when rate mismatch may cause artefacts
 - Master device selection — tap the crown icon next to any device to set it as the master clock for the aggregate
 - Battery level display — shows battery percentage next to each device when available (device-dependent)

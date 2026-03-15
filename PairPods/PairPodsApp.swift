@@ -140,11 +140,10 @@ struct ContentView: View {
                     Text("5s").tag(5.0)
                     Text("10s").tag(10.0)
                     Text("30s").tag(30.0)
-                    Text("60s").tag(60.0)
                 }
                 .labelsHidden()
                 .pickerStyle(.segmented)
-                .frame(width: 180)
+                .frame(width: 155)
             }
             .padding(.horizontal, -10)
             .padding(.vertical, -4)

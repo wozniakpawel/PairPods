@@ -8,9 +8,16 @@ import CoreAudio
 import Testing
 
 struct AudioSharingManagerReconnectTests {
+    private static let timeoutKey = "PairPods.ReconnectTimeout"
+
+    init() {
+        UserDefaults.standard.removeObject(forKey: Self.timeoutKey)
+    }
+
     @Test("Disconnect stops sharing and attempts reconnection")
     @MainActor func disconnectStopsSharingAndReconnects() async throws {
-        UserDefaults.standard.set(1.0, forKey: "PairPods.ReconnectTimeout")
+        defer { UserDefaults.standard.removeObject(forKey: Self.timeoutKey) }
+        UserDefaults.standard.set(1.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
@@ -37,7 +44,8 @@ struct AudioSharingManagerReconnectTests {
 
     @Test("Reconnection gives up after timeout when devices don't reappear")
     @MainActor func reconnectionGivesUpAfterTimeout() async throws {
-        UserDefaults.standard.set(0.3, forKey: "PairPods.ReconnectTimeout")
+        defer { UserDefaults.standard.removeObject(forKey: Self.timeoutKey) }
+        UserDefaults.standard.set(0.3, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)

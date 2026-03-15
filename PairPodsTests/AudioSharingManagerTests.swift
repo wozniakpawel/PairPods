@@ -8,9 +8,15 @@ import CoreAudio
 import Testing
 
 struct AudioSharingManagerTests {
+    private static let timeoutKey = "PairPods.ReconnectTimeout"
+
+    init() {
+        UserDefaults.standard.removeObject(forKey: Self.timeoutKey)
+    }
+
     @MainActor private func makeManagerAndMock() -> (AudioSharingManager, MockAudioSystem, AudioDeviceManager) {
         UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
-        UserDefaults.standard.set(0.5, forKey: "PairPods.ReconnectTimeout")
+        UserDefaults.standard.set(0.5, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)

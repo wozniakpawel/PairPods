@@ -14,13 +14,7 @@ struct DeviceVolumeView: View {
     var isSharingActive: Bool = false
 
     private var sortedDevices: [AudioDevice] {
-        let order = audioDeviceManager.loadDeviceOrder()
-        return audioDeviceManager.compatibleDevices.sorted { a, b in
-            let ai = order.firstIndex(of: a.uid) ?? Int.max
-            let bi = order.firstIndex(of: b.uid) ?? Int.max
-            if ai != bi { return ai < bi }
-            return a.name < b.name
-        }
+        audioDeviceManager.compatibleDevices.sorted { $0.name < $1.name }
     }
 
     private var masterUID: String? {
@@ -59,9 +53,6 @@ struct DeviceVolumeView: View {
                             order.removeAll { $0 == device.uid }
                             order.insert(device.uid, at: 0)
                             audioDeviceManager.saveDeviceOrder(order)
-                            if isSharingActive {
-                                NotificationCenter.default.postDeviceConfigurationChanged()
-                            }
                         }
                     )
                 }

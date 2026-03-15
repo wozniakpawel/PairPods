@@ -100,6 +100,7 @@ final class AudioDeviceManager: ObservableObject {
 
     func saveDeviceOrder(_ uids: [String]) {
         UserDefaults.standard.set(uids, forKey: Self.deviceOrderKey)
+        objectWillChange.send()
         logDebug("Saved device order: \(uids)")
     }
 
