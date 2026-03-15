@@ -2,6 +2,25 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.6.0] - 2026-03-15
+
+### Added
+- Configurable reconnect timeout — choose 5 s, 10 s, 30 s or 60 s in the menu
+- Per-device sample rate badge — see each device's nominal sample rate (e.g. 44.1 kHz) in the device list to understand when rate mismatch may cause artefacts
+- User-defined device order — drag devices in the menu to set your preferred order; the first device becomes the master clock for the aggregate
+- Battery level display — shows battery percentage next to each device when available (device-dependent)
+- "Open Bluetooth Settings" shortcut now appears when only one device is connected, not just when no devices are connected
+
+### Fixed
+- Removed redundant device refresh on every menu open (was firing twice per open)
+- Device list no longer reorders after a device reconnects (now sorted alphabetically by name)
+- `AudioVolumeManager` is now correctly marked `final`
+- Removed unnecessary `async` wrapper from internal volume query
+- UID-to-device lookups now use the dedicated CoreAudio property instead of full device enumeration
+- `MenuToggleItem` no longer has a confusing duplicate write path via both binding and action
+- Log messages containing device names are now redacted in Console.app (use `%{private}` formatting)
+- About window now uses SwiftUI's `openWindow` environment action — no risk of duplicate windows
+
 ## [0.5.1] - 2026-03-02
 
 ### Fixed
