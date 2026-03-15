@@ -14,7 +14,7 @@ struct DeviceVolumeView: View {
     var isSharingActive: Bool = false
 
     private var sortedDevices: [AudioDevice] {
-        audioDeviceManager.compatibleDevices.sorted { $0.id < $1.id }
+        audioDeviceManager.compatibleDevices.sorted { $0.name < $1.name }
     }
 
     var body: some View {
