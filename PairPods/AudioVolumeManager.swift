@@ -11,7 +11,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class AudioVolumeManager: ObservableObject {
+final class AudioVolumeManager: ObservableObject {
     // AudioDeviceManager reference for device access
     private let audioDeviceManager: AudioDeviceManager
     private var cancellables = Set<AnyCancellable>()
