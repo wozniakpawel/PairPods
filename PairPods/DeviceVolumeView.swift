@@ -52,12 +52,6 @@ struct DeviceVolumeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: audioDeviceManager.compatibleDevices.count)
-        .onAppear {
-            Task {
-                await audioDeviceManager.refreshCompatibleDevices()
-                await volumeManager.refreshAllVolumes()
-            }
-        }
     }
 }
 
