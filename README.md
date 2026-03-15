@@ -43,7 +43,7 @@ PairPods is a macOS menubar app that lets you share audio between multiple Bluet
 - ⚡️ Quick access from the menubar
 - 🎚️ Adjust volume levels for each device separately
 - 🔄 Auto-reconnect when devices disconnect
-- ⏱️ Configurable auto-reconnect timeout (5 s to 60 s)
+- ⏱️ Configurable auto-reconnect timeout (Off, 5 s, 10 s or 30 s)
 - 🔊 See each device's sample rate to understand audio quality and mismatch
 - 🔋 Battery level display when supported by the device
 - 👑 Set any device as the master clock with one click

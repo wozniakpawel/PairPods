@@ -18,7 +18,6 @@ All notable changes to PairPods will be documented in this file.
 - Removed unnecessary `async` wrapper from internal volume query
 - UID-to-device lookups now use the dedicated CoreAudio property instead of full device enumeration
 - `MenuToggleItem` no longer has a confusing duplicate write path via both binding and action
-- Log messages containing device names are now redacted in Console.app (use `%{private}` formatting)
 - About window now uses SwiftUI's `openWindow` environment action — no risk of duplicate windows
 
 ## [0.5.1] - 2026-03-02
