@@ -73,9 +73,12 @@ struct DeviceVolumeView: View {
                     )
                 }
                 if audioDeviceManager.compatibleDevices.count == 1 {
-                    Text("Connect more devices to share audio")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                    MenuCommand("Open Bluetooth Settings...") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .padding(.horizontal, -14)
                 }
             }
         }
