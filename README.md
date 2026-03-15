@@ -46,7 +46,7 @@ PairPods is a macOS menubar app that lets you share audio between multiple Bluet
 - ⏱️ Configurable auto-reconnect timeout (5 s to 60 s)
 - 🔊 See each device's sample rate to understand audio quality and mismatch
 - 🔋 Battery level display when supported by the device
-- 🔀 Drag to reorder devices — sets your preferred master clock
+- 👑 Set any device as the master clock with one click
 - 🖥️ Native macOS app built with SwiftUI
 - 💯 Completely free and open source
 
@@ -101,7 +101,7 @@ git clone https://github.com/wozniakpawel/PairPods.git
 
 ## Known Limitations
 
-- **Audio pitch shifting between devices with different sample rates**: When two Bluetooth devices have different native sample rates (e.g., 44,100 Hz vs 48,000 Hz), audio may sound pitch-shifted or warped on one device. PairPods now shows each device's sample rate in the menu so you can identify mismatches. If you experience pitch shifting, try using two devices of the same model or brand, as they are more likely to share the same native sample rate. You can also drag devices to reorder them — the first device becomes the master clock.
+- **Audio pitch shifting between devices with different sample rates**: When two Bluetooth devices have different native sample rates (e.g., 44,100 Hz vs 48,000 Hz), audio may sound pitch-shifted or warped on one device. PairPods now shows each device's sample rate in the menu so you can identify mismatches. If you experience pitch shifting, try using two devices of the same model or brand, as they are more likely to share the same native sample rate. You can also tap the crown icon to set a device as the master clock.
 
 ## Contributing
 

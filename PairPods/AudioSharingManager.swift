@@ -98,6 +98,11 @@ final class AudioSharingManager: ObservableObject {
             return
         }
 
+        guard reconnectTimeout > 0 else {
+            logInfo("Reconnect disabled, staying inactive")
+            return
+        }
+
         logInfo("Watching for reconnection of selected devices")
         reconnectTask?.cancel()
         reconnectTask = Task {
