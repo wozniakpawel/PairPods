@@ -17,7 +17,7 @@ final class AudioSharingManager: ObservableObject {
     private let audioDeviceManager: AudioDeviceManager
     private var monitoringTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
-    private let reconnectTimeout: TimeInterval
+    var reconnectTimeout: TimeInterval
 
     var isSharingAudio: Bool {
         state == .active

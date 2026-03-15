@@ -76,6 +76,7 @@ struct ContentView: View {
     @ObservedObject private var audioVolumeManager: AudioVolumeManager
     @Binding private var isMenuPresented: Bool
     @Environment(\.openWindow) private var openWindow
+    @AppStorage("PairPods.ReconnectTimeout") private var reconnectTimeout: Double = 10.0
 
     init(
         audioSharingManager: AudioSharingManager,
@@ -128,6 +129,24 @@ struct ContentView: View {
             )
 
             Divider()
+
+            HStack {
+                Text("Reconnect")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                Spacer()
+                Picker("", selection: $reconnectTimeout) {
+                    Text("5s").tag(5.0)
+                    Text("10s").tag(10.0)
+                    Text("30s").tag(30.0)
+                    Text("60s").tag(60.0)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 140)
+            }
+            .padding(.horizontal, 2)
+            .accessibilityIdentifier("reconnectTimeoutPicker")
 
             LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
@@ -205,6 +224,9 @@ struct ContentView: View {
                 await audioDeviceManager.refreshCompatibleDevices()
                 audioVolumeManager.refreshAllVolumes()
             }
+        }
+        .onChange(of: reconnectTimeout) { newValue in
+            audioSharingManager.reconnectTimeout = newValue
         }
     }
 }
