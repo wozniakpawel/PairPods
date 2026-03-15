@@ -14,7 +14,11 @@ struct DeviceVolumeView: View {
     var isSharingActive: Bool = false
 
     private var sortedDevices: [AudioDevice] {
-        audioDeviceManager.compatibleDevices.sorted { $0.id < $1.id }
+        audioDeviceManager.compatibleDevices.sorted { $0.name < $1.name }
+    }
+
+    private var masterUID: String? {
+        audioDeviceManager.masterDeviceUID(for: audioDeviceManager.compatibleDevices)
     }
 
     var body: some View {
@@ -41,30 +45,41 @@ struct DeviceVolumeView: View {
                                     NotificationCenter.default.postDeviceConfigurationChanged()
                                 }
                             }
-                        )
+                        ),
+                        isMaster: device.uid == masterUID,
+                        onSetMaster: {
+                            var order = sortedDevices.map(\.uid)
+                            order.removeAll { $0 == device.uid }
+                            order.insert(device.uid, at: 0)
+                            audioDeviceManager.saveDeviceOrder(order)
+                            if isSharingActive {
+                                NotificationCenter.default.postDeviceConfigurationChanged()
+                            }
+                        }
                     )
                 }
                 if audioDeviceManager.compatibleDevices.count == 1 {
-                    Text("Connect more devices to share audio")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                    MenuCommand("Open Bluetooth Settings...") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .padding(.horizontal, -14)
                 }
             }
         }
         .animation(.easeInOut(duration: 0.2), value: audioDeviceManager.compatibleDevices.count)
-        .onAppear {
-            Task {
-                await audioDeviceManager.refreshCompatibleDevices()
-                await volumeManager.refreshAllVolumes()
-            }
-        }
     }
 }
+
+// MARK: - Device Row
 
 struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
     @Binding var isSelected: Bool
+    var isMaster: Bool = false
+    var onSetMaster: (() -> Void)?
 
     private var cgFloatVolume: Binding<CGFloat> {
         Binding(
@@ -87,7 +102,27 @@ struct DeviceVolumeRowView: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
 
+                if let battery = device.batteryLevel {
+                    BatteryLevelView(level: battery)
+                }
+
                 Spacer()
+
+                Text(formatSampleRate(device.sampleRate))
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(Color.secondary.opacity(0.12))
+                    .cornerRadius(3)
+
+                Button(action: { onSetMaster?() }) {
+                    Image(systemName: isMaster ? "crown.fill" : "crown")
+                        .font(.system(size: 11))
+                        .foregroundColor(isMaster ? .orange : .secondary.opacity(0.4))
+                }
+                .buttonStyle(.plain)
+                .help(isMaster ? "Master clock device" : "Set as master clock")
 
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 12))
@@ -116,6 +151,40 @@ struct DeviceVolumeRowView: View {
             return "headphones"
         } else {
             return "speaker.wave.2"
+        }
+    }
+
+    private func formatSampleRate(_ rate: Double) -> String {
+        String(format: "%.1f kHz", rate / 1000)
+    }
+}
+
+struct BatteryLevelView: View {
+    let level: Int
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: batteryIconName)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            Text("\(level)%")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var batteryIconName: String {
+        switch level {
+        case 0 ..< 13:
+            "battery.0percent"
+        case 13 ..< 38:
+            "battery.25percent"
+        case 38 ..< 63:
+            "battery.50percent"
+        case 63 ..< 88:
+            "battery.75percent"
+        default:
+            "battery.100percent"
         }
     }
 }

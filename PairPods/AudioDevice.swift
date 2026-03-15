@@ -7,6 +7,7 @@
 
 import CoreAudio
 import Foundation
+import IOKit
 
 // MARK: - CoreAudio Extensions
 
@@ -332,26 +333,28 @@ extension AudioObjectID {
 
 // MARK: - AudioDevice Model
 
-struct AudioDevice: Sendable, Identifiable {
+struct AudioDevice: Identifiable {
     let id: AudioDeviceID
     let uid: String
     let name: String
     let transportType: UInt32
     let isOutputDevice: Bool
     let sampleRate: Double
+    let batteryLevel: Int?
 
     var isCompatibleOutputDevice: Bool {
         isOutputDevice && (transportType == kAudioDeviceTransportTypeBluetooth ||
             transportType == kAudioDeviceTransportTypeBluetoothLE)
     }
 
-    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double) {
+    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, batteryLevel: Int? = nil) {
         self.id = id
         self.uid = uid
         self.name = name
         self.transportType = transportType
         self.isOutputDevice = isOutputDevice
         self.sampleRate = sampleRate
+        self.batteryLevel = batteryLevel
     }
 
     init?(deviceID: AudioDeviceID) async {
@@ -371,8 +374,42 @@ struct AudioDevice: Sendable, Identifiable {
         let streamConfiguration = deviceID.getStreamConfiguration(scope: kAudioObjectPropertyScopeOutput)
         isOutputDevice = streamConfiguration?.mNumberBuffers ?? 0 > 0
         self.sampleRate = sampleRate
+        batteryLevel = AudioDevice.queryBatteryLevel(for: name)
 
         logDebug("Initialized AudioDevice: \(name) (ID: \(deviceID))")
+    }
+
+    // MARK: - Battery Level Query
+
+    /// Query the IORegistry for the battery percentage of a Bluetooth device by name.
+    /// Looks for `AppleDeviceManagementHIDEventService` entries that expose a `BatteryPercent` key.
+    static func queryBatteryLevel(for deviceName: String) -> Int? {
+        let matching = IOServiceMatching("AppleDeviceManagementHIDEventService")
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator) == KERN_SUCCESS else {
+            return nil
+        }
+        defer { IOObjectRelease(iterator) }
+
+        var service = IOIteratorNext(iterator)
+        while service != 0 {
+            defer {
+                IOObjectRelease(service)
+                service = IOIteratorNext(iterator)
+            }
+            var properties: Unmanaged<CFMutableDictionary>?
+            guard IORegistryEntryCreateCFProperties(service, &properties, kCFAllocatorDefault, 0) == KERN_SUCCESS,
+                  let dict = properties?.takeRetainedValue() as? [String: Any]
+            else { continue }
+
+            if let product = dict["Product"] as? String,
+               product == deviceName,
+               let battery = dict["BatteryPercent"] as? Int
+            {
+                return battery
+            }
+        }
+        return nil
     }
 }
 
@@ -412,7 +449,7 @@ extension AudioDevice {
 }
 
 extension AudioDevice {
-    func getVolume() async -> Float? {
+    func getVolume() -> Float? {
         id.getVolume()
     }
 

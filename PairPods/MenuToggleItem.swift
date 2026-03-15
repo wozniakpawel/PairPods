@@ -8,21 +8,19 @@
 import SwiftUI
 
 struct MenuToggleItem<Label: View>: View {
-    let isOn: Binding<Bool>
-    let action: () -> Void
+    @Binding var isOn: Bool
     let label: () -> Label
 
     @State private var isHovered = false
     @Environment(\.colorScheme) private var colorScheme
 
-    init(isOn: Binding<Bool>, action: @escaping () -> Void, @ViewBuilder label: @escaping () -> Label) {
-        self.isOn = isOn
-        self.action = action
+    init(isOn: Binding<Bool>, @ViewBuilder label: @escaping () -> Label) {
+        _isOn = isOn
         self.label = label
     }
 
     var body: some View {
-        Button(action: action) {
+        Button(action: { isOn.toggle() }) {
             ZStack {
                 if isHovered {
                     RoundedRectangle(cornerRadius: 4)
@@ -32,7 +30,7 @@ struct MenuToggleItem<Label: View>: View {
                     label()
                         .foregroundColor(.primary)
                     Spacer()
-                    Toggle("", isOn: .constant(isOn.wrappedValue))
+                    Toggle("", isOn: .constant(isOn))
                         .labelsHidden()
                         .toggleStyle(.checkbox)
                         .allowsHitTesting(false)
@@ -59,8 +57,7 @@ struct MenuToggleItem<Label: View>: View {
 
 #Preview {
     MenuToggleItem(
-        isOn: .constant(false),
-        action: {}
+        isOn: .constant(false)
     ) {
         Text("Menu Toggle Item")
     }

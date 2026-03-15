@@ -7,13 +7,20 @@ import CoreAudio
 @testable import PairPods
 import Testing
 
-@Suite("AudioSharingManager Reconnect")
 struct AudioSharingManagerReconnectTests {
+    private static let timeoutKey = "PairPods.ReconnectTimeout"
+
+    init() {
+        UserDefaults.standard.removeObject(forKey: Self.timeoutKey)
+    }
+
     @Test("Disconnect stops sharing and attempts reconnection")
     @MainActor func disconnectStopsSharingAndReconnects() async throws {
+        defer { UserDefaults.standard.removeObject(forKey: Self.timeoutKey) }
+        UserDefaults.standard.set(1.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, reconnectTimeout: 1.0)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
 
         let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
         let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
@@ -37,9 +44,11 @@ struct AudioSharingManagerReconnectTests {
 
     @Test("Reconnection gives up after timeout when devices don't reappear")
     @MainActor func reconnectionGivesUpAfterTimeout() async throws {
+        defer { UserDefaults.standard.removeObject(forKey: Self.timeoutKey) }
+        UserDefaults.standard.set(0.3, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, reconnectTimeout: 0.3)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
 
         let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
         let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)

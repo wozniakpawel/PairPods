@@ -64,11 +64,7 @@ struct AutomaticUpdatesToggle: View {
                     updaterViewModel.automaticallyChecksForUpdates = $0
                     updaterViewModel.objectWillChange.send()
                 }
-            ),
-            action: {
-                updaterViewModel.automaticallyChecksForUpdates.toggle()
-                updaterViewModel.objectWillChange.send()
-            }
+            )
         ) {
             Text("Automatic Updates")
         }

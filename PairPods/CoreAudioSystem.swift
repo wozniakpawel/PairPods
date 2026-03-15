@@ -34,13 +34,22 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
     }
 
     func fetchDeviceID(deviceUID: String) async -> AudioDeviceID? {
-        do {
-            let devices = try await fetchAllAudioDevices()
-            return devices.first { $0.uid == deviceUID }?.id
-        } catch {
-            logError("Failed to fetch device ID", error: .systemError(error))
-            return nil
-        }
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyTranslateUIDToDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var uid = deviceUID as CFString
+        var deviceID = AudioDeviceID(0)
+        var propSize = UInt32(MemoryLayout<AudioDeviceID>.size)
+        let status = AudioObjectGetPropertyData(
+            systemObject, &address,
+            UInt32(MemoryLayout<CFString>.size), &uid,
+            &propSize, &deviceID
+        )
+        guard status == noErr, deviceID != kAudioObjectUnknown else { return nil }
+        return deviceID
     }
 
     func createAggregateDevice(name: String, uid: String,

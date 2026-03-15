@@ -34,6 +34,7 @@ extension NotificationCenter {
 final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
     private static let excludedDeviceUIDsKey = "excludedDeviceUIDs"
+    private static let deviceOrderKey = "PairPods.DeviceOrder"
     private var originalOutputDeviceID: AudioDeviceID?
     private var sharedDevices: [AudioDevice]?
     private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
@@ -93,6 +94,30 @@ final class AudioDeviceManager: ObservableObject {
 
     private func saveExcludedDeviceUIDs() {
         UserDefaults.standard.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
+    }
+
+    // MARK: - Device Order
+
+    func saveDeviceOrder(_ uids: [String]) {
+        UserDefaults.standard.set(uids, forKey: Self.deviceOrderKey)
+        objectWillChange.send()
+        logDebug("Saved device order: \(uids)")
+    }
+
+    func loadDeviceOrder() -> [String] {
+        UserDefaults.standard.stringArray(forKey: Self.deviceOrderKey) ?? []
+    }
+
+    /// Returns the UID of the device that would be master clock for the given devices,
+    /// using the same logic as `selectDevicesForSharing`.
+    func masterDeviceUID(for devices: [AudioDevice]) -> String? {
+        let userOrder = loadDeviceOrder()
+        if !userOrder.isEmpty {
+            // User order: first device in saved order that's in the list
+            return userOrder.first { uid in devices.contains { $0.uid == uid } }
+        }
+        // Fallback: same sample-rate logic as selectDevicesForSharing
+        return selectDevicesForSharing(devices).first?.uid
     }
 
     // MARK: - Public Methods
@@ -239,9 +264,9 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     /// Get volume for a specific device
-    func getDeviceVolume(deviceID: AudioDeviceID) async -> Float {
+    func getDeviceVolume(deviceID: AudioDeviceID) -> Float {
         if let device = compatibleDevices.first(where: { $0.id == deviceID }),
-           let volume = await device.getVolume()
+           let volume = device.getVolume()
         {
             return volume
         }
@@ -286,7 +311,21 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
-        // Find the most common sample rate among the devices
+        // If user has defined a preferred order, use it (first device = master clock)
+        let userOrder = loadDeviceOrder()
+        if !userOrder.isEmpty {
+            let sorted = devices.sorted { a, b in
+                let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
+                let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
+                if ai != bi { return ai < bi }
+                return a.name < b.name
+            }
+            let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
+            logInfo("Selected devices for sharing (user order) - \(names)")
+            return sorted
+        }
+
+        // Fallback: find the most common sample rate among the devices
         var rateCount: [Double: Int] = [:]
         for device in devices {
             rateCount[device.sampleRate, default: 0] += 1
@@ -411,7 +450,7 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     /// Handle a volume change event for a specific device
-    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: AudioObjectPropertyAddress) async {
+    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: AudioObjectPropertyAddress) {
         logInfo("Volume change detected for device ID: \(deviceID)")
         logDebug("Property address: selector=\(propertyAddress.mSelector), scope=\(propertyAddress.mScope), element=\(propertyAddress.mElement)")
 
@@ -420,7 +459,7 @@ final class AudioDeviceManager: ObservableObject {
             return
         }
 
-        if let newVolume = await device.getVolume() {
+        if let newVolume = device.getVolume() {
             logInfo("Volume for \(device.name): \(newVolume)")
             NotificationCenter.default.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
         } else {
@@ -464,7 +503,7 @@ final class AudioDeviceManager: ObservableObject {
             volumeListenerBlock = { [weak self] inObjectID, propertyAddress in
                 let address = propertyAddress.pointee
                 Task { @MainActor in
-                    await self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: address)
+                    self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: address)
                 }
             }
         }

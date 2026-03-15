@@ -11,7 +11,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class AudioVolumeManager: ObservableObject {
+final class AudioVolumeManager: ObservableObject {
     // AudioDeviceManager reference for device access
     private let audioDeviceManager: AudioDeviceManager
     private var cancellables = Set<AnyCancellable>()
@@ -34,9 +34,7 @@ class AudioVolumeManager: ObservableObject {
         audioDeviceManager.$compatibleDevices
             .receive(on: RunLoop.main)
             .sink { [weak self] devices in
-                Task {
-                    await self?.refreshVolumesForDevices(devices)
-                }
+                self?.refreshVolumesForDevices(devices)
             }
             .store(in: &cancellables)
 
@@ -70,16 +68,14 @@ class AudioVolumeManager: ObservableObject {
             .store(in: &cancellables)
 
         // Initial volume refresh
-        Task {
-            await refreshAllVolumes()
-        }
+        refreshAllVolumes()
     }
 
     // MARK: - Public Methods
 
     /// Refresh volumes for all compatible devices
-    func refreshAllVolumes() async {
-        await refreshVolumesForDevices(audioDeviceManager.compatibleDevices)
+    func refreshAllVolumes() {
+        refreshVolumesForDevices(audioDeviceManager.compatibleDevices)
     }
 
     /// Set volume for a specific device
@@ -109,9 +105,9 @@ class AudioVolumeManager: ObservableObject {
     // MARK: - Private Methods
 
     /// Refresh volumes for a specific set of devices
-    private func refreshVolumesForDevices(_ devices: [AudioDevice]) async {
+    private func refreshVolumesForDevices(_ devices: [AudioDevice]) {
         for device in devices {
-            if let volume = await device.getVolume() {
+            if let volume = device.getVolume() {
                 // Update the in-memory volume map
                 deviceVolumes[device.id] = volume
 

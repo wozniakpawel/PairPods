@@ -14,10 +14,14 @@ enum AudioSharingState: String {
 
 @MainActor
 final class AudioSharingManager: ObservableObject {
+    private static let reconnectTimeoutKey = "PairPods.ReconnectTimeout"
     private let audioDeviceManager: AudioDeviceManager
     private var monitoringTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
-    private let reconnectTimeout: TimeInterval
+
+    var reconnectTimeout: TimeInterval {
+        UserDefaults.standard.object(forKey: Self.reconnectTimeoutKey) as? TimeInterval ?? 10.0
+    }
 
     var isSharingAudio: Bool {
         state == .active
@@ -31,10 +35,9 @@ final class AudioSharingManager: ObservableObject {
         }
     }
 
-    init(audioDeviceManager: AudioDeviceManager, reconnectTimeout: TimeInterval = 10) {
+    init(audioDeviceManager: AudioDeviceManager) {
         logDebug("Initializing AudioSharingManager")
         self.audioDeviceManager = audioDeviceManager
-        self.reconnectTimeout = reconnectTimeout
         setupMonitoring()
     }
 
@@ -92,6 +95,11 @@ final class AudioSharingManager: ObservableObject {
         if audioDeviceManager.selectedDevices.count >= 2 {
             logInfo("2+ selected devices still available, restarting sharing immediately")
             await startSharing()
+            return
+        }
+
+        guard reconnectTimeout > 0 else {
+            logInfo("Reconnect disabled, staying inactive")
             return
         }
 

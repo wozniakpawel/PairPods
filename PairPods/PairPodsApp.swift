@@ -44,6 +44,11 @@ struct PairPodsApp: App {
         }
         .menuBarExtraStyle(.window)
         .menuBarExtraAccess(isPresented: $isMenuPresented)
+
+        Window("About PairPods", id: "about") {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
     }
 }
 
@@ -70,8 +75,8 @@ struct ContentView: View {
     @ObservedObject private var audioDeviceManager: AudioDeviceManager
     @ObservedObject private var audioVolumeManager: AudioVolumeManager
     @Binding private var isMenuPresented: Bool
-    @State private var settingsWindow: NSWindow?
-    @State private var aboutWindow: NSWindow?
+    @Environment(\.openWindow) private var openWindow
+    @AppStorage("PairPods.ReconnectTimeout") private var reconnectTimeout: Double = 10.0
 
     init(
         audioSharingManager: AudioSharingManager,
@@ -125,6 +130,23 @@ struct ContentView: View {
 
             Divider()
 
+            HStack {
+                Text("Reconnect")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                Spacer()
+                Picker("", selection: $reconnectTimeout) {
+                    Text("Off").tag(0.0)
+                    Text("5s").tag(5.0)
+                    Text("10s").tag(10.0)
+                    Text("30s").tag(30.0)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+            }
+            .accessibilityIdentifier("reconnectTimeoutPicker")
+
             LaunchAtLoginMenuToggle()
                 .accessibilityIdentifier("launchAtLoginToggle")
                 .padding(.horizontal, -10)
@@ -138,7 +160,12 @@ struct ContentView: View {
             Divider()
 
             MenuCommand {
-                showAboutWindow()
+                openWindow(id: "about")
+                if #available(macOS 14.0, *) {
+                    NSApp.activate()
+                } else {
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             } label: {
                 HStack {
                     Text("About")
@@ -179,41 +206,23 @@ struct ContentView: View {
         .onAppear {
             Task {
                 await audioDeviceManager.refreshCompatibleDevices()
-                await audioVolumeManager.refreshAllVolumes()
+                audioVolumeManager.refreshAllVolumes()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showAboutWindow)) { _ in
-            showAboutWindow()
+            openWindow(id: "about")
+            if #available(macOS 14.0, *) {
+                NSApp.activate()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
         .onReceive(audioSharingManager.$state) { newState in
             guard newState == .active else { return }
             Task {
                 await audioDeviceManager.refreshCompatibleDevices()
-                await audioVolumeManager.refreshAllVolumes()
+                audioVolumeManager.refreshAllVolumes()
             }
-        }
-    }
-
-    private func showAboutWindow() {
-        if aboutWindow?.isVisible != true {
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 300, height: 300),
-                styleMask: [.titled, .closable],
-                backing: .buffered,
-                defer: false
-            )
-            window.center()
-            window.title = "About PairPods"
-            window.contentView = NSHostingView(rootView: AboutView())
-            window.isReleasedWhenClosed = false
-            aboutWindow = window
-        }
-
-        aboutWindow?.makeKeyAndOrderFront(nil)
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
         }
     }
 }
@@ -258,8 +267,7 @@ struct LaunchAtLoginMenuToggle: View {
         )
 
         MenuToggleItem(
-            isOn: binding,
-            action: { LaunchAtLogin.isEnabled.toggle() }
+            isOn: binding
         ) {
             Text("Launch at Login")
         }
