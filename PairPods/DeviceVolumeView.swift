@@ -87,6 +87,14 @@ struct DeviceVolumeRowView: View {
 
                 Spacer()
 
+                Text(formatSampleRate(device.sampleRate))
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(Color.secondary.opacity(0.12))
+                    .cornerRadius(3)
+
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
@@ -115,6 +123,10 @@ struct DeviceVolumeRowView: View {
         } else {
             return "speaker.wave.2"
         }
+    }
+
+    private func formatSampleRate(_ rate: Double) -> String {
+        String(format: "%.1f kHz", rate / 1000)
     }
 }
 
