@@ -19,8 +19,7 @@ final class AppDependencies: ObservableObject {
 
     init() {
         audioDeviceManager = AudioDeviceManager(shouldShowAlerts: true)
-        let reconnectTimeout = UserDefaults.standard.object(forKey: "PairPods.ReconnectTimeout") as? TimeInterval ?? 10.0
-        audioSharingManager = AudioSharingManager(audioDeviceManager: audioDeviceManager, reconnectTimeout: reconnectTimeout)
+        audioSharingManager = AudioSharingManager(audioDeviceManager: audioDeviceManager)
         audioVolumeManager = AudioVolumeManager(audioDeviceManager: audioDeviceManager)
     }
 

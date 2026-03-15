@@ -7,13 +7,13 @@ import CoreAudio
 @testable import PairPods
 import Testing
 
-@Suite("AudioSharingManager")
 struct AudioSharingManagerTests {
     @MainActor private func makeManagerAndMock() -> (AudioSharingManager, MockAudioSystem, AudioDeviceManager) {
         UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
+        UserDefaults.standard.set(0.5, forKey: "PairPods.ReconnectTimeout")
         let mock = MockAudioSystem()
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, reconnectTimeout: 0.5)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
         return (sharingManager, mock, deviceManager)
     }
 

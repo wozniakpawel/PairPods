@@ -45,7 +45,7 @@ struct PairPodsApp: App {
         .menuBarExtraStyle(.window)
         .menuBarExtraAccess(isPresented: $isMenuPresented)
 
-        WindowGroup("About PairPods", id: "about") {
+        Window("About PairPods", id: "about") {
             AboutView()
         }
         .windowResizability(.contentSize)
@@ -224,9 +224,6 @@ struct ContentView: View {
                 await audioDeviceManager.refreshCompatibleDevices()
                 audioVolumeManager.refreshAllVolumes()
             }
-        }
-        .onChange(of: reconnectTimeout) { newValue in
-            audioSharingManager.reconnectTimeout = newValue
         }
     }
 }

@@ -7,14 +7,11 @@
 
 import MacControlCenterUI
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct DeviceVolumeView: View {
     @ObservedObject var audioDeviceManager: AudioDeviceManager
     @ObservedObject var volumeManager: AudioVolumeManager
     var isSharingActive: Bool = false
-
-    @State private var draggingUID: String? = nil
 
     private var sortedDevices: [AudioDevice] {
         let order = audioDeviceManager.loadDeviceOrder()
@@ -24,6 +21,11 @@ struct DeviceVolumeView: View {
             if ai != bi { return ai < bi }
             return a.name < b.name
         }
+    }
+
+    private var masterUID: String? {
+        let order = audioDeviceManager.loadDeviceOrder()
+        return order.first
     }
 
     var body: some View {
@@ -51,25 +53,16 @@ struct DeviceVolumeView: View {
                                 }
                             }
                         ),
-                        isDragging: draggingUID == device.uid
-                    )
-                    .onDrag {
-                        draggingUID = device.uid
-                        return NSItemProvider(object: device.uid as NSString)
-                    }
-                    .onDrop(
-                        of: [.plainText],
-                        delegate: DeviceDropDelegate(
-                            targetUID: device.uid,
-                            draggingUID: $draggingUID,
-                            devices: sortedDevices,
-                            onReorder: { newOrder in
-                                audioDeviceManager.saveDeviceOrder(newOrder.map(\.uid))
-                                if isSharingActive {
-                                    NotificationCenter.default.postDeviceConfigurationChanged()
-                                }
+                        isMaster: device.uid == masterUID,
+                        onSetMaster: {
+                            var order = sortedDevices.map(\.uid)
+                            order.removeAll { $0 == device.uid }
+                            order.insert(device.uid, at: 0)
+                            audioDeviceManager.saveDeviceOrder(order)
+                            if isSharingActive {
+                                NotificationCenter.default.postDeviceConfigurationChanged()
                             }
-                        )
+                        }
                     )
                 }
                 if audioDeviceManager.compatibleDevices.count == 1 {
@@ -86,52 +79,14 @@ struct DeviceVolumeView: View {
     }
 }
 
-// MARK: - Drop Delegate
-
-private struct DeviceDropDelegate: DropDelegate {
-    let targetUID: String
-    @Binding var draggingUID: String?
-    let devices: [AudioDevice]
-    let onReorder: ([AudioDevice]) -> Void
-
-    func performDrop(info _: DropInfo) -> Bool {
-        guard let dragging = draggingUID, dragging != targetUID else {
-            draggingUID = nil
-            return false
-        }
-        var reordered = devices
-        guard
-            let fromIndex = reordered.firstIndex(where: { $0.uid == dragging }),
-            let toIndex = reordered.firstIndex(where: { $0.uid == targetUID })
-        else {
-            draggingUID = nil
-            return false
-        }
-        let item = reordered.remove(at: fromIndex)
-        reordered.insert(item, at: toIndex)
-        onReorder(reordered)
-        draggingUID = nil
-        return true
-    }
-
-    func dropEntered(info _: DropInfo) {}
-
-    func dropUpdated(info _: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func validateDrop(info _: DropInfo) -> Bool {
-        draggingUID != nil
-    }
-}
-
 // MARK: - Device Row
 
 struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
     @Binding var isSelected: Bool
-    var isDragging: Bool = false
+    var isMaster: Bool = false
+    var onSetMaster: (() -> Void)?
 
     private var cgFloatVolume: Binding<CGFloat> {
         Binding(
@@ -143,11 +98,6 @@ struct DeviceVolumeRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary.opacity(0.5))
-                    .padding(.trailing, 2)
-
                 Toggle("", isOn: $isSelected)
                     .toggleStyle(.checkbox)
                     .labelsHidden()
@@ -173,6 +123,14 @@ struct DeviceVolumeRowView: View {
                     .background(Color.secondary.opacity(0.12))
                     .cornerRadius(3)
 
+                Button(action: { onSetMaster?() }) {
+                    Image(systemName: isMaster ? "crown.fill" : "crown")
+                        .font(.system(size: 11))
+                        .foregroundColor(isMaster ? .orange : .secondary.opacity(0.4))
+                }
+                .buttonStyle(.plain)
+                .help(isMaster ? "Master clock device" : "Set as master clock")
+
                 Text("\(Int(volume * 100))%")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
@@ -182,7 +140,6 @@ struct DeviceVolumeRowView: View {
             MenuVolumeSlider(value: cgFloatVolume)
         }
         .padding(.vertical, 2)
-        .opacity(isDragging ? 0.5 : 1.0)
     }
 
     /// Determine icon based on device type
