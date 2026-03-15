@@ -81,6 +81,10 @@ struct DeviceVolumeRowView: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
 
+                if let battery = device.batteryLevel {
+                    BatteryLevelView(level: battery)
+                }
+
                 Spacer()
 
                 Text("\(Int(volume * 100))%")
@@ -110,6 +114,36 @@ struct DeviceVolumeRowView: View {
             return "headphones"
         } else {
             return "speaker.wave.2"
+        }
+    }
+}
+
+struct BatteryLevelView: View {
+    let level: Int
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: batteryIconName)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            Text("\(level)%")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var batteryIconName: String {
+        switch level {
+        case 0 ..< 13:
+            "battery.0percent"
+        case 13 ..< 38:
+            "battery.25percent"
+        case 38 ..< 63:
+            "battery.50percent"
+        case 63 ..< 88:
+            "battery.75percent"
+        default:
+            "battery.100percent"
         }
     }
 }
