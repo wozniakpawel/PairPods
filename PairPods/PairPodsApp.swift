@@ -44,6 +44,11 @@ struct PairPodsApp: App {
         }
         .menuBarExtraStyle(.window)
         .menuBarExtraAccess(isPresented: $isMenuPresented)
+
+        WindowGroup("About PairPods", id: "about") {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
     }
 }
 
@@ -70,8 +75,7 @@ struct ContentView: View {
     @ObservedObject private var audioDeviceManager: AudioDeviceManager
     @ObservedObject private var audioVolumeManager: AudioVolumeManager
     @Binding private var isMenuPresented: Bool
-    @State private var settingsWindow: NSWindow?
-    @State private var aboutWindow: NSWindow?
+    @Environment(\.openWindow) private var openWindow
 
     init(
         audioSharingManager: AudioSharingManager,
@@ -138,7 +142,12 @@ struct ContentView: View {
             Divider()
 
             MenuCommand {
-                showAboutWindow()
+                openWindow(id: "about")
+                if #available(macOS 14.0, *) {
+                    NSApp.activate()
+                } else {
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             } label: {
                 HStack {
                     Text("About")
@@ -183,7 +192,12 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showAboutWindow)) { _ in
-            showAboutWindow()
+            openWindow(id: "about")
+            if #available(macOS 14.0, *) {
+                NSApp.activate()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
         .onReceive(audioSharingManager.$state) { newState in
             guard newState == .active else { return }
@@ -191,29 +205,6 @@ struct ContentView: View {
                 await audioDeviceManager.refreshCompatibleDevices()
                 audioVolumeManager.refreshAllVolumes()
             }
-        }
-    }
-
-    private func showAboutWindow() {
-        if aboutWindow?.isVisible != true {
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 300, height: 300),
-                styleMask: [.titled, .closable],
-                backing: .buffered,
-                defer: false
-            )
-            window.center()
-            window.title = "About PairPods"
-            window.contentView = NSHostingView(rootView: AboutView())
-            window.isReleasedWhenClosed = false
-            aboutWindow = window
-        }
-
-        aboutWindow?.makeKeyAndOrderFront(nil)
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
         }
     }
 }
