@@ -332,7 +332,7 @@ extension AudioObjectID {
 
 // MARK: - AudioDevice Model
 
-struct AudioDevice: Sendable, Identifiable {
+struct AudioDevice: Identifiable {
     let id: AudioDeviceID
     let uid: String
     let name: String
@@ -412,7 +412,7 @@ extension AudioDevice {
 }
 
 extension AudioDevice {
-    func getVolume() async -> Float? {
+    func getVolume() -> Float? {
         id.getVolume()
     }
 

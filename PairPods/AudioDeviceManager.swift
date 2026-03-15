@@ -239,9 +239,9 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     /// Get volume for a specific device
-    func getDeviceVolume(deviceID: AudioDeviceID) async -> Float {
+    func getDeviceVolume(deviceID: AudioDeviceID) -> Float {
         if let device = compatibleDevices.first(where: { $0.id == deviceID }),
-           let volume = await device.getVolume()
+           let volume = device.getVolume()
         {
             return volume
         }
@@ -411,7 +411,7 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     /// Handle a volume change event for a specific device
-    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: AudioObjectPropertyAddress) async {
+    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: AudioObjectPropertyAddress) {
         logInfo("Volume change detected for device ID: \(deviceID)")
         logDebug("Property address: selector=\(propertyAddress.mSelector), scope=\(propertyAddress.mScope), element=\(propertyAddress.mElement)")
 
@@ -420,7 +420,7 @@ final class AudioDeviceManager: ObservableObject {
             return
         }
 
-        if let newVolume = await device.getVolume() {
+        if let newVolume = device.getVolume() {
             logInfo("Volume for \(device.name): \(newVolume)")
             NotificationCenter.default.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
         } else {
@@ -464,7 +464,7 @@ final class AudioDeviceManager: ObservableObject {
             volumeListenerBlock = { [weak self] inObjectID, propertyAddress in
                 let address = propertyAddress.pointee
                 Task { @MainActor in
-                    await self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: address)
+                    self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: address)
                 }
             }
         }

@@ -179,7 +179,7 @@ struct ContentView: View {
         .onAppear {
             Task {
                 await audioDeviceManager.refreshCompatibleDevices()
-                await audioVolumeManager.refreshAllVolumes()
+                audioVolumeManager.refreshAllVolumes()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showAboutWindow)) { _ in
@@ -189,7 +189,7 @@ struct ContentView: View {
             guard newState == .active else { return }
             Task {
                 await audioDeviceManager.refreshCompatibleDevices()
-                await audioVolumeManager.refreshAllVolumes()
+                audioVolumeManager.refreshAllVolumes()
             }
         }
     }
