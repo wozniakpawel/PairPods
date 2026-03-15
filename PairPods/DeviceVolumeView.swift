@@ -18,8 +18,7 @@ struct DeviceVolumeView: View {
     }
 
     private var masterUID: String? {
-        let order = audioDeviceManager.loadDeviceOrder()
-        return order.first ?? sortedDevices.first?.uid
+        audioDeviceManager.masterDeviceUID(for: audioDeviceManager.compatibleDevices)
     }
 
     var body: some View {
