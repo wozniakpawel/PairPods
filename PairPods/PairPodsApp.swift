@@ -258,8 +258,7 @@ struct LaunchAtLoginMenuToggle: View {
         )
 
         MenuToggleItem(
-            isOn: binding,
-            action: { LaunchAtLogin.isEnabled.toggle() }
+            isOn: binding
         ) {
             Text("Launch at Login")
         }
