@@ -130,10 +130,11 @@ struct ContentView: View {
 
             Divider()
 
-            HStack(spacing: 8) {
+            HStack {
                 Text("Reconnect")
                     .font(.system(size: 13))
                     .foregroundColor(.secondary)
+                Spacer()
                 Picker("", selection: $reconnectTimeout) {
                     Text("Off").tag(0.0)
                     Text("5s").tag(5.0)
@@ -142,9 +143,8 @@ struct ContentView: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.segmented)
+                .fixedSize()
             }
-            .padding(.horizontal, -14)
-            .padding(.vertical, -4)
             .accessibilityIdentifier("reconnectTimeoutPicker")
 
             LaunchAtLoginMenuToggle()

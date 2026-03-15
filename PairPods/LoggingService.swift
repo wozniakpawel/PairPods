@@ -53,7 +53,7 @@ final class LoggingService {
         case .error: .error
         }
 
-        os_log(type, log: osLog, "%{private}@", logMessage)
+        os_log(type, log: osLog, "%{public}@", logMessage)
     }
 
     private func errorDescription(for error: AppError) -> String {
