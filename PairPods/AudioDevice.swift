@@ -7,7 +7,7 @@
 
 import CoreAudio
 import Foundation
-import IOKit
+import IOBluetooth
 
 // MARK: - CoreAudio Extensions
 
@@ -391,41 +391,54 @@ struct AudioDevice: Identifiable {
         let streamConfiguration = deviceID.getStreamConfiguration(scope: kAudioObjectPropertyScopeOutput)
         isOutputDevice = streamConfiguration?.mNumberBuffers ?? 0 > 0
         self.sampleRate = sampleRate
-        batteryInfo = nil
+        batteryInfo = AudioDevice.queryBatteryFromBluetooth(forDeviceUID: uid)
 
         logDebug("Initialized AudioDevice: \(name) (ID: \(deviceID))")
     }
 
     // MARK: - Battery Level Query
 
-    /// Query the IORegistry for the battery percentage of a Bluetooth device by name.
-    /// Looks for `AppleDeviceManagementHIDEventService` entries that expose a `BatteryPercent` key.
-    static func queryBatteryLevel(for deviceName: String) -> Int? {
-        let matching = IOServiceMatching("AppleDeviceManagementHIDEventService")
-        var iterator: io_iterator_t = 0
-        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator) == KERN_SUCCESS else {
+    /// Query battery info for a Bluetooth device by matching its MAC address.
+    /// Extracts the MAC from the CoreAudio device UID (format: "XX-XX-XX-XX-XX-XX:output")
+    /// and matches it against paired IOBluetoothDevice entries.
+    static func queryBatteryFromBluetooth(forDeviceUID uid: String) -> BatteryInfo? {
+        // Extract MAC address from CoreAudio UID (e.g., "20-F4-D4-49-C9-47:output" -> "20-F4-D4-49-C9-47")
+        let mac = uid.components(separatedBy: ":").first ?? uid
+
+        guard let pairedDevices = IOBluetoothDevice.pairedDevices() else {
+            logDebug("IOBluetoothDevice.pairedDevices() returned nil")
             return nil
         }
-        defer { IOObjectRelease(iterator) }
 
-        var service = IOIteratorNext(iterator)
-        while service != 0 {
-            defer {
-                IOObjectRelease(service)
-                service = IOIteratorNext(iterator)
-            }
-            var properties: Unmanaged<CFMutableDictionary>?
-            guard IORegistryEntryCreateCFProperties(service, &properties, kCFAllocatorDefault, 0) == KERN_SUCCESS,
-                  let dict = properties?.takeRetainedValue() as? [String: Any]
+        for case let device as IOBluetoothDevice in pairedDevices {
+            guard let address = device.addressString,
+                  address.caseInsensitiveCompare(mac) == .orderedSame,
+                  device.isConnected()
             else { continue }
 
-            if let product = dict["Product"] as? String,
-               product == deviceName,
-               let battery = dict["BatteryPercent"] as? Int
-            {
-                return battery
+            let left = device.value(forKey: "batteryPercentLeft") as? Int
+            let right = device.value(forKey: "batteryPercentRight") as? Int
+            let case_ = device.value(forKey: "batteryPercentCase") as? Int
+            let single = device.value(forKey: "batteryPercentSingle") as? Int
+
+            // 0 means "not reporting" — treat as nil
+            let info = BatteryInfo(
+                left: left != nil && left! > 0 ? left : nil,
+                right: right != nil && right! > 0 ? right : nil,
+                case_: case_ != nil && case_! > 0 ? case_ : nil,
+                single: single != nil && single! > 0 ? single : nil
+            )
+
+            if info.displayLevel != nil {
+                logDebug("Battery for \(device.name ?? mac): L=\(info.left ?? -1) R=\(info.right ?? -1) C=\(info.case_ ?? -1) S=\(info.single ?? -1)")
+                return info
             }
+
+            logDebug("Battery query matched \(device.name ?? mac) but no levels reported")
+            return nil
         }
+
+        logDebug("No paired Bluetooth device matched MAC \(mac)")
         return nil
     }
 }
