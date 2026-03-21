@@ -20,6 +20,7 @@
 		E985A99C2B92F5A0005494FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99B2B92F5A0005494FA /* Assets.xcassets */; };
 		E985A99F2B92F5A0005494FA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */; };
 		E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C32B936984005494FA /* CoreAudio.framework */; };
+		E985A9C82B936985005494FA /* IOBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E985A9C72B936985005494FA /* IOBluetooth.framework */; };
 		E985A9C62B95975A005494FA /* AudioSharingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E985A9C52B95975A005494FA /* AudioSharingManager.swift */; };
 		E995C78A2C9B1E8A00DEB230 /* AudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */; };
 		E99A49F82D6C969A00F492A2 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E99A49F72D6C969A00F492A2 /* Sparkle */; };
@@ -57,6 +58,7 @@
 		E985A99E2B92F5A0005494FA /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		E985A9A02B92F5A0005494FA /* PairPods.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PairPods.entitlements; sourceTree = "<group>"; };
 		E985A9C32B936984005494FA /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		E985A9C72B936985005494FA /* IOBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOBluetooth.framework; path = System/Library/Frameworks/IOBluetooth.framework; sourceTree = SDKROOT; };
 		E985A9C52B95975A005494FA /* AudioSharingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSharingManager.swift; sourceTree = "<group>"; };
 		E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceManager.swift; sourceTree = "<group>"; };
 		E99A49F92D6CAA4900F492A2 /* SparkleUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdater.swift; sourceTree = "<group>"; };
@@ -88,6 +90,7 @@
 				0C3578DE2DB43E7D00354DE5 /* MacControlCenterUI in Frameworks */,
 				E9C1777B2C03EA950062C0E0 /* LaunchAtLogin in Frameworks */,
 				E985A9C42B936984005494FA /* CoreAudio.framework in Frameworks */,
+				E985A9C82B936985005494FA /* IOBluetooth.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,6 +155,7 @@
 			children = (
 				E967B74E2D6B7ACF000D86CE /* XCTest.framework */,
 				E985A9C32B936984005494FA /* CoreAudio.framework */,
+				E985A9C72B936985005494FA /* IOBluetooth.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
