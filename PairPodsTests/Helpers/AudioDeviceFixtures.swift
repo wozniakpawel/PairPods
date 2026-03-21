@@ -11,7 +11,8 @@ enum AudioDeviceFixtures {
         id: AudioDeviceID = 100,
         uid: String = "bt-device-1",
         name: String = "BT Headphones",
-        sampleRate: Double = 48000
+        sampleRate: Double = 48000,
+        batteryInfo: BatteryInfo? = nil
     ) -> AudioDevice {
         AudioDevice(
             id: id,
@@ -19,7 +20,8 @@ enum AudioDeviceFixtures {
             name: name,
             transportType: kAudioDeviceTransportTypeBluetooth,
             isOutputDevice: true,
-            sampleRate: sampleRate
+            sampleRate: sampleRate,
+            batteryInfo: batteryInfo
         )
     }
 
@@ -27,7 +29,8 @@ enum AudioDeviceFixtures {
         id: AudioDeviceID = 200,
         uid: String = "btle-device-1",
         name: String = "BT LE Speaker",
-        sampleRate: Double = 44100
+        sampleRate: Double = 44100,
+        batteryInfo: BatteryInfo? = nil
     ) -> AudioDevice {
         AudioDevice(
             id: id,
@@ -35,7 +38,8 @@ enum AudioDeviceFixtures {
             name: name,
             transportType: kAudioDeviceTransportTypeBluetoothLE,
             isOutputDevice: true,
-            sampleRate: sampleRate
+            sampleRate: sampleRate,
+            batteryInfo: batteryInfo
         )
     }
 

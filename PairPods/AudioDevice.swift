@@ -331,6 +331,23 @@ extension AudioObjectID {
     }
 }
 
+// MARK: - Battery Info Model
+
+struct BatteryInfo: Equatable {
+    let left: Int?
+    let right: Int?
+    let case_: Int?
+    let single: Int?
+
+    /// case_ intentionally excluded — we display earbud/headphone level, not case level
+    var displayLevel: Int? {
+        if let left, let right {
+            return min(left, right)
+        }
+        return single ?? left ?? right
+    }
+}
+
 // MARK: - AudioDevice Model
 
 struct AudioDevice: Identifiable {
@@ -340,21 +357,21 @@ struct AudioDevice: Identifiable {
     let transportType: UInt32
     let isOutputDevice: Bool
     let sampleRate: Double
-    let batteryLevel: Int?
+    let batteryInfo: BatteryInfo?
 
     var isCompatibleOutputDevice: Bool {
         isOutputDevice && (transportType == kAudioDeviceTransportTypeBluetooth ||
             transportType == kAudioDeviceTransportTypeBluetoothLE)
     }
 
-    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, batteryLevel: Int? = nil) {
+    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, batteryInfo: BatteryInfo? = nil) {
         self.id = id
         self.uid = uid
         self.name = name
         self.transportType = transportType
         self.isOutputDevice = isOutputDevice
         self.sampleRate = sampleRate
-        self.batteryLevel = batteryLevel
+        self.batteryInfo = batteryInfo
     }
 
     init?(deviceID: AudioDeviceID) async {
@@ -374,7 +391,7 @@ struct AudioDevice: Identifiable {
         let streamConfiguration = deviceID.getStreamConfiguration(scope: kAudioObjectPropertyScopeOutput)
         isOutputDevice = streamConfiguration?.mNumberBuffers ?? 0 > 0
         self.sampleRate = sampleRate
-        batteryLevel = AudioDevice.queryBatteryLevel(for: name)
+        batteryInfo = nil
 
         logDebug("Initialized AudioDevice: \(name) (ID: \(deviceID))")
     }

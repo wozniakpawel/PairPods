@@ -102,7 +102,7 @@ struct DeviceVolumeRowView: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
 
-                if let battery = device.batteryLevel {
+                if let battery = device.batteryInfo?.displayLevel {
                     BatteryLevelView(level: battery)
                 }
 
