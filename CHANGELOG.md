@@ -2,6 +2,17 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [0.7.0] - 2026-03-22
+
+### Fixed
+- Battery indicator now works for AirPods and other Bluetooth devices — replaced broken IOKit/IORegistry approach with IOBluetooth framework
+- Battery query now matches devices by MAC address instead of name, fixing mismatches between CoreAudio and IOBluetooth device names
+
+### Changed
+- Reorganized device row layout — name and controls on first line, battery/sample rate/volume on second line for less crowding
+- Volume percentage now shows a speaker icon for clarity
+- Battery model upgraded to support left/right earbud and case levels (displays minimum of left/right, matching Apple convention)
+
 ## [0.6.0] - 2026-03-15
 
 ### Added

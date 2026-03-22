@@ -95,18 +95,26 @@ struct DeviceVolumeRowView: View {
                     .toggleStyle(.checkbox)
                     .labelsHidden()
 
+                Button(action: { onSetMaster?() }) {
+                    Image(systemName: isMaster ? "crown.fill" : "crown")
+                        .font(.system(size: 11))
+                        .foregroundColor(isMaster ? .orange : .secondary.opacity(0.4))
+                }
+                .buttonStyle(.plain)
+                .help(isMaster ? "Master clock device" : "Set as master clock")
+
                 Image(systemName: deviceIcon)
                     .foregroundColor(.secondary)
 
                 Text(device.name)
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
+            }
 
-                if let battery = device.batteryLevel {
+            HStack(spacing: 6) {
+                if let battery = device.batteryInfo?.displayLevel {
                     BatteryLevelView(level: battery)
                 }
-
-                Spacer()
 
                 Text(formatSampleRate(device.sampleRate))
                     .font(.system(size: 11))
@@ -116,18 +124,14 @@ struct DeviceVolumeRowView: View {
                     .background(Color.secondary.opacity(0.12))
                     .cornerRadius(3)
 
-                Button(action: { onSetMaster?() }) {
-                    Image(systemName: isMaster ? "crown.fill" : "crown")
-                        .font(.system(size: 11))
-                        .foregroundColor(isMaster ? .orange : .secondary.opacity(0.4))
-                }
-                .buttonStyle(.plain)
-                .help(isMaster ? "Master clock device" : "Set as master clock")
+                Spacer()
 
-                Text("\(Int(volume * 100))%")
-                    .font(.system(size: 12))
+                Image(systemName: "speaker.wave.2")
+                    .font(.system(size: 10))
                     .foregroundColor(.secondary)
-                    .frame(width: 40, alignment: .trailing)
+                Text("\(Int(volume * 100))%")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
             }
 
             MenuVolumeSlider(value: cgFloatVolume)

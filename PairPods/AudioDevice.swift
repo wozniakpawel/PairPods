@@ -7,7 +7,7 @@
 
 import CoreAudio
 import Foundation
-import IOKit
+import IOBluetooth
 
 // MARK: - CoreAudio Extensions
 
@@ -331,6 +331,23 @@ extension AudioObjectID {
     }
 }
 
+// MARK: - Battery Info Model
+
+struct BatteryInfo: Equatable {
+    let left: Int?
+    let right: Int?
+    let case_: Int?
+    let single: Int?
+
+    /// case_ intentionally excluded — we display earbud/headphone level, not case level
+    var displayLevel: Int? {
+        if let left, let right {
+            return min(left, right)
+        }
+        return single ?? left ?? right
+    }
+}
+
 // MARK: - AudioDevice Model
 
 struct AudioDevice: Identifiable {
@@ -340,21 +357,21 @@ struct AudioDevice: Identifiable {
     let transportType: UInt32
     let isOutputDevice: Bool
     let sampleRate: Double
-    let batteryLevel: Int?
+    let batteryInfo: BatteryInfo?
 
     var isCompatibleOutputDevice: Bool {
         isOutputDevice && (transportType == kAudioDeviceTransportTypeBluetooth ||
             transportType == kAudioDeviceTransportTypeBluetoothLE)
     }
 
-    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, batteryLevel: Int? = nil) {
+    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, batteryInfo: BatteryInfo? = nil) {
         self.id = id
         self.uid = uid
         self.name = name
         self.transportType = transportType
         self.isOutputDevice = isOutputDevice
         self.sampleRate = sampleRate
-        self.batteryLevel = batteryLevel
+        self.batteryInfo = batteryInfo
     }
 
     init?(deviceID: AudioDeviceID) async {
@@ -374,41 +391,62 @@ struct AudioDevice: Identifiable {
         let streamConfiguration = deviceID.getStreamConfiguration(scope: kAudioObjectPropertyScopeOutput)
         isOutputDevice = streamConfiguration?.mNumberBuffers ?? 0 > 0
         self.sampleRate = sampleRate
-        batteryLevel = AudioDevice.queryBatteryLevel(for: name)
+        if transportType == kAudioDeviceTransportTypeBluetooth ||
+            transportType == kAudioDeviceTransportTypeBluetoothLE
+        {
+            batteryInfo = AudioDevice.queryBatteryFromBluetooth(forDeviceUID: uid)
+        } else {
+            batteryInfo = nil
+        }
 
         logDebug("Initialized AudioDevice: \(name) (ID: \(deviceID))")
     }
 
     // MARK: - Battery Level Query
 
-    /// Query the IORegistry for the battery percentage of a Bluetooth device by name.
-    /// Looks for `AppleDeviceManagementHIDEventService` entries that expose a `BatteryPercent` key.
-    static func queryBatteryLevel(for deviceName: String) -> Int? {
-        let matching = IOServiceMatching("AppleDeviceManagementHIDEventService")
-        var iterator: io_iterator_t = 0
-        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator) == KERN_SUCCESS else {
+    /// Query battery info for a Bluetooth device by matching its MAC address.
+    /// Extracts the MAC from the CoreAudio device UID (format: "XX-XX-XX-XX-XX-XX:output")
+    /// and matches it against paired IOBluetoothDevice entries.
+    static func queryBatteryFromBluetooth(forDeviceUID uid: String) -> BatteryInfo? {
+        // Extract MAC address from CoreAudio UID (e.g., "20-F4-D4-49-C9-47:output" -> "20-F4-D4-49-C9-47")
+        let mac = uid.components(separatedBy: ":").first ?? uid
+
+        guard let pairedDevices = IOBluetoothDevice.pairedDevices() else {
+            logDebug("IOBluetoothDevice.pairedDevices() returned nil")
             return nil
         }
-        defer { IOObjectRelease(iterator) }
 
-        var service = IOIteratorNext(iterator)
-        while service != 0 {
-            defer {
-                IOObjectRelease(service)
-                service = IOIteratorNext(iterator)
-            }
-            var properties: Unmanaged<CFMutableDictionary>?
-            guard IORegistryEntryCreateCFProperties(service, &properties, kCFAllocatorDefault, 0) == KERN_SUCCESS,
-                  let dict = properties?.takeRetainedValue() as? [String: Any]
+        for case let device as IOBluetoothDevice in pairedDevices {
+            guard let address = device.addressString,
+                  address.caseInsensitiveCompare(mac) == .orderedSame,
+                  device.isConnected()
             else { continue }
 
-            if let product = dict["Product"] as? String,
-               product == deviceName,
-               let battery = dict["BatteryPercent"] as? Int
-            {
-                return battery
+            func batteryValue(_ key: String) -> Int? {
+                guard device.responds(to: NSSelectorFromString(key)),
+                      let val = device.value(forKey: key) as? Int,
+                      val > 0 // 0 means "not reporting"
+                else { return nil }
+                return val
             }
+
+            let info = BatteryInfo(
+                left: batteryValue("batteryPercentLeft"),
+                right: batteryValue("batteryPercentRight"),
+                case_: batteryValue("batteryPercentCase"),
+                single: batteryValue("batteryPercentSingle")
+            )
+
+            if info.displayLevel != nil {
+                logDebug("Battery for \(device.name ?? mac): L=\(info.left ?? -1) R=\(info.right ?? -1) C=\(info.case_ ?? -1) S=\(info.single ?? -1)")
+                return info
+            }
+
+            logDebug("Battery query matched \(device.name ?? mac) but no levels reported")
+            return nil
         }
+
+        logDebug("No paired Bluetooth device matched MAC \(mac)")
         return nil
     }
 }
