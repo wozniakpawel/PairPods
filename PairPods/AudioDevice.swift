@@ -391,7 +391,13 @@ struct AudioDevice: Identifiable {
         let streamConfiguration = deviceID.getStreamConfiguration(scope: kAudioObjectPropertyScopeOutput)
         isOutputDevice = streamConfiguration?.mNumberBuffers ?? 0 > 0
         self.sampleRate = sampleRate
-        batteryInfo = AudioDevice.queryBatteryFromBluetooth(forDeviceUID: uid)
+        if transportType == kAudioDeviceTransportTypeBluetooth ||
+            transportType == kAudioDeviceTransportTypeBluetoothLE
+        {
+            batteryInfo = AudioDevice.queryBatteryFromBluetooth(forDeviceUID: uid)
+        } else {
+            batteryInfo = nil
+        }
 
         logDebug("Initialized AudioDevice: \(name) (ID: \(deviceID))")
     }
@@ -416,17 +422,19 @@ struct AudioDevice: Identifiable {
                   device.isConnected()
             else { continue }
 
-            let left = device.value(forKey: "batteryPercentLeft") as? Int
-            let right = device.value(forKey: "batteryPercentRight") as? Int
-            let case_ = device.value(forKey: "batteryPercentCase") as? Int
-            let single = device.value(forKey: "batteryPercentSingle") as? Int
+            func batteryValue(_ key: String) -> Int? {
+                guard device.responds(to: NSSelectorFromString(key)),
+                      let val = device.value(forKey: key) as? Int,
+                      val > 0 // 0 means "not reporting"
+                else { return nil }
+                return val
+            }
 
-            // 0 means "not reporting" — treat as nil
             let info = BatteryInfo(
-                left: left != nil && left! > 0 ? left : nil,
-                right: right != nil && right! > 0 ? right : nil,
-                case_: case_ != nil && case_! > 0 ? case_ : nil,
-                single: single != nil && single! > 0 ? single : nil
+                left: batteryValue("batteryPercentLeft"),
+                right: batteryValue("batteryPercentRight"),
+                case_: batteryValue("batteryPercentCase"),
+                single: batteryValue("batteryPercentSingle")
             )
 
             if info.displayLevel != nil {
