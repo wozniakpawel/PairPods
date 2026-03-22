@@ -183,3 +183,44 @@ jobs:
           ls -la ./build/export/
           echo "Contents of release notes:"
           cat release-notes.md || echo "No release notes found"
+
+  update-website-screenshots:
+    needs: build-release
+    if: ${{ !inputs.test-version }}
+    runs-on: macos-latest
+    steps:
+      - name: Checkout PairPods
+        uses: actions/checkout@v4.2.2
+
+      - name: Set Xcode version
+        uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: '16.2'
+
+      - name: Generate screenshots
+        run: |
+          cd ScreenshotGenerator
+          swift build -c release
+          .build/release/ScreenshotGenerator --output-dir /tmp/screenshots
+
+      - name: Checkout website repo
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: wozniakpawel/pairpods.app
+          path: website
+          token: ${{ secrets.WEBSITE_PAT }}
+
+      - name: Update screenshots
+        run: |
+          cp /tmp/screenshots/step-*.png website/src/assets/images/demo/
+          cd website
+          if git diff --quiet; then
+            echo "No screenshot changes detected"
+            exit 0
+          fi
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add src/assets/images/demo/step-*.png
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          git commit -m "Update app screenshots for v${VERSION}"
+          git push
