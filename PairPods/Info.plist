@@ -23,5 +23,7 @@
     <true/>
     <key>SUEnableInstallerLauncherService</key>
     <true/>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>PairPods needs Bluetooth access to read battery levels from your connected audio devices.</string>
 </dict>
 </plist>

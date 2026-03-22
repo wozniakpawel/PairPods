@@ -54,3 +54,6 @@ fastlane/test_output
 
 # Worktrees
 .worktrees/
+
+# Claude generated docs
+docs/
