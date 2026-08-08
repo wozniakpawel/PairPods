@@ -32,6 +32,38 @@ struct AudioDeviceManagerFlowTests {
         #expect(mock.setDefaultOutputCalls.contains(999))
     }
 
+    @Test("Aggregate is clocked by the clock device when the Mac exposes one")
+    @MainActor func setupUsesClockDeviceWhenAvailable() async throws {
+        let (mock, manager) = makeMockAndManager()
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
+        ]
+        mock.clockDeviceUIDToReturn = "ATSAC:testclock"
+
+        try await manager.setupMultiOutputDevice()
+
+        // With a clock device no Bluetooth radio is the timing reference, which is the
+        // entire point: every sub-device can then be drift compensated.
+        #expect(mock.createAggregateCalls.first?.clockUID == "ATSAC:testclock")
+    }
+
+    @Test("Aggregate falls back to a master sub-device when no clock device exists")
+    @MainActor func setupFallsBackToMasterSubDevice() async throws {
+        let (mock, manager) = makeMockAndManager()
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
+        ]
+        mock.clockDeviceUIDToReturn = nil
+
+        try await manager.setupMultiOutputDevice()
+
+        let call = try #require(mock.createAggregateCalls.first)
+        #expect(call.clockUID == nil)
+        #expect(call.subDeviceUIDs.contains(call.masterUID), "Master must be one of the sub-devices")
+    }
+
     @Test("Setup does not force sample rate changes on Bluetooth devices")
     @MainActor func setupDoesNotForceSampleRateChanges() async throws {
         let (mock, manager) = makeMockAndManager()

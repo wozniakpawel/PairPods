@@ -22,6 +22,7 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         let uid: String
         let masterUID: String
         let subDeviceUIDs: [String]
+        let clockUID: String?
     }
 
     struct SetSampleRateCall {
@@ -34,6 +35,7 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         var devicesToReturn: [AudioDevice] = []
         var defaultDevice: (AudioDevice?, AudioDeviceID?) = (nil, nil)
         var deviceIDToReturn: AudioDeviceID?
+        var clockDeviceUIDToReturn: String?
         var createAggregateResult: Result<AudioDeviceID, Error> = .success(999)
         var destroyAggregateError: Error?
         var setDefaultOutputError: Error?
@@ -71,6 +73,11 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
     var deviceIDToReturn: AudioDeviceID? {
         get { withState { $0.deviceIDToReturn } }
         set { withState { $0.deviceIDToReturn = newValue } }
+    }
+
+    var clockDeviceUIDToReturn: String? {
+        get { withState { $0.clockDeviceUIDToReturn } }
+        set { withState { $0.clockDeviceUIDToReturn = newValue } }
     }
 
     var createAggregateResult: Result<AudioDeviceID, Error> {
@@ -150,14 +157,18 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         withState { $0.deviceIDToReturn }
     }
 
+    func fetchClockDeviceUID() async -> String? {
+        withState { $0.clockDeviceUIDToReturn }
+    }
+
     // MARK: - AudioSystemCommanding
 
-    func createAggregateDevice(name: String, uid: String,
-                               masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID
+    func createAggregateDevice(name: String, uid: String, masterUID: String,
+                               subDeviceUIDs: [String], clockUID: String?) async throws -> AudioDeviceID
     {
         let result = withState {
             $0.createAggregateCalls.append(CreateAggregateCall(
-                name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs
+                name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs, clockUID: clockUID
             ))
             return $0.createAggregateResult
         }
@@ -184,7 +195,7 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         }
     }
 
-    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) -> Bool {
+    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) async -> Bool {
         withState {
             $0.setSampleRateCalls.append(SetSampleRateCall(deviceID: deviceID, sampleRate: sampleRate))
             return $0.setSampleRateResult

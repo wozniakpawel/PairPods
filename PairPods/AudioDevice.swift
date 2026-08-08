@@ -62,6 +62,27 @@ extension AudioObjectID {
         return value
     }
 
+    /// Discrete nominal sample rates the device advertises.
+    /// ponytail: continuous ranges (mMinimum != mMaximum) are skipped, as no Bluetooth or
+    /// built-in device reports one. Widen to range containment if a device ever needs it.
+    func getAvailableSampleRates() -> [Double] {
+        var address = getPropertyAddress(selector: kAudioDevicePropertyAvailableNominalSampleRates)
+        var propsize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(self, &address, 0, nil, &propsize) == noErr, propsize > 0 else {
+            logDebug("Failed to get available sample rates size for device ID: \(self)")
+            return []
+        }
+
+        var ranges = [AudioValueRange](repeating: AudioValueRange(mMinimum: 0, mMaximum: 0),
+                                       count: Int(propsize) / MemoryLayout<AudioValueRange>.size)
+        guard AudioObjectGetPropertyData(self, &address, 0, nil, &propsize, &ranges) == noErr else {
+            logDebug("Failed to get available sample rates for device ID: \(self)")
+            return []
+        }
+
+        return ranges.filter { $0.mMinimum == $0.mMaximum }.map(\.mMinimum)
+    }
+
     func getStreamConfiguration(scope: AudioObjectPropertyScope) -> AudioBufferList? {
         var address = getPropertyAddress(selector: kAudioDevicePropertyStreamConfiguration, scope: scope)
         var propsize: UInt32 = 0
@@ -220,7 +241,18 @@ extension AudioObjectID {
         return value
     }
 
-    func setSampleRate(_ sampleRate: Double) -> Bool {
+    /// Sets the nominal sample rate and waits for CoreAudio to actually apply it.
+    ///
+    /// Two guards that the reverted v0.4 fix lacked, and which caused the AirPods 4
+    /// dropouts (#39): the rate must be one the device advertises, and the change,
+    /// which CoreAudio applies asynchronously, must be confirmed before the caller
+    /// builds an aggregate on top of it.
+    func setSampleRate(_ sampleRate: Double) async -> Bool {
+        guard getAvailableSampleRates().contains(sampleRate) else {
+            logDebug("Device ID \(self) does not advertise \(sampleRate)Hz, refusing to force it")
+            return false
+        }
+
         var address = getPropertyAddress(
             selector: kAudioDevicePropertyNominalSampleRate,
             scope: kAudioObjectPropertyScopeGlobal,
@@ -249,9 +281,21 @@ extension AudioObjectID {
             return false
         }
 
-        logDebug("Successfully set sample rate to \(sampleRate) for device ID: \(self)")
-        return true
+        // ponytail: poll rather than register a property listener. One call site, ~1s worst case.
+        for _ in 0 ..< Int(Self.sampleRateConfirmTimeout / Self.sampleRatePollInterval) {
+            if getFloat64Property(selector: kAudioDevicePropertyNominalSampleRate) == sampleRate {
+                logDebug("Confirmed sample rate \(sampleRate) for device ID: \(self)")
+                return true
+            }
+            try? await Task.sleep(for: .seconds(Self.sampleRatePollInterval))
+        }
+
+        logWarning("Sample rate change to \(sampleRate) never took effect for device ID: \(self)")
+        return false
     }
+
+    private static let sampleRateConfirmTimeout = 1.0
+    private static let sampleRatePollInterval = 0.05
 
     func setVolume(_ volume: Float) throws {
         logDebug("Attempting to set volume \(volume) for device ID: \(self)")
@@ -357,6 +401,7 @@ struct AudioDevice: Identifiable {
     let transportType: UInt32
     let isOutputDevice: Bool
     let sampleRate: Double
+    let availableSampleRates: [Double]
     let batteryInfo: BatteryInfo?
 
     var isCompatibleOutputDevice: Bool {
@@ -364,13 +409,14 @@ struct AudioDevice: Identifiable {
             transportType == kAudioDeviceTransportTypeBluetoothLE)
     }
 
-    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, batteryInfo: BatteryInfo? = nil) {
+    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, availableSampleRates: [Double] = [], batteryInfo: BatteryInfo? = nil) {
         self.id = id
         self.uid = uid
         self.name = name
         self.transportType = transportType
         self.isOutputDevice = isOutputDevice
         self.sampleRate = sampleRate
+        self.availableSampleRates = availableSampleRates
         self.batteryInfo = batteryInfo
     }
 
@@ -391,6 +437,7 @@ struct AudioDevice: Identifiable {
         let streamConfiguration = deviceID.getStreamConfiguration(scope: kAudioObjectPropertyScopeOutput)
         isOutputDevice = streamConfiguration?.mNumberBuffers ?? 0 > 0
         self.sampleRate = sampleRate
+        availableSampleRates = deviceID.getAvailableSampleRates()
         if transportType == kAudioDeviceTransportTypeBluetooth ||
             transportType == kAudioDeviceTransportTypeBluetoothLE
         {
@@ -462,6 +509,7 @@ extension AudioDevice {
         Transport Type: \(transportTypeString)
         Is Output Device: \(isOutputDevice)
         Sample Rate: \(sampleRate) Hz
+        Available Sample Rates: \(availableSampleRates)
         Is Compatible: \(isCompatibleOutputDevice)
         """
     }

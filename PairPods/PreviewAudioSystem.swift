@@ -20,15 +20,19 @@ struct PreviewAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
         nil
     }
 
-    func createAggregateDevice(name _: String, uid _: String,
-                               masterUID _: String, subDeviceUIDs _: [String]) async throws -> AudioDeviceID
+    func fetchClockDeviceUID() async -> String? {
+        nil
+    }
+
+    func createAggregateDevice(name _: String, uid _: String, masterUID _: String,
+                               subDeviceUIDs _: [String], clockUID _: String?) async throws -> AudioDeviceID
     {
         0
     }
 
     func destroyAggregateDevice(deviceID _: AudioDeviceID) async throws {}
     func setDefaultOutputDevice(deviceID _: AudioDeviceID) async throws {}
-    func setSampleRate(on _: AudioDeviceID, to _: Double) -> Bool {
+    func setSampleRate(on _: AudioDeviceID, to _: Double) async -> Bool {
         false
     }
 }

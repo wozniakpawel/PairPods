@@ -188,13 +188,17 @@ final class AudioDeviceManager: ObservableObject {
         let sorted = selectDevicesForSharing(selected)
         sharedDevices = sorted
 
+        await alignSampleRates(sorted)
+
         let masterDevice = sorted[0]
+        let clockUID = await audioSystem.fetchClockDeviceUID()
 
         let deviceID = try await audioSystem.createAggregateDevice(
             name: "PairPods Output Device",
             uid: multiOutputDeviceUID,
             masterUID: masterDevice.uid,
-            subDeviceUIDs: sorted.map(\.uid)
+            subDeviceUIDs: sorted.map(\.uid),
+            clockUID: clockUID
         )
         try await audioSystem.setDefaultOutputDevice(deviceID: deviceID)
         logInfo("Multi-output device setup completed successfully")
