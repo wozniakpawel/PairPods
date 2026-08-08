@@ -9,10 +9,12 @@ import Testing
 
 @Suite("AudioDeviceManager Flow")
 struct AudioDeviceManagerFlowTests {
+    private let defaults = TestDefaults.make()
+
     @MainActor private func makeMockAndManager() -> (MockAudioSystem, AudioDeviceManager) {
-        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
+        defaults.removeObject(forKey: "excludedDeviceUIDs")
         let mock = MockAudioSystem()
-        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         return (mock, manager)
     }
 
@@ -88,7 +90,7 @@ struct AudioDeviceManagerFlowTests {
         mock.createAggregateResult = .success(999)
 
         try await manager.setupMultiOutputDevice()
-        mock.setDefaultOutputCalls.removeAll()
+        mock.clearRecordedCalls()
 
         await manager.restoreOutputDevice()
 
@@ -106,7 +108,7 @@ struct AudioDeviceManagerFlowTests {
         mock.createAggregateResult = .success(999)
 
         try await manager.setupMultiOutputDevice()
-        mock.setDefaultOutputCalls.removeAll()
+        mock.clearRecordedCalls()
 
         // Remove shared devices, add built-in
         let builtIn = AudioDeviceFixtures.builtInSpeaker(id: 300)

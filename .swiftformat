@@ -1,0 +1,8 @@
+# Shared by `make format`, `make format-check` and the CI format job, so all three
+# agree. Without the excludes, any local build makes SwiftFormat descend into the
+# SPM dependency checkouts under a DerivedData directory and reformat third-party
+# sources, which is why the glob covers the suffixed variants the Makefile creates.
+
+--swiftversion 6.0.3
+
+--exclude **/DerivedData*/**,**/.build/**,Sparkle/**

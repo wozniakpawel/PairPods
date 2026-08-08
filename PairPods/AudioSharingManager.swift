@@ -16,11 +16,14 @@ enum AudioSharingState: String {
 final class AudioSharingManager: ObservableObject {
     private static let reconnectTimeoutKey = "PairPods.ReconnectTimeout"
     private let audioDeviceManager: AudioDeviceManager
+    /// Injected for the same reason as in AudioDeviceManager: parallel tests must not
+    /// share the persisted reconnect timeout.
+    private let userDefaults: UserDefaults
     private var monitoringTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
 
     var reconnectTimeout: TimeInterval {
-        UserDefaults.standard.object(forKey: Self.reconnectTimeoutKey) as? TimeInterval ?? 10.0
+        userDefaults.object(forKey: Self.reconnectTimeoutKey) as? TimeInterval ?? 10.0
     }
 
     var isSharingAudio: Bool {
@@ -35,9 +38,10 @@ final class AudioSharingManager: ObservableObject {
         }
     }
 
-    init(audioDeviceManager: AudioDeviceManager) {
+    init(audioDeviceManager: AudioDeviceManager, userDefaults: UserDefaults = .standard) {
         logDebug("Initializing AudioSharingManager")
         self.audioDeviceManager = audioDeviceManager
+        self.userDefaults = userDefaults
         setupMonitoring()
     }
 

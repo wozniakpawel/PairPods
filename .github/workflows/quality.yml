@@ -1,0 +1,75 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: brew install swiftlint
+      - run: swiftlint lint --strict
+
+  format:
+    name: SwiftFormat
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: brew install swiftformat
+      # --lint reports and fails; it does not rewrite the contributor's branch.
+      - run: swiftformat --lint .
+
+  deadcode:
+    name: Dead code
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: latest-stable
+      - run: brew install peripheryapp/periphery/periphery
+      # Fails only on dead code that is not already in periphery-baseline.json.
+      - run: periphery scan --baseline periphery-baseline.json --strict
+
+  sanitizers:
+    name: ${{ matrix.sanitizer }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # ASan and TSan instrument incompatibly and cannot share a run.
+        include:
+          - sanitizer: AddressSanitizer
+            flags: -enableAddressSanitizer YES -enableUndefinedBehaviorSanitizer YES
+          - sanitizer: ThreadSanitizer
+            flags: -enableThreadSanitizer YES
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: latest-stable
+      - name: Install BlackHole audio drivers
+        run: |
+          brew install --cask blackhole-2ch
+          brew install --cask blackhole-16ch
+      - name: Test under ${{ matrix.sanitizer }}
+        run: |
+          xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES \
+            -destination 'platform=macOS' ${{ matrix.flags }}
+
+  analyze:
+    name: Static analyzer
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: latest-stable
+      - run: |
+          xcodebuild analyze -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES

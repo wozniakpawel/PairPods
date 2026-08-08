@@ -1,0 +1,80 @@
+included:
+  - PairPods
+  - PairPodsTests
+
+# SwiftFormat owns layout; SwiftLint is here for correctness smells only, so the
+# formatting-adjacent default rules are off to avoid the two tools disagreeing.
+disabled_rules:
+  - line_length
+  - trailing_comma
+  - todo
+  # SwiftFormat puts the brace of a wrapped signature on its own line. Leaving this on
+  # makes the two tools rewrite each other forever.
+  - opening_brace
+  # SwiftUI view builders legitimately pass several trailing closures.
+  - multiple_closures_with_trailing_closure
+  # The codebase mirrors CoreAudio's own "master sub-device" vocabulary. Apple has since
+  # renamed the constant to kAudioAggregateDeviceMainSubDeviceKey, so the rename is worth
+  # doing, as its own PR rather than smuggled into the tooling one. Re-enable it then.
+  - inclusive_language
+
+opt_in_rules:
+  # CoreAudio code is full of optional property reads, so a force unwrap there is a crash.
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - discouraged_optional_boolean
+  # Callback- and listener-heavy code: capture mistakes leak or crash.
+  - unowned_variable_capture
+  - weak_delegate
+  # Correctness and clarity.
+  - empty_count
+  - empty_string
+  - first_where
+  - last_where
+  - contains_over_first_not_nil
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - redundant_nil_coalescing
+  - explicit_init
+  - fatal_error_message
+  - toggle_bool
+  - yoda_condition
+  - static_operator
+  - legacy_multiple
+  - unavailable_function
+  - overridden_super_call
+  - prohibited_super_call
+
+analyzer_rules:
+  - unused_declaration
+  - unused_import
+
+# `(AudioDevice?, AudioDeviceID?)` and the test factory triples are readable as-is.
+large_tuple:
+  warning: 3
+  error: 4
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 600
+  error: 900
+
+function_body_length:
+  warning: 80
+  error: 120
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+identifier_name:
+  # CoreAudio idioms: `id`, `uid`, `a`/`b` in sort comparators.
+  # `case_` carries a trailing underscore because `case` is a keyword.
+  min_length: 1
+  excluded:
+    - id
+    - uid
+    - case_

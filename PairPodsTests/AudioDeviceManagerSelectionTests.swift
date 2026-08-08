@@ -8,11 +8,13 @@ import CoreAudio
 import Testing
 
 struct AudioDeviceManagerSelectionTests {
+    private let defaults = TestDefaults.make()
+
     @MainActor private func makeManager() -> AudioDeviceManager {
-        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
-        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+        defaults.removeObject(forKey: "excludedDeviceUIDs")
+        defaults.removeObject(forKey: "PairPods.DeviceOrder")
         let mock = MockAudioSystem()
-        return AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        return AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
     }
 
     @Test("Selects highest sample rate device as master")
@@ -110,9 +112,9 @@ struct AudioDeviceManagerSelectionTests {
     @MainActor func saveDeviceOrderPersists() {
         let manager = makeManager()
         manager.saveDeviceOrder(["uid-b", "uid-a", "uid-c"])
-        let stored = UserDefaults.standard.stringArray(forKey: "PairPods.DeviceOrder") ?? []
+        let stored = defaults.stringArray(forKey: "PairPods.DeviceOrder") ?? []
         #expect(stored == ["uid-b", "uid-a", "uid-c"])
-        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+        defaults.removeObject(forKey: "PairPods.DeviceOrder")
     }
 
     @Test("loadDeviceOrder returns empty array when nothing saved")
@@ -123,11 +125,11 @@ struct AudioDeviceManagerSelectionTests {
 
     @Test("loadDeviceOrder returns saved order")
     @MainActor func loadDeviceOrderReturnsSavedOrder() {
-        UserDefaults.standard.set(["uid-z", "uid-x"], forKey: "PairPods.DeviceOrder")
+        defaults.set(["uid-z", "uid-x"], forKey: "PairPods.DeviceOrder")
         let mock = MockAudioSystem()
-        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         #expect(manager.loadDeviceOrder() == ["uid-z", "uid-x"])
-        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+        defaults.removeObject(forKey: "PairPods.DeviceOrder")
     }
 
     @Test("selectDevicesForSharing uses user order when saved")
@@ -143,7 +145,7 @@ struct AudioDeviceManagerSelectionTests {
         #expect(result[0].uid == "uid-c")
         #expect(result[1].uid == "uid-a")
         #expect(result[2].uid == "uid-b")
-        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+        defaults.removeObject(forKey: "PairPods.DeviceOrder")
     }
 
     @Test("selectDevicesForSharing falls back to sample rate sort when no user order")
@@ -171,6 +173,6 @@ struct AudioDeviceManagerSelectionTests {
         #expect(result[0].uid == "uid-b")
         #expect(result[1].uid == "uid-a")
         #expect(result[2].uid == "uid-new")
-        UserDefaults.standard.removeObject(forKey: "PairPods.DeviceOrder")
+        defaults.removeObject(forKey: "PairPods.DeviceOrder")
     }
 }

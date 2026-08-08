@@ -9,18 +9,20 @@ import Testing
 
 @Suite("AudioVolumeManager")
 struct AudioVolumeManagerTests {
+    private let defaults = TestDefaults.make()
+
     @MainActor private func makeManager(
         devices: [AudioDevice] = [],
         userDefaults: UserDefaults? = nil
     ) async -> (AudioVolumeManager, MockAudioSystem, AudioDeviceManager) {
         let mock = MockAudioSystem()
         mock.devicesToReturn = devices
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         await deviceManager.refreshCompatibleDevices()
 
         let defaults = userDefaults ?? {
             let suiteName = "PairPodsTests.\(UUID().uuidString)"
-            let d = UserDefaults(suiteName: suiteName)!
+            guard let d = UserDefaults(suiteName: suiteName) else { return .standard }
             d.removePersistentDomain(forName: suiteName)
             return d
         }()
@@ -82,7 +84,7 @@ struct AudioVolumeManagerTests {
 
         let mock = MockAudioSystem()
         mock.devicesToReturn = [bt1]
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         await deviceManager.refreshCompatibleDevices()
 
         let vm1 = AudioVolumeManager(audioDeviceManager: deviceManager, userDefaults: defaults)

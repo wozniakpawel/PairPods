@@ -41,8 +41,10 @@ jobs:
           xcodebuild -resolvePackageDependencies -project PairPods.xcodeproj
           
       - name: Build
+        # Warnings are errors in CI only. Locally they stay warnings so a work in
+        # progress still compiles.
         run: |
-          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO
+          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES GCC_TREAT_WARNINGS_AS_ERRORS=YES
       
       - name: Install BlackHole audio drivers
         run: |
@@ -51,7 +53,11 @@ jobs:
 
       - name: Run Tests
         run: |
-          xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES -destination 'platform=macOS'
+          xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES -destination 'platform=macOS' -enableCodeCoverage YES
+
+      - name: Coverage summary
+        run: |
+          xcrun xccov view --report --only-targets ./DerivedData/Logs/Test/*.xcresult
 
       - name: Verify app architectures
         run: |

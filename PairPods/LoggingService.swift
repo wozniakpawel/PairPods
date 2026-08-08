@@ -20,7 +20,9 @@ enum AppError: Error {
     case systemError(Error)
 }
 
-final class LoggingService {
+/// Safe to share: the only stored state is an `OSLog`, and `os_log` is documented
+/// as thread-safe. The free `logDebug`/`logInfo`/… helpers call this from every actor.
+final class LoggingService: Sendable {
     static let shared = LoggingService()
     private let osLog: OSLog
 

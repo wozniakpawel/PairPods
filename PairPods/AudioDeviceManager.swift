@@ -44,6 +44,10 @@ final class AudioDeviceManager: ObservableObject {
     private var volumeListenerTask: Task<Void, Never>?
     private let shouldShowAlerts: Bool
     private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
+    /// Injected so parallel tests do not share persisted state. Exclusions and device
+    /// order both live here, and a test that wrote either could drop another test's
+    /// selection below two devices, which is what made the reconnect tests flaky.
+    private let userDefaults: UserDefaults
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
     @Published var excludedDeviceUIDs: Set<String> = []
@@ -60,10 +64,14 @@ final class AudioDeviceManager: ObservableObject {
         self.init(audioSystem: CoreAudioSystem(), shouldShowAlerts: shouldShowAlerts)
     }
 
-    init(audioSystem: AudioSystemQuerying & AudioSystemCommanding, shouldShowAlerts: Bool = true) {
+    init(audioSystem: AudioSystemQuerying & AudioSystemCommanding,
+         shouldShowAlerts: Bool = true,
+         userDefaults: UserDefaults = .standard)
+    {
         self.audioSystem = audioSystem
         self.shouldShowAlerts = shouldShowAlerts
-        excludedDeviceUIDs = Self.loadExcludedDeviceUIDs()
+        self.userDefaults = userDefaults
+        excludedDeviceUIDs = Self.loadExcludedDeviceUIDs(from: userDefaults)
         logDebug("Initializing AudioDeviceManager")
         setupAudioDeviceMonitoring()
         initTask = Task {
@@ -87,25 +95,25 @@ final class AudioDeviceManager: ObservableObject {
         !excludedDeviceUIDs.contains(uid)
     }
 
-    private static func loadExcludedDeviceUIDs() -> Set<String> {
-        let array = UserDefaults.standard.stringArray(forKey: excludedDeviceUIDsKey) ?? []
+    private static func loadExcludedDeviceUIDs(from userDefaults: UserDefaults) -> Set<String> {
+        let array = userDefaults.stringArray(forKey: excludedDeviceUIDsKey) ?? []
         return Set(array)
     }
 
     private func saveExcludedDeviceUIDs() {
-        UserDefaults.standard.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
+        userDefaults.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
     }
 
     // MARK: - Device Order
 
     func saveDeviceOrder(_ uids: [String]) {
-        UserDefaults.standard.set(uids, forKey: Self.deviceOrderKey)
+        userDefaults.set(uids, forKey: Self.deviceOrderKey)
         objectWillChange.send()
         logDebug("Saved device order: \(uids)")
     }
 
     func loadDeviceOrder() -> [String] {
-        UserDefaults.standard.stringArray(forKey: Self.deviceOrderKey) ?? []
+        userDefaults.stringArray(forKey: Self.deviceOrderKey) ?? []
     }
 
     /// Returns the UID of the device that would be master clock for the given devices,
@@ -317,7 +325,9 @@ final class AudioDeviceManager: ObservableObject {
             let sorted = devices.sorted { a, b in
                 let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
                 let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
-                if ai != bi { return ai < bi }
+                if ai != bi {
+                    return ai < bi
+                }
                 return a.name < b.name
             }
             let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")

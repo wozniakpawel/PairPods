@@ -14,6 +14,8 @@ private let blackHoleRequired = ConditionTrait.enabled(
 
 @Suite("Audio Regression Tests", .serialized)
 struct AudioRegressionTests {
+    private let defaults = TestDefaults.make()
+
     @Test("Same-rate BT Classic — AirPods Pro 2 + Sony XM5", blackHoleRequired)
     @MainActor func sameRateBTClassic() async throws {
         try await runDevicePairTest(profileA: .airPodsPro2, profileB: .sonyXM5)
@@ -80,7 +82,7 @@ struct AudioRegressionTests {
         //    The init launches an async task that calls removeMultiOutputDevice().
         //    We immediately call cleanup() to cancel that task and remove the
         //    property listener so it cannot race with our test setup.
-        let manager = AudioDeviceManager(audioSystem: simulatedSystem, shouldShowAlerts: false)
+        let manager = AudioDeviceManager(audioSystem: simulatedSystem, shouldShowAlerts: false, userDefaults: defaults)
         await manager.cleanup()
 
         do {
