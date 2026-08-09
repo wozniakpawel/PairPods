@@ -40,14 +40,22 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
-        var uid = deviceUID as CFString
+        // The qualifier CoreAudio wants is a CFStringRef, so what we hand it is a pointer
+        // to that reference. Taking `&uid` on the CFString variable directly forms a raw
+        // pointer to memory holding an object reference, which the compiler rightly warns
+        // about; going through an opaque pointer keeps the same bytes on the wire without
+        // the hazard. withExtendedLifetime keeps the bridged string alive for the call.
+        let uid = deviceUID as CFString
+        var qualifier = Unmanaged.passUnretained(uid).toOpaque()
         var deviceID = AudioDeviceID(0)
         var propSize = UInt32(MemoryLayout<AudioDeviceID>.size)
-        let status = AudioObjectGetPropertyData(
-            systemObject, &address,
-            UInt32(MemoryLayout<CFString>.size), &uid,
-            &propSize, &deviceID
-        )
+        let status = withExtendedLifetime(uid) {
+            AudioObjectGetPropertyData(
+                systemObject, &address,
+                UInt32(MemoryLayout<UnsafeMutableRawPointer>.size), &qualifier,
+                &propSize, &deviceID
+            )
+        }
         guard status == noErr, deviceID != kAudioObjectUnknown else { return nil }
         return deviceID
     }

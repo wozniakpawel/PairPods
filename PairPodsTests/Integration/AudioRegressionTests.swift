@@ -4,6 +4,7 @@
 //
 
 import CoreAudio
+import Foundation
 @testable import PairPods
 import Testing
 
@@ -15,6 +16,16 @@ private let blackHoleRequired = ConditionTrait.enabled(
 @Suite("Audio Regression Tests", .serialized)
 struct AudioRegressionTests {
     private let defaults = TestDefaults.make()
+
+    /// A skipped integration suite looks identical to a passing one in a CI summary.
+    /// Where the environment promises BlackHole, its absence has to fail the job rather
+    /// than quietly remove every case below from the run.
+    @Test("BlackHole is present when the environment requires it")
+    func blackHoleAvailableWhenRequired() {
+        guard ProcessInfo.processInfo.environment["PAIRPODS_REQUIRE_BLACKHOLE"] == "1" else { return }
+        #expect(BlackHoleHelper.isAvailable,
+                "PAIRPODS_REQUIRE_BLACKHOLE=1 but BlackHole 2ch/16ch were not found, so the integration cases would silently skip")
+    }
 
     @Test("Same-rate BT Classic — AirPods Pro 2 + Sony XM5", blackHoleRequired)
     @MainActor func sameRateBTClassic() async throws {

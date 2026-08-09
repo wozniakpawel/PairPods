@@ -37,7 +37,7 @@ struct AudioSharingManagerReconnectTests {
         return condition()
     }
 
-    @Test("Disconnect stops sharing and attempts reconnection")
+    @Test("Disconnect with devices still present rebuilds the aggregate")
     @MainActor func disconnectStopsSharingAndReconnects() async {
         defer { defaults.removeObject(forKey: Self.timeoutKey) }
         defaults.set(1.0, forKey: Self.timeoutKey)
@@ -45,47 +45,59 @@ struct AudioSharingManagerReconnectTests {
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults)
 
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
-        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
-        mock.devicesToReturn = [bt1, bt2]
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
+        ]
         mock.createAggregateResult = .success(999)
 
         await sharingManager.startSharing()
         #expect(sharingManager.state == .active)
+        #expect(mock.createAggregateCalls.count == 1)
 
-        // Simulate device disconnect by posting notification
         NotificationCenter.default.postDeviceConfigurationChanged()
 
-        // The devices are still present, so the manager should settle back into sharing
-        // rather than sit in a transitional state.
-        let settled = await waitUntil { sharingManager.state == .active || sharingManager.state == .inactive }
-        #expect(settled, "Stuck in transitional state \(sharingManager.state)")
+        // Asserting on the state alone proves nothing here: it is already .active, so any
+        // predicate accepting .active is satisfied before the notification is even
+        // processed. The observable that distinguishes a real restart is a second
+        // aggregate being built.
+        let rebuilt = await waitUntil { mock.createAggregateCalls.count >= 2 }
+        #expect(rebuilt, "Aggregate was never rebuilt; createAggregateDevice called \(mock.createAggregateCalls.count) time(s)")
+        #expect(sharingManager.state == .active, "Ended in \(sharingManager.state) after rebuilding")
     }
 
-    @Test("Reconnection gives up after timeout when devices don't reappear")
+    @Test("Reconnection gives up after the timeout when devices do not reappear")
     @MainActor func reconnectionGivesUpAfterTimeout() async {
         defer { defaults.removeObject(forKey: Self.timeoutKey) }
+        let reconnectTimeout = Duration.milliseconds(300)
         defaults.set(0.3, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
         let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults)
 
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
-        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
-        mock.devicesToReturn = [bt1, bt2]
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
+        ]
         mock.createAggregateResult = .success(999)
 
         await sharingManager.startSharing()
         #expect(sharingManager.state == .active)
+        #expect(mock.createAggregateCalls.count == 1)
 
-        // Remove all devices so reconnection will fail
         mock.devicesToReturn = []
-
-        // Simulate disconnect
+        let disconnectedAt = ContinuousClock.now
         NotificationCenter.default.postDeviceConfigurationChanged()
 
-        // With no devices left to find, the reconnect watch must expire and give up.
-        let gaveUp = await waitUntil { sharingManager.state == .inactive }
-        #expect(gaveUp, "Reconnect watch never gave up; state is \(sharingManager.state)")
+        // .inactive on its own is not evidence of giving up: production passes through it
+        // during stopSharing(), before the reconnect watch even starts. The watch has only
+        // genuinely expired once the timeout has elapsed and nothing was rebuilt.
+        let expired = await waitUntil {
+            ContinuousClock.now - disconnectedAt > reconnectTimeout + .milliseconds(500)
+        }
+        #expect(expired)
+        #expect(sharingManager.state == .inactive, "Ended in \(sharingManager.state) rather than giving up")
+        #expect(mock.createAggregateCalls.count == 1,
+                "Rebuilt the aggregate \(mock.createAggregateCalls.count - 1) time(s) despite no devices being available")
     }
 }

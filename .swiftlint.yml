@@ -45,9 +45,9 @@ opt_in_rules:
   - overridden_super_call
   - prohibited_super_call
 
-analyzer_rules:
-  - unused_declaration
-  - unused_import
+# No analyzer_rules here on purpose: they only run under `swiftlint analyze`, which
+# needs a compiler log, and dead code is already gated by Periphery. Declaring them
+# without running `analyze` advertises coverage that does not exist.
 
 # `(AudioDevice?, AudioDeviceID?)` and the test factory triples are readable as-is.
 large_tuple:
