@@ -9,6 +9,9 @@ import Testing
 
 @Suite("AudioVolumeManager")
 struct AudioVolumeManagerTests {
+    /// Private bus so a volume notification from another parallel suite cannot land here.
+    private let center = NotificationCenter()
+
     private let defaults = TestDefaults.make()
 
     @MainActor private func makeManager(
@@ -17,7 +20,7 @@ struct AudioVolumeManagerTests {
     ) async -> (AudioVolumeManager, MockAudioSystem, AudioDeviceManager) {
         let mock = MockAudioSystem()
         mock.devicesToReturn = devices
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
         await deviceManager.refreshCompatibleDevices()
 
         let defaults = userDefaults ?? {
@@ -84,7 +87,7 @@ struct AudioVolumeManagerTests {
 
         let mock = MockAudioSystem()
         mock.devicesToReturn = [bt1]
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
         await deviceManager.refreshCompatibleDevices()
 
         let vm1 = AudioVolumeManager(audioDeviceManager: deviceManager, userDefaults: defaults)
@@ -116,7 +119,7 @@ struct AudioVolumeManagerTests {
         let (volumeManager, _, _) = await makeManager(devices: [bt1])
 
         // Post a volume change notification
-        NotificationCenter.default.postDeviceVolumeChanged(deviceID: 1, volume: 0.33)
+        center.postDeviceVolumeChanged(deviceID: 1, volume: 0.33)
 
         // Give RunLoop time to process
         try await Task.sleep(nanoseconds: 100_000_000)

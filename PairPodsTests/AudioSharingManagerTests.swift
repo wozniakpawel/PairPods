@@ -9,6 +9,9 @@ import Testing
 
 struct AudioSharingManagerTests {
     private let defaults = TestDefaults.make()
+    /// Private bus: NotificationCenter.default is process-wide, so a notification posted
+    /// by another suite running in parallel would drive this manager too.
+    private let center = NotificationCenter()
 
     private static let timeoutKey = "PairPods.ReconnectTimeout"
 
@@ -20,8 +23,8 @@ struct AudioSharingManagerTests {
         defaults.removeObject(forKey: "excludedDeviceUIDs")
         defaults.set(0.5, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
         return (sharingManager, mock, deviceManager)
     }
 

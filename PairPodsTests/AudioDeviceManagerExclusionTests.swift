@@ -156,9 +156,8 @@ struct AudioDeviceManagerExclusionTests {
 
         manager.setDeviceExcluded("bt1", excluded: true)
 
-        await #expect(throws: AppError.self) {
-            try await manager.setupMultiOutputDevice()
-        }
+        let thrown = await errorThrown { try await manager.setupMultiOutputDevice() }
+        #expect(thrown is AppError, "Expected an AppError, got \(String(describing: thrown))")
     }
 
     // MARK: - N-Device Aggregate

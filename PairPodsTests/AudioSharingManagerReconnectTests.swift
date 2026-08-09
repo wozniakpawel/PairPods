@@ -9,6 +9,9 @@ import Testing
 
 struct AudioSharingManagerReconnectTests {
     private let defaults = TestDefaults.make()
+    /// Private bus: NotificationCenter.default is process-wide, so a notification posted
+    /// by another suite running in parallel would drive this manager too.
+    private let center = NotificationCenter()
 
     private static let timeoutKey = "PairPods.ReconnectTimeout"
 
@@ -42,8 +45,8 @@ struct AudioSharingManagerReconnectTests {
         defer { defaults.removeObject(forKey: Self.timeoutKey) }
         defaults.set(1.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
 
         mock.devicesToReturn = [
             AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
@@ -55,7 +58,7 @@ struct AudioSharingManagerReconnectTests {
         #expect(sharingManager.state == .active)
         #expect(mock.createAggregateCalls.count == 1)
 
-        NotificationCenter.default.postDeviceConfigurationChanged()
+        center.postDeviceConfigurationChanged()
 
         // Asserting on the state alone proves nothing here: it is already .active, so any
         // predicate accepting .active is satisfied before the notification is even
@@ -72,8 +75,8 @@ struct AudioSharingManagerReconnectTests {
         let reconnectTimeout = Duration.milliseconds(300)
         defaults.set(0.3, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
 
         mock.devicesToReturn = [
             AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
@@ -87,7 +90,7 @@ struct AudioSharingManagerReconnectTests {
 
         mock.devicesToReturn = []
         let disconnectedAt = ContinuousClock.now
-        NotificationCenter.default.postDeviceConfigurationChanged()
+        center.postDeviceConfigurationChanged()
 
         // .inactive on its own is not evidence of giving up: production passes through it
         // during stopSharing(), before the reconnect watch even starts. The watch has only

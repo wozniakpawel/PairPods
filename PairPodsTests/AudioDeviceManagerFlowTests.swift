@@ -63,9 +63,8 @@ struct AudioDeviceManagerFlowTests {
         let (mock, manager) = makeMockAndManager()
         mock.devicesToReturn = [AudioDeviceFixtures.bluetoothDevice()]
 
-        await #expect(throws: AppError.self) {
-            try await manager.setupMultiOutputDevice()
-        }
+        let thrown = await errorThrown { try await manager.setupMultiOutputDevice() }
+        #expect(thrown is AppError, "Expected an AppError, got \(String(describing: thrown))")
     }
 
     @Test("Setup throws when aggregate creation fails")
@@ -76,9 +75,8 @@ struct AudioDeviceManagerFlowTests {
         mock.devicesToReturn = [bt1, bt2]
         mock.createAggregateResult = .failure(AppError.operationError("Failed"))
 
-        await #expect(throws: AppError.self) {
-            try await manager.setupMultiOutputDevice()
-        }
+        let thrown = await errorThrown { try await manager.setupMultiOutputDevice() }
+        #expect(thrown is AppError, "Expected an AppError, got \(String(describing: thrown))")
     }
 
     @Test("Restore falls back to master device")
