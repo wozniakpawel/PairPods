@@ -46,12 +46,12 @@ jobs:
         run: |
           xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO PAIRPODS_WARNINGS_AS_ERRORS=YES
       
-      - name: Install BlackHole audio drivers
-        run: |
-          brew install --cask blackhole-2ch
-          brew install --cask blackhole-16ch
+      - name: Install BlackHole and wait for CoreAudio to publish it
+        run: ./scripts/ci/ensure-blackhole.sh
 
       - name: Run Tests
+        env:
+          PAIRPODS_REQUIRE_BLACKHOLE: "1"
         run: |
           xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES -destination 'platform=macOS' -enableCodeCoverage YES
 

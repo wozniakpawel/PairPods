@@ -62,29 +62,8 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Install BlackHole audio drivers
-        run: |
-          brew install --cask blackhole-2ch
-          brew install --cask blackhole-16ch
-          # The cask asks for a reboot; restarting coreaudiod is enough to register
-          # the new HAL plug-ins, and is what makes the devices visible to the tests.
-          sudo killall coreaudiod || true
-
-      # Without this the integration suite silently skips and the job goes green while
-      # covering nothing, which is exactly what it is here to prevent.
-      - name: Verify BlackHole devices are visible to CoreAudio
-        run: |
-          for attempt in $(seq 1 30); do
-            devices=$(system_profiler SPAudioDataType 2>/dev/null || true)
-            if echo "$devices" | grep -q "BlackHole 2ch" && echo "$devices" | grep -q "BlackHole 16ch"; then
-              echo "Both BlackHole devices visible after ${attempt} attempt(s)."
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "::error::BlackHole 2ch and/or 16ch never became visible to CoreAudio."
-          system_profiler SPAudioDataType 2>/dev/null | grep -iE "^ +[A-Za-z].*:$" || true
-          exit 1
+      - name: Install BlackHole and wait for CoreAudio to publish it
+        run: ./scripts/ci/ensure-blackhole.sh
 
       - name: Test under ${{ matrix.sanitizer }}
         # PAIRPODS_REQUIRE_BLACKHOLE turns the integration suite's skip condition into a
