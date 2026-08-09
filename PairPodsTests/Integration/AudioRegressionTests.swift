@@ -57,8 +57,11 @@ struct AudioRegressionTests {
         try await runDevicePairTest(profileA: .airPods1, profileB: .cheapBTEarbuds)
     }
 
-    @Test("Three devices — Pro 2 + AirPods 4 + Generic BLE", blackHoleRequired)
-    @MainActor func threeDevices() async throws {
+    /// Only two BlackHole devices exist, so this harness cannot build a genuine
+    /// three-device aggregate; it used to claim to. Three-device selection, alignment and
+    /// aggregate construction are covered against the mock in AudioDeviceManagerFlowTests.
+    @Test("Same-rate BT Classic and BLE — AirPods Pro 2 + AirPods 4", blackHoleRequired)
+    @MainActor func sameRateClassicAndBLE() async throws {
         try await runDevicePairTest(profileA: .airPodsPro2, profileB: .airPods4)
     }
 

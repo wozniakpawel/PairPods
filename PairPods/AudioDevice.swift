@@ -65,7 +65,7 @@ extension AudioObjectID {
     /// Discrete nominal sample rates the device advertises.
     /// ponytail: continuous ranges (mMinimum != mMaximum) are skipped, as no Bluetooth or
     /// built-in device reports one. Widen to range containment if a device ever needs it.
-    func getAvailableSampleRates() -> [Double] {
+    func getSupportedSampleRates() -> [SampleRateRange] {
         var address = getPropertyAddress(selector: kAudioDevicePropertyAvailableNominalSampleRates)
         var propsize: UInt32 = 0
         guard AudioObjectGetPropertyDataSize(self, &address, 0, nil, &propsize) == noErr, propsize > 0 else {
@@ -80,7 +80,7 @@ extension AudioObjectID {
             return []
         }
 
-        return ranges.filter { $0.mMinimum == $0.mMaximum }.map(\.mMinimum)
+        return ranges.map { SampleRateRange(lower: $0.mMinimum, upper: $0.mMaximum) }
     }
 
     func getStreamConfiguration(scope: AudioObjectPropertyScope) -> AudioBufferList? {
@@ -248,7 +248,7 @@ extension AudioObjectID {
     /// which CoreAudio applies asynchronously, must be confirmed before the caller
     /// builds an aggregate on top of it.
     func setSampleRate(_ sampleRate: Double) async -> Bool {
-        guard getAvailableSampleRates().contains(sampleRate) else {
+        guard getSupportedSampleRates().contains(where: { $0.contains(sampleRate) }) else {
             logDebug("Device ID \(self) does not advertise \(sampleRate)Hz, refusing to force it")
             return false
         }
@@ -375,6 +375,35 @@ extension AudioObjectID {
     }
 }
 
+/// A nominal sample rate range as CoreAudio reports it. Most devices report a list of
+/// single points, but the API allows continuous ranges and some interfaces use them, so
+/// containment rather than equality is what decides whether a rate can be requested.
+struct SampleRateRange: Equatable, Sendable, CustomStringConvertible {
+    let lower: Double
+    let upper: Double
+
+    init(lower: Double, upper: Double) {
+        self.lower = lower
+        self.upper = upper
+    }
+
+    init(_ rate: Double) {
+        self.init(lower: rate, upper: rate)
+    }
+
+    var isDiscrete: Bool {
+        lower == upper
+    }
+
+    func contains(_ rate: Double) -> Bool {
+        rate >= lower && rate <= upper
+    }
+
+    var description: String {
+        isDiscrete ? "\(lower)" : "\(lower)-\(upper)"
+    }
+}
+
 // MARK: - Battery Info Model
 
 struct BatteryInfo: Equatable {
@@ -401,7 +430,7 @@ struct AudioDevice: Identifiable {
     let transportType: UInt32
     let isOutputDevice: Bool
     let sampleRate: Double
-    let availableSampleRates: [Double]
+    let supportedSampleRates: [SampleRateRange]
     let batteryInfo: BatteryInfo?
 
     var isCompatibleOutputDevice: Bool {
@@ -409,14 +438,14 @@ struct AudioDevice: Identifiable {
             transportType == kAudioDeviceTransportTypeBluetoothLE)
     }
 
-    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, availableSampleRates: [Double] = [], batteryInfo: BatteryInfo? = nil) {
+    init(id: AudioDeviceID, uid: String, name: String, transportType: UInt32, isOutputDevice: Bool, sampleRate: Double, supportedSampleRates: [SampleRateRange] = [], batteryInfo: BatteryInfo? = nil) {
         self.id = id
         self.uid = uid
         self.name = name
         self.transportType = transportType
         self.isOutputDevice = isOutputDevice
         self.sampleRate = sampleRate
-        self.availableSampleRates = availableSampleRates
+        self.supportedSampleRates = supportedSampleRates
         self.batteryInfo = batteryInfo
     }
 
@@ -437,7 +466,7 @@ struct AudioDevice: Identifiable {
         let streamConfiguration = deviceID.getStreamConfiguration(scope: kAudioObjectPropertyScopeOutput)
         isOutputDevice = streamConfiguration?.mNumberBuffers ?? 0 > 0
         self.sampleRate = sampleRate
-        availableSampleRates = deviceID.getAvailableSampleRates()
+        supportedSampleRates = deviceID.getSupportedSampleRates()
         if transportType == kAudioDeviceTransportTypeBluetooth ||
             transportType == kAudioDeviceTransportTypeBluetoothLE
         {
@@ -509,7 +538,7 @@ extension AudioDevice {
         Transport Type: \(transportTypeString)
         Is Output Device: \(isOutputDevice)
         Sample Rate: \(sampleRate) Hz
-        Available Sample Rates: \(availableSampleRates)
+        Supported Sample Rates: \(supportedSampleRates)
         Is Compatible: \(isCompatibleOutputDevice)
         """
     }

@@ -20,7 +20,11 @@ struct PreviewAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
         nil
     }
 
-    func fetchClockDeviceUID() async -> String? {
+    func fetchClockDeviceUIDs() async -> [String] {
+        []
+    }
+
+    func fetchNominalSampleRate(on _: AudioDeviceID) async -> Double? {
         nil
     }
 

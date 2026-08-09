@@ -97,21 +97,7 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
         }
 
         var aggregateDevice: AudioDeviceID = 0
-        var status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateDevice)
-
-        if status != noErr, clockUID != nil {
-            logWarning("Aggregate creation with clock device failed (status: \(status)), retrying with master sub-device")
-            desc[kAudioAggregateDeviceClockDeviceKey] = nil
-            desc[kAudioAggregateDeviceMasterSubDeviceKey] = masterUID
-            desc[kAudioAggregateDeviceSubDeviceListKey] = subDeviceUIDs.map { subUID in
-                subUID == masterUID
-                    ? [kAudioSubDeviceUIDKey: subUID]
-                    : [kAudioSubDeviceUIDKey: subUID,
-                       kAudioSubDeviceDriftCompensationKey as String: 1,
-                       kAudioSubDeviceDriftCompensationQualityKey as String: kAudioAggregateDriftCompensationMaxQuality]
-            }
-            status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateDevice)
-        }
+        let status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateDevice)
 
         guard status == noErr else {
             throw AppError.operationError("Failed to create aggregate device. Status: \(status)")
@@ -150,10 +136,13 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
         await deviceID.setSampleRate(sampleRate)
     }
 
-    /// UID of a standalone clock device to drive the aggregate, if the Mac exposes one.
-    /// Apple Silicon and T2 Macs publish `ATSAC:…` clocks; older hardware may publish none,
-    /// in which case the aggregate falls back to a master sub-device.
-    func fetchClockDeviceUID() async -> String? {
+    func fetchNominalSampleRate(on deviceID: AudioDeviceID) async -> Double? {
+        deviceID.getFloat64Property(selector: kAudioDevicePropertyNominalSampleRate)
+    }
+
+    /// Standalone clock devices that can drive the aggregate. Apple Silicon and T2 Macs
+    /// publish `ATSAC:…` clocks; older hardware may publish none.
+    func fetchClockDeviceUIDs() async -> [String] {
         let systemObject = AudioObjectID(kAudioObjectSystemObject)
         var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyClockDeviceList)
 
@@ -162,20 +151,18 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
               propertySize > 0
         else {
             logDebug("No CoreAudio clock devices available")
-            return nil
+            return []
         }
 
         var clockIDs = [AudioObjectID](repeating: 0, count: Int(propertySize) / MemoryLayout<AudioObjectID>.size)
         guard AudioObjectGetPropertyData(systemObject, &address, 0, nil, &propertySize, &clockIDs) == noErr else {
             logDebug("Failed to read the clock device list")
-            return nil
+            return []
         }
 
-        let uid = clockIDs.lazy
-            .compactMap { $0.getStringProperty(selector: kAudioClockDevicePropertyDeviceUID) }
-            .first
-        logDebug("Clock device for aggregate: \(uid ?? "none")")
-        return uid
+        let uids = clockIDs.compactMap { $0.getStringProperty(selector: kAudioClockDevicePropertyDeviceUID) }
+        logDebug("Clock device candidates for aggregate: \(uids)")
+        return uids
     }
 
     // MARK: - Private Helpers

@@ -106,8 +106,9 @@ struct AudioDeviceManagerRateAlignmentTests {
 
         for call in mock.setSampleRateCalls {
             let target = devices.first { $0.id == call.deviceID }
-            #expect(target?.availableSampleRates.contains(call.sampleRate) == true,
-                    "Wrote \(call.sampleRate)Hz to a device advertising \(target?.availableSampleRates ?? [])")
+            let supported = target?.supportedSampleRates ?? []
+            #expect(supported.contains { $0.contains(call.sampleRate) },
+                    "Wrote \(call.sampleRate)Hz to a device advertising \(supported)")
         }
     }
 }

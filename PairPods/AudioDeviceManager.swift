@@ -43,7 +43,7 @@ final class AudioDeviceManager: ObservableObject {
     private var initTask: Task<Void, Never>?
     private var volumeListenerTask: Task<Void, Never>?
     private let shouldShowAlerts: Bool
-    private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
+    let audioSystem: AudioSystemQuerying & AudioSystemCommanding
     /// Injected for the same reason as userDefaults: NotificationCenter.default is
     /// process-wide, so a notification posted by one parallel test suite reaches every
     /// other suite's manager.
@@ -52,6 +52,13 @@ final class AudioDeviceManager: ObservableObject {
     /// order both live here, and a test that wrote either could drop another test's
     /// selection below two devices, which is what made the reconnect tests flaky.
     private let userDefaults: UserDefaults
+    /// Rate changes currently applied to hardware, so they can be undone on failure or
+    /// when sharing stops. Nothing else in the app writes device nominal rates.
+    private var appliedSampleRateChanges: [SampleRateChange] = []
+
+    /// Outcome of the last alignment attempt, exposed so callers and tests can tell a
+    /// clean setup from one running with mismatched sub-device rates.
+    private(set) var lastAlignment: SampleRateAlignment?
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
     @Published var excludedDeviceUIDs: Set<String> = []
@@ -188,20 +195,56 @@ final class AudioDeviceManager: ObservableObject {
         let sorted = selectDevicesForSharing(selected)
         sharedDevices = sorted
 
-        await alignSampleRates(sorted)
+        let alignment = await alignSampleRates(sorted)
+        lastAlignment = alignment
+        appliedSampleRateChanges = alignment.appliedChanges
+        if case let .degraded(reason) = alignment {
+            // Sharing still proceeds: refusing outright would take a pairing that works
+            // today, imperfectly, and make it not work at all. But this is a named,
+            // observable state rather than a silent one.
+            logWarning("Proceeding in degraded mode, sub-device rates differ (\(reason))")
+        }
 
-        let masterDevice = sorted[0]
-        let clockUID = await audioSystem.fetchClockDeviceUID()
+        do {
+            let deviceID = try await createAggregate(masterUID: sorted[0].uid, subDeviceUIDs: sorted.map(\.uid))
+            try await audioSystem.setDefaultOutputDevice(deviceID: deviceID)
+        } catch {
+            // Anything written to hardware before this point has to come back off it.
+            await restoreSampleRates(appliedSampleRateChanges)
+            appliedSampleRateChanges = []
+            throw error
+        }
+        logInfo("Multi-output device setup completed successfully")
+    }
 
-        let deviceID = try await audioSystem.createAggregateDevice(
+    /// Builds the aggregate, preferring a standalone clock device over a Bluetooth master.
+    ///
+    /// Every advertised clock is tried before giving up: the first one may be stale or
+    /// incompatible with the rate the aggregate needs, and falling straight back to a
+    /// Bluetooth master would reintroduce the very problem this change removes.
+    private func createAggregate(masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID {
+        for clockUID in await audioSystem.fetchClockDeviceUIDs() {
+            do {
+                return try await audioSystem.createAggregateDevice(
+                    name: "PairPods Output Device",
+                    uid: multiOutputDeviceUID,
+                    masterUID: masterUID,
+                    subDeviceUIDs: subDeviceUIDs,
+                    clockUID: clockUID
+                )
+            } catch {
+                logWarning("Clock device \(clockUID) rejected for the aggregate, trying the next candidate")
+            }
+        }
+
+        logInfo("No usable clock device, falling back to a master sub-device")
+        return try await audioSystem.createAggregateDevice(
             name: "PairPods Output Device",
             uid: multiOutputDeviceUID,
-            masterUID: masterDevice.uid,
-            subDeviceUIDs: sorted.map(\.uid),
-            clockUID: clockUID
+            masterUID: masterUID,
+            subDeviceUIDs: subDeviceUIDs,
+            clockUID: nil
         )
-        try await audioSystem.setDefaultOutputDevice(deviceID: deviceID)
-        logInfo("Multi-output device setup completed successfully")
     }
 
     func restoreOutputDevice() async {
@@ -230,6 +273,8 @@ final class AudioDeviceManager: ObservableObject {
             logError("Failed to restore output device", error: appError)
         }
 
+        await restoreSampleRates(appliedSampleRateChanges)
+        appliedSampleRateChanges = []
         originalOutputDeviceID = nil
         sharedDevices = nil
     }
@@ -497,54 +542,5 @@ final class AudioDeviceManager: ObservableObject {
                 logError("Failed to set up volume listeners", error: .systemError(error))
             }
         }
-    }
-}
-
-// MARK: - Device Selection
-
-/// Kept in an extension so it stays out of the main class body, which is already at
-/// the size the linter accepts.
-extension AudioDeviceManager {
-    func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
-        // If user has defined a preferred order, use it (first device = master clock)
-        let userOrder = loadDeviceOrder()
-        if !userOrder.isEmpty {
-            let sorted = devices.sorted { a, b in
-                let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
-                let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
-                if ai != bi {
-                    return ai < bi
-                }
-                return a.name < b.name
-            }
-            let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
-            logInfo("Selected devices for sharing (user order) - \(names)")
-            return sorted
-        }
-
-        // Fallback: find the most common sample rate among the devices
-        var rateCount: [Double: Int] = [:]
-        for device in devices {
-            rateCount[device.sampleRate, default: 0] += 1
-        }
-        let maxCount = rateCount.values.max() ?? 0
-        let hasClearMajority = rateCount.values.count(where: { $0 == maxCount }) == 1
-        let majorityRate = hasClearMajority ? rateCount.first(where: { $0.value == maxCount })?.key : nil
-
-        // Sort: when a clear majority exists, those devices go first; otherwise sort descending by rate
-        let sorted = devices.sorted { a, b in
-            if let majorityRate {
-                let aMatches = a.sampleRate == majorityRate
-                let bMatches = b.sampleRate == majorityRate
-                if aMatches != bMatches {
-                    return aMatches
-                }
-            }
-            return a.sampleRate > b.sampleRate
-        }
-
-        let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
-        logInfo("Selected devices for sharing - \(names)")
-        return sorted
     }
 }

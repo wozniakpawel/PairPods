@@ -39,13 +39,31 @@ struct AudioDeviceManagerFlowTests {
             AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
             AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
         ]
-        mock.clockDeviceUIDToReturn = "ATSAC:testclock"
+        mock.clockDeviceUIDsToReturn = ["ATSAC:testclock"]
 
         try await manager.setupMultiOutputDevice()
 
         // With a clock device no Bluetooth radio is the timing reference, which is the
         // entire point: every sub-device can then be drift compensated.
         #expect(mock.createAggregateCalls.first?.clockUID == "ATSAC:testclock")
+    }
+
+    @Test("Three devices all end up in the aggregate")
+    @MainActor func threeDevicesAllShare() async throws {
+        let (mock, manager) = makeMockAndManager()
+        let devices = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothLEDevice(id: 3, uid: "bt3", sampleRate: 48000),
+        ]
+        mock.devicesToReturn = devices
+        mock.createAggregateResult = .success(999)
+
+        try await manager.setupMultiOutputDevice()
+
+        let call = try #require(mock.createAggregateCalls.first)
+        #expect(Set(call.subDeviceUIDs) == ["bt1", "bt2", "bt3"],
+                "All three selected devices must be sub-devices, got \(call.subDeviceUIDs)")
     }
 
     @Test("Aggregate falls back to a master sub-device when no clock device exists")
@@ -55,7 +73,7 @@ struct AudioDeviceManagerFlowTests {
             AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
             AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
         ]
-        mock.clockDeviceUIDToReturn = nil
+        mock.clockDeviceUIDsToReturn = []
 
         try await manager.setupMultiOutputDevice()
 

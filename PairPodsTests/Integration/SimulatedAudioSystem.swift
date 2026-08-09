@@ -22,7 +22,7 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
             transportType: profileA.transportType,
             isOutputDevice: true,
             sampleRate: profileA.nominalSampleRate,
-            availableSampleRates: profileA.availableSampleRates
+            supportedSampleRates: profileA.supportedSampleRates
         )
     }
 
@@ -34,7 +34,7 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
             transportType: profileB.transportType,
             isOutputDevice: true,
             sampleRate: profileB.nominalSampleRate,
-            availableSampleRates: profileB.availableSampleRates
+            supportedSampleRates: profileB.supportedSampleRates
         )
     }
 
@@ -75,8 +75,12 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
         await realSystem.fetchDeviceID(deviceUID: deviceUID)
     }
 
-    func fetchClockDeviceUID() async -> String? {
-        await realSystem.fetchClockDeviceUID()
+    func fetchClockDeviceUIDs() async -> [String] {
+        await realSystem.fetchClockDeviceUIDs()
+    }
+
+    func fetchNominalSampleRate(on deviceID: AudioDeviceID) async -> Double? {
+        await realSystem.fetchNominalSampleRate(on: deviceID)
     }
 
     // MARK: - AudioSystemCommanding
@@ -101,7 +105,7 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
     func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) async -> Bool {
         let profile = (deviceID == blackHoleA.id) ? profileA : profileB
         setSampleRateCalls.append(SetSampleRateCall(deviceID: deviceID, sampleRate: sampleRate, profile: profile))
-        guard profile.availableSampleRates.contains(sampleRate) else { return false }
+        guard profile.supportedSampleRates.contains(where: { $0.contains(sampleRate) }) else { return false }
         return await realSystem.setSampleRate(on: deviceID, to: sampleRate)
     }
 
@@ -116,7 +120,7 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
     /// Descriptive messages for rate change violations.
     var rateChangeViolations: [String] {
         setSampleRateCalls
-            .filter { !$0.profile.availableSampleRates.contains($0.sampleRate) }
-            .map { "Code attempted setSampleRate \($0.sampleRate)Hz on '\($0.profile.name)', which only advertises \($0.profile.availableSampleRates)" }
+            .filter { call in !call.profile.supportedSampleRates.contains { $0.contains(call.sampleRate) } }
+            .map { "Code attempted setSampleRate \($0.sampleRate)Hz on '\($0.profile.name)', which only advertises \($0.profile.supportedSampleRates)" }
     }
 }

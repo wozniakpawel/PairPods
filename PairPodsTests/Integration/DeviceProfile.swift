@@ -4,6 +4,7 @@
 //
 
 import CoreAudio
+@testable import PairPods
 
 struct DeviceProfile {
     let name: String
@@ -14,8 +15,10 @@ struct DeviceProfile {
     /// Rates the device advertises via `kAudioDevicePropertyAvailableNominalSampleRates`.
     /// A device that tolerates rate changes offers both common Bluetooth rates; one that
     /// does not is locked to its native rate, so nothing may ever write a rate to it.
-    var availableSampleRates: [Double] {
-        toleratesRateChange ? [44100, 48000] : [nominalSampleRate]
+    var supportedSampleRates: [SampleRateRange] {
+        toleratesRateChange
+            ? [SampleRateRange(44100), SampleRateRange(48000)]
+            : [SampleRateRange(nominalSampleRate)]
     }
 }
 
