@@ -42,6 +42,7 @@ final class AudioDeviceManager: ObservableObject {
     private var volumeListenerDeviceIDs: [AudioDeviceID] = []
     private var initTask: Task<Void, Never>?
     private var volumeListenerTask: Task<Void, Never>?
+    private let monitorHardware: Bool
     private let shouldShowAlerts: Bool
     private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
     /// Injected for the same reason as userDefaults: NotificationCenter.default is
@@ -70,11 +71,13 @@ final class AudioDeviceManager: ObservableObject {
 
     init(audioSystem: AudioSystemQuerying & AudioSystemCommanding,
          shouldShowAlerts: Bool = true,
+         monitorHardware: Bool = true,
          userDefaults: UserDefaults = .standard,
          notificationCenter: NotificationCenter = .default)
     {
         self.audioSystem = audioSystem
         self.shouldShowAlerts = shouldShowAlerts
+        self.monitorHardware = monitorHardware
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
         excludedDeviceUIDs = Self.loadExcludedDeviceUIDs(from: userDefaults)
@@ -327,6 +330,7 @@ final class AudioDeviceManager: ObservableObject {
     // MARK: - Private Methods
 
     private func setupAudioDeviceMonitoring() {
+        guard monitorHardware else { return }
         logDebug("Setting up audio device monitoring")
         propertyListenerBlock = { [weak self] _, _ in
             Task { @MainActor in
@@ -470,6 +474,7 @@ final class AudioDeviceManager: ObservableObject {
 
     /// Setup listeners for volume changes on all compatible devices
     private func setupVolumeChangeListeners() {
+        guard monitorHardware else { return }
         logDebug("Setting up volume change listeners")
 
         if volumeListenerBlock == nil {

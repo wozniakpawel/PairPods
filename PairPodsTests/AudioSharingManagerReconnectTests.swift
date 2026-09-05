@@ -12,6 +12,9 @@ struct AudioSharingManagerReconnectTests {
     /// Private bus: NotificationCenter.default is process-wide, so a notification posted
     /// by another suite running in parallel would drive this manager too.
     private let center = NotificationCenter()
+    // These managers also disable real CoreAudio monitoring: the integration suites
+    // create/destroy hardware devices in parallel, which would otherwise add unrelated
+    // refresh calls to the reconnect polling counts below.
 
     private static let timeoutKey = "PairPods.ReconnectTimeout"
 
@@ -45,7 +48,7 @@ struct AudioSharingManagerReconnectTests {
         defer { defaults.removeObject(forKey: Self.timeoutKey) }
         defaults.set(1.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults, notificationCenter: center)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
 
         mock.devicesToReturn = [
@@ -75,7 +78,7 @@ struct AudioSharingManagerReconnectTests {
         let reconnectTimeout = Duration.seconds(2)
         defaults.set(2.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults, notificationCenter: center)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
 
         mock.devicesToReturn = [
