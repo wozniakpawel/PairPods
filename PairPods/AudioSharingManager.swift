@@ -31,6 +31,8 @@ final class AudioSharingManager: ObservableObject {
         state == .active
     }
 
+    @Published private(set) var lastErrorMessage: String?
+
     var stateDidChange: ((AudioSharingState) -> Void)?
 
     @Published private(set) var state: AudioSharingState = .inactive {
@@ -164,6 +166,7 @@ final class AudioSharingManager: ObservableObject {
 
     private func startAudioSharing() async {
         logInfo("Starting audio sharing process")
+        lastErrorMessage = nil
         state = .starting
 
         do {
@@ -171,6 +174,7 @@ final class AudioSharingManager: ObservableObject {
             await handleStateTransition(to: .active)
             logInfo("Audio sharing started successfully")
         } catch {
+            lastErrorMessage = error.localizedDescription
             logError("Failed to start audio sharing", error: .systemError(error))
             await handleStateTransition(to: .inactive)
         }

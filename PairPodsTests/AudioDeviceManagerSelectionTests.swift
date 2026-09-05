@@ -175,4 +175,17 @@ struct AudioDeviceManagerSelectionTests {
         #expect(result[2].uid == "uid-new")
         defaults.removeObject(forKey: "PairPods.DeviceOrder")
     }
+
+    @Test("Disconnected clock preferences fall back to the actual selected master")
+    @MainActor func disconnectedClockPreferenceFallsBack() {
+        let manager = makeManager()
+        let lowRate = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "new-a", sampleRate: 44100)
+        let highRate = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "new-b", sampleRate: 48000)
+        manager.saveDeviceOrder(["disconnected-device"])
+
+        let devices = [lowRate, highRate]
+        #expect(manager.selectDevicesForSharing(devices).first?.uid == highRate.uid)
+        #expect(manager.masterDeviceUID(for: devices) == highRate.uid)
+        #expect(manager.masterDeviceUID(for: []) == nil)
+    }
 }

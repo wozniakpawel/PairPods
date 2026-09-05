@@ -125,13 +125,7 @@ final class AudioDeviceManager: ObservableObject {
     /// Returns the UID of the device that would be master clock for the given devices,
     /// using the same logic as `selectDevicesForSharing`.
     func masterDeviceUID(for devices: [AudioDevice]) -> String? {
-        let userOrder = loadDeviceOrder()
-        if !userOrder.isEmpty {
-            // User order: first device in saved order that's in the list
-            return userOrder.first { uid in devices.contains { $0.uid == uid } }
-        }
-        // Fallback: same sample-rate logic as selectDevicesForSharing
-        return selectDevicesForSharing(devices).first?.uid
+        selectDevicesForSharing(devices).first?.uid
     }
 
     // MARK: - Public Methods
@@ -504,7 +498,7 @@ extension AudioDeviceManager {
     func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
         // If user has defined a preferred order, use it (first device = master clock)
         let userOrder = loadDeviceOrder()
-        if !userOrder.isEmpty {
+        if devices.contains(where: { userOrder.contains($0.uid) }) {
             let sorted = devices.sorted { a, b in
                 let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
                 let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
