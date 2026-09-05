@@ -51,11 +51,15 @@ jobs:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
-      - name: Install Sparkle tools
+      - name: Resolve packages and locate Sparkle tools
         id: sparkle-install
         run: |
-          brew install --cask sparkle
-          GENERATE_APPCAST_PATH=$(find "$(brew --prefix)/Caskroom/sparkle" -name "generate_appcast" -type f | head -n 1)
+          xcodebuild -resolvePackageDependencies \
+            -project PairPods.xcodeproj \
+            -clonedSourcePackagesDirPath ./build/SourcePackages \
+            -onlyUsePackageVersionsFromResolvedFile
+          GENERATE_APPCAST_PATH="$PWD/build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast"
+          test -x "$GENERATE_APPCAST_PATH"
           echo "Found generate_appcast at: $GENERATE_APPCAST_PATH"
           echo "appcast_tool=$GENERATE_APPCAST_PATH" >> $GITHUB_OUTPUT
 
@@ -67,6 +71,8 @@ jobs:
             -scheme PairPods \
             -configuration Release \
             -archivePath ./build/PairPods.xcarchive \
+            -clonedSourcePackagesDirPath ./build/SourcePackages \
+            -onlyUsePackageVersionsFromResolvedFile \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=$TEAM_ID \
