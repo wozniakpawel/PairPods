@@ -42,8 +42,17 @@ final class AudioDeviceManager: ObservableObject {
     private var volumeListenerDeviceIDs: [AudioDeviceID] = []
     private var initTask: Task<Void, Never>?
     private var volumeListenerTask: Task<Void, Never>?
+    private let monitorHardware: Bool
     private let shouldShowAlerts: Bool
     private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
+    /// Injected for the same reason as userDefaults: NotificationCenter.default is
+    /// process-wide, so a notification posted by one parallel test suite reaches every
+    /// other suite's manager.
+    let notificationCenter: NotificationCenter
+    /// Injected so parallel tests do not share persisted state. Exclusions and device
+    /// order both live here, and a test that wrote either could drop another test's
+    /// selection below two devices, which is what made the reconnect tests flaky.
+    private let userDefaults: UserDefaults
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
     @Published var excludedDeviceUIDs: Set<String> = []
@@ -60,10 +69,18 @@ final class AudioDeviceManager: ObservableObject {
         self.init(audioSystem: CoreAudioSystem(), shouldShowAlerts: shouldShowAlerts)
     }
 
-    init(audioSystem: AudioSystemQuerying & AudioSystemCommanding, shouldShowAlerts: Bool = true) {
+    init(audioSystem: AudioSystemQuerying & AudioSystemCommanding,
+         shouldShowAlerts: Bool = true,
+         monitorHardware: Bool = true,
+         userDefaults: UserDefaults = .standard,
+         notificationCenter: NotificationCenter = .default)
+    {
         self.audioSystem = audioSystem
         self.shouldShowAlerts = shouldShowAlerts
-        excludedDeviceUIDs = Self.loadExcludedDeviceUIDs()
+        self.monitorHardware = monitorHardware
+        self.userDefaults = userDefaults
+        self.notificationCenter = notificationCenter
+        excludedDeviceUIDs = Self.loadExcludedDeviceUIDs(from: userDefaults)
         logDebug("Initializing AudioDeviceManager")
         setupAudioDeviceMonitoring()
         initTask = Task {
@@ -87,25 +104,25 @@ final class AudioDeviceManager: ObservableObject {
         !excludedDeviceUIDs.contains(uid)
     }
 
-    private static func loadExcludedDeviceUIDs() -> Set<String> {
-        let array = UserDefaults.standard.stringArray(forKey: excludedDeviceUIDsKey) ?? []
+    private static func loadExcludedDeviceUIDs(from userDefaults: UserDefaults) -> Set<String> {
+        let array = userDefaults.stringArray(forKey: excludedDeviceUIDsKey) ?? []
         return Set(array)
     }
 
     private func saveExcludedDeviceUIDs() {
-        UserDefaults.standard.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
+        userDefaults.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
     }
 
     // MARK: - Device Order
 
     func saveDeviceOrder(_ uids: [String]) {
-        UserDefaults.standard.set(uids, forKey: Self.deviceOrderKey)
+        userDefaults.set(uids, forKey: Self.deviceOrderKey)
         objectWillChange.send()
         logDebug("Saved device order: \(uids)")
     }
 
     func loadDeviceOrder() -> [String] {
-        UserDefaults.standard.stringArray(forKey: Self.deviceOrderKey) ?? []
+        userDefaults.stringArray(forKey: Self.deviceOrderKey) ?? []
     }
 
     /// Returns the UID of the device that would be master clock for the given devices,
@@ -310,50 +327,10 @@ final class AudioDeviceManager: ObservableObject {
         }
     }
 
-    func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
-        // If user has defined a preferred order, use it (first device = master clock)
-        let userOrder = loadDeviceOrder()
-        if !userOrder.isEmpty {
-            let sorted = devices.sorted { a, b in
-                let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
-                let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
-                if ai != bi { return ai < bi }
-                return a.name < b.name
-            }
-            let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
-            logInfo("Selected devices for sharing (user order) - \(names)")
-            return sorted
-        }
-
-        // Fallback: find the most common sample rate among the devices
-        var rateCount: [Double: Int] = [:]
-        for device in devices {
-            rateCount[device.sampleRate, default: 0] += 1
-        }
-        let maxCount = rateCount.values.max() ?? 0
-        let hasClearMajority = rateCount.values.count(where: { $0 == maxCount }) == 1
-        let majorityRate = hasClearMajority ? rateCount.first(where: { $0.value == maxCount })?.key : nil
-
-        // Sort: when a clear majority exists, those devices go first; otherwise sort descending by rate
-        let sorted = devices.sorted { a, b in
-            if let majorityRate {
-                let aMatches = a.sampleRate == majorityRate
-                let bMatches = b.sampleRate == majorityRate
-                if aMatches != bMatches {
-                    return aMatches
-                }
-            }
-            return a.sampleRate > b.sampleRate
-        }
-
-        let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
-        logInfo("Selected devices for sharing - \(names)")
-        return sorted
-    }
-
     // MARK: - Private Methods
 
     private func setupAudioDeviceMonitoring() {
+        guard monitorHardware else { return }
         logDebug("Setting up audio device monitoring")
         propertyListenerBlock = { [weak self] _, _ in
             Task { @MainActor in
@@ -378,7 +355,7 @@ final class AudioDeviceManager: ObservableObject {
 
         if isActive, !isValid {
             logWarning("Multi-output device configuration is no longer valid")
-            NotificationCenter.default.postDeviceConfigurationChanged()
+            notificationCenter.postDeviceConfigurationChanged()
         }
     }
 
@@ -461,7 +438,7 @@ final class AudioDeviceManager: ObservableObject {
 
         if let newVolume = device.getVolume() {
             logInfo("Volume for \(device.name): \(newVolume)")
-            NotificationCenter.default.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
+            notificationCenter.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
         } else {
             logWarning("Failed to get volume for device: \(device.name)")
         }
@@ -497,6 +474,7 @@ final class AudioDeviceManager: ObservableObject {
 
     /// Setup listeners for volume changes on all compatible devices
     private func setupVolumeChangeListeners() {
+        guard monitorHardware else { return }
         logDebug("Setting up volume change listeners")
 
         if volumeListenerBlock == nil {
@@ -520,5 +498,54 @@ final class AudioDeviceManager: ObservableObject {
                 logError("Failed to set up volume listeners", error: .systemError(error))
             }
         }
+    }
+}
+
+// MARK: - Device Selection
+
+/// Kept in an extension so it stays out of the main class body, which is already at
+/// the size the linter accepts.
+extension AudioDeviceManager {
+    func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
+        // If user has defined a preferred order, use it (first device = master clock)
+        let userOrder = loadDeviceOrder()
+        if !userOrder.isEmpty {
+            let sorted = devices.sorted { a, b in
+                let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
+                let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
+                if ai != bi {
+                    return ai < bi
+                }
+                return a.name < b.name
+            }
+            let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
+            logInfo("Selected devices for sharing (user order) - \(names)")
+            return sorted
+        }
+
+        // Fallback: find the most common sample rate among the devices
+        var rateCount: [Double: Int] = [:]
+        for device in devices {
+            rateCount[device.sampleRate, default: 0] += 1
+        }
+        let maxCount = rateCount.values.max() ?? 0
+        let hasClearMajority = rateCount.values.count(where: { $0 == maxCount }) == 1
+        let majorityRate = hasClearMajority ? rateCount.first(where: { $0.value == maxCount })?.key : nil
+
+        // Sort: when a clear majority exists, those devices go first; otherwise sort descending by rate
+        let sorted = devices.sorted { a, b in
+            if let majorityRate {
+                let aMatches = a.sampleRate == majorityRate
+                let bMatches = b.sampleRate == majorityRate
+                if aMatches != bMatches {
+                    return aMatches
+                }
+            }
+            return a.sampleRate > b.sampleRate
+        }
+
+        let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
+        logInfo("Selected devices for sharing - \(names)")
+        return sorted
     }
 }

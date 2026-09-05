@@ -9,10 +9,12 @@ import Testing
 
 @Suite("AudioDeviceManager Flow")
 struct AudioDeviceManagerFlowTests {
+    private let defaults = TestDefaults.make()
+
     @MainActor private func makeMockAndManager() -> (MockAudioSystem, AudioDeviceManager) {
-        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
+        defaults.removeObject(forKey: "excludedDeviceUIDs")
         let mock = MockAudioSystem()
-        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         return (mock, manager)
     }
 
@@ -61,9 +63,8 @@ struct AudioDeviceManagerFlowTests {
         let (mock, manager) = makeMockAndManager()
         mock.devicesToReturn = [AudioDeviceFixtures.bluetoothDevice()]
 
-        await #expect(throws: AppError.self) {
-            try await manager.setupMultiOutputDevice()
-        }
+        let thrown = await errorThrown { try await manager.setupMultiOutputDevice() }
+        #expect(thrown is AppError, "Expected an AppError, got \(String(describing: thrown))")
     }
 
     @Test("Setup throws when aggregate creation fails")
@@ -74,9 +75,8 @@ struct AudioDeviceManagerFlowTests {
         mock.devicesToReturn = [bt1, bt2]
         mock.createAggregateResult = .failure(AppError.operationError("Failed"))
 
-        await #expect(throws: AppError.self) {
-            try await manager.setupMultiOutputDevice()
-        }
+        let thrown = await errorThrown { try await manager.setupMultiOutputDevice() }
+        #expect(thrown is AppError, "Expected an AppError, got \(String(describing: thrown))")
     }
 
     @Test("Restore falls back to master device")
@@ -88,7 +88,7 @@ struct AudioDeviceManagerFlowTests {
         mock.createAggregateResult = .success(999)
 
         try await manager.setupMultiOutputDevice()
-        mock.setDefaultOutputCalls.removeAll()
+        mock.clearRecordedCalls()
 
         await manager.restoreOutputDevice()
 
@@ -106,7 +106,7 @@ struct AudioDeviceManagerFlowTests {
         mock.createAggregateResult = .success(999)
 
         try await manager.setupMultiOutputDevice()
-        mock.setDefaultOutputCalls.removeAll()
+        mock.clearRecordedCalls()
 
         // Remove shared devices, add built-in
         let builtIn = AudioDeviceFixtures.builtInSpeaker(id: 300)

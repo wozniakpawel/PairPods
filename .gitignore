@@ -30,7 +30,7 @@ Carthage/Build/
 
 # Build artifacts
 build/
-DerivedData/
+DerivedData*/
 
 # Sparkle specific
 sparkle_private_key
