@@ -15,9 +15,16 @@ enum LogLevel: String {
     case error = "ERROR"
 }
 
-enum AppError: Error {
+enum AppError: LocalizedError {
     case operationError(String)
     case systemError(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case let .operationError(message): message
+        case let .systemError(error): error.localizedDescription
+        }
+    }
 }
 
 /// Safe to share: the only stored state is an `OSLog`, and `os_log` is documented
