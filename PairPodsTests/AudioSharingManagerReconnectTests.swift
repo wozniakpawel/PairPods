@@ -67,7 +67,11 @@ struct AudioSharingManagerReconnectTests {
         // predicate accepting .active is satisfied before the notification is even
         // processed. The observable that distinguishes a real restart is a second
         // aggregate being built.
-        let rebuilt = await waitUntil { mock.createAggregateCalls.count >= 2 }
+        // Creation is recorded before setup finishes its remaining async operations.
+        // Wait for completion too, or this assertion races the transition to .active.
+        let rebuilt = await waitUntil {
+            mock.createAggregateCalls.count >= 2 && sharingManager.state == .active
+        }
         #expect(rebuilt, "Aggregate was never rebuilt; createAggregateDevice called \(mock.createAggregateCalls.count) time(s)")
         #expect(sharingManager.state == .active, "Ended in \(sharingManager.state) after rebuilding")
     }
