@@ -81,7 +81,7 @@ jobs:
 
       - name: Verify app architectures
         run: |
-          lipo -verify_arch x86_64 arm64 ./build/PairPods.xcarchive/Products/Applications/PairPods.app/Contents/MacOS/PairPods
+          lipo ./build/PairPods.xcarchive/Products/Applications/PairPods.app/Contents/MacOS/PairPods -verify_arch x86_64 arm64
           BUILT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' ./build/PairPods.xcarchive/Products/Applications/PairPods.app/Contents/Info.plist)
           if [[ "$GITHUB_EVENT_NAME" == "push" && "$BUILT_VERSION" != "${GITHUB_REF#refs/tags/v}" ]]; then
             echo "::error::Built version does not match release tag"
