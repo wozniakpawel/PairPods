@@ -22,6 +22,7 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         let uid: String
         let masterUID: String
         let subDeviceUIDs: [String]
+        let clockUID: String?
     }
 
     struct SetSampleRateCall {
@@ -34,6 +35,13 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         var devicesToReturn: [AudioDevice] = []
         var defaultDevice: (AudioDevice?, AudioDeviceID?) = (nil, nil)
         var deviceIDToReturn: AudioDeviceID?
+        var clockDeviceUIDsToReturn: [String] = []
+        /// Nominal rate per device, so restore can be observed rather than assumed.
+        var nominalRates: [AudioDeviceID: Double] = [:]
+        /// Device IDs whose rate writes should fail, for partial-failure coverage.
+        var rateWriteFailures: Set<AudioDeviceID> = []
+        /// Clock UIDs for which aggregate creation should fail, so clock fallback is testable.
+        var failAggregateForClockUIDs: Set<String> = []
         var createAggregateResult: Result<AudioDeviceID, Error> = .success(999)
         var destroyAggregateError: Error?
         var setDefaultOutputError: Error?
@@ -71,6 +79,26 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
     var deviceIDToReturn: AudioDeviceID? {
         get { withState { $0.deviceIDToReturn } }
         set { withState { $0.deviceIDToReturn = newValue } }
+    }
+
+    var clockDeviceUIDsToReturn: [String] {
+        get { withState { $0.clockDeviceUIDsToReturn } }
+        set { withState { $0.clockDeviceUIDsToReturn = newValue } }
+    }
+
+    var nominalRates: [AudioDeviceID: Double] {
+        get { withState { $0.nominalRates } }
+        set { withState { $0.nominalRates = newValue } }
+    }
+
+    var rateWriteFailures: Set<AudioDeviceID> {
+        get { withState { $0.rateWriteFailures } }
+        set { withState { $0.rateWriteFailures = newValue } }
+    }
+
+    var failAggregateForClockUIDs: Set<String> {
+        get { withState { $0.failAggregateForClockUIDs } }
+        set { withState { $0.failAggregateForClockUIDs = newValue } }
     }
 
     var createAggregateResult: Result<AudioDeviceID, Error> {
@@ -150,15 +178,26 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         withState { $0.deviceIDToReturn }
     }
 
+    func fetchClockDeviceUIDs() async -> [String] {
+        withState { $0.clockDeviceUIDsToReturn }
+    }
+
+    func fetchNominalSampleRate(on deviceID: AudioDeviceID) async -> Double? {
+        withState { $0.nominalRates[deviceID] }
+    }
+
     // MARK: - AudioSystemCommanding
 
-    func createAggregateDevice(name: String, uid: String,
-                               masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID
+    func createAggregateDevice(name: String, uid: String, masterUID: String,
+                               subDeviceUIDs: [String], clockUID: String?) async throws -> AudioDeviceID
     {
-        let result = withState {
+        let result: Result<AudioDeviceID, Error> = withState {
             $0.createAggregateCalls.append(CreateAggregateCall(
-                name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs
+                name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs, clockUID: clockUID
             ))
+            if let clockUID, $0.failAggregateForClockUIDs.contains(clockUID) {
+                return .failure(AppError.operationError("Clock \(clockUID) rejected"))
+            }
             return $0.createAggregateResult
         }
         return try result.get()
@@ -184,10 +223,12 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         }
     }
 
-    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) -> Bool {
+    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) async -> Bool {
         withState {
             $0.setSampleRateCalls.append(SetSampleRateCall(deviceID: deviceID, sampleRate: sampleRate))
-            return $0.setSampleRateResult
+            guard $0.setSampleRateResult, !$0.rateWriteFailures.contains(deviceID) else { return false }
+            $0.nominalRates[deviceID] = sampleRate
+            return true
         }
     }
 }

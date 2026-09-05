@@ -21,7 +21,8 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
             name: profileA.name,
             transportType: profileA.transportType,
             isOutputDevice: true,
-            sampleRate: profileA.nominalSampleRate
+            sampleRate: profileA.nominalSampleRate,
+            supportedSampleRates: profileA.supportedSampleRates
         )
     }
 
@@ -32,7 +33,8 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
             name: profileB.name,
             transportType: profileB.transportType,
             isOutputDevice: true,
-            sampleRate: profileB.nominalSampleRate
+            sampleRate: profileB.nominalSampleRate,
+            supportedSampleRates: profileB.supportedSampleRates
         )
     }
 
@@ -46,6 +48,7 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
     struct CreateAggregateCall {
         let masterUID: String
         let subDeviceUIDs: [String]
+        let clockUID: String?
     }
 
     var setSampleRateCalls: [SetSampleRateCall] = []
@@ -72,13 +75,23 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
         await realSystem.fetchDeviceID(deviceUID: deviceUID)
     }
 
+    func fetchClockDeviceUIDs() async -> [String] {
+        await realSystem.fetchClockDeviceUIDs()
+    }
+
+    func fetchNominalSampleRate(on deviceID: AudioDeviceID) async -> Double? {
+        await realSystem.fetchNominalSampleRate(on: deviceID)
+    }
+
     // MARK: - AudioSystemCommanding
 
-    func createAggregateDevice(name: String, uid: String,
-                               masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID
+    func createAggregateDevice(name: String, uid: String, masterUID: String,
+                               subDeviceUIDs: [String], clockUID: String?) async throws -> AudioDeviceID
     {
-        createAggregateCalls.append(CreateAggregateCall(masterUID: masterUID, subDeviceUIDs: subDeviceUIDs))
-        return try await realSystem.createAggregateDevice(name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs)
+        createAggregateCalls.append(CreateAggregateCall(masterUID: masterUID, subDeviceUIDs: subDeviceUIDs, clockUID: clockUID))
+        return try await realSystem.createAggregateDevice(
+            name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs, clockUID: clockUID
+        )
     }
 
     func destroyAggregateDevice(deviceID: AudioDeviceID) async throws {
@@ -89,24 +102,25 @@ final class SimulatedAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @u
         try await realSystem.setDefaultOutputDevice(deviceID: deviceID)
     }
 
-    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) -> Bool {
+    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) async -> Bool {
         let profile = (deviceID == blackHoleA.id) ? profileA : profileB
         setSampleRateCalls.append(SetSampleRateCall(deviceID: deviceID, sampleRate: sampleRate, profile: profile))
-        guard profile.toleratesRateChange else { return false }
-        return realSystem.setSampleRate(on: deviceID, to: sampleRate)
+        guard profile.supportedSampleRates.contains(where: { $0.contains(sampleRate) }) else { return false }
+        return await realSystem.setSampleRate(on: deviceID, to: sampleRate)
     }
 
     // MARK: - Helpers
 
-    /// Returns true if any setSampleRate call targeted a profile that doesn't tolerate rate changes.
+    /// Returns true if any setSampleRate call targeted a rate the device does not advertise.
+    /// That is the v0.4 regression (#39): forcing an unsupported rate silences the device.
     var attemptedRateChangeOnIntolerantDevice: Bool {
-        setSampleRateCalls.contains { !$0.profile.toleratesRateChange }
+        !rateChangeViolations.isEmpty
     }
 
     /// Descriptive messages for rate change violations.
     var rateChangeViolations: [String] {
         setSampleRateCalls
-            .filter { !$0.profile.toleratesRateChange }
-            .map { "Code attempted setSampleRate on BLE device '\($0.profile.name)' which does not tolerate rate changes" }
+            .filter { call in !call.profile.supportedSampleRates.contains { $0.contains(call.sampleRate) } }
+            .map { "Code attempted setSampleRate \($0.sampleRate)Hz on '\($0.profile.name)', which only advertises \($0.profile.supportedSampleRates)" }
     }
 }

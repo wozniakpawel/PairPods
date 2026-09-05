@@ -12,8 +12,12 @@ enum AudioDeviceFixtures {
         uid: String = "bt-device-1",
         name: String = "BT Headphones",
         sampleRate: Double = 48000,
+        availableSampleRates: [Double] = [],
+        sampleRateRanges: [SampleRateRange]? = nil,
         batteryInfo: BatteryInfo? = nil
     ) -> AudioDevice {
+        // Most devices advertise discrete rates, so the ergonomic parameter takes those;
+        // `sampleRateRanges` is for covering the continuous case explicitly.
         AudioDevice(
             id: id,
             uid: uid,
@@ -21,6 +25,7 @@ enum AudioDeviceFixtures {
             transportType: kAudioDeviceTransportTypeBluetooth,
             isOutputDevice: true,
             sampleRate: sampleRate,
+            supportedSampleRates: sampleRateRanges ?? availableSampleRates.map(SampleRateRange.init),
             batteryInfo: batteryInfo
         )
     }

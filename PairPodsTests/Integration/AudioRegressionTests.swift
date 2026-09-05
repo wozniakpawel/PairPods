@@ -57,8 +57,11 @@ struct AudioRegressionTests {
         try await runDevicePairTest(profileA: .airPods1, profileB: .cheapBTEarbuds)
     }
 
-    @Test("Three devices — Pro 2 + AirPods 4 + Generic BLE", blackHoleRequired)
-    @MainActor func threeDevices() async throws {
+    /// Only two BlackHole devices exist, so this harness cannot build a genuine
+    /// three-device aggregate; it used to claim to. Three-device selection, alignment and
+    /// aggregate construction are covered against the mock in AudioDeviceManagerFlowTests.
+    @Test("Same-rate BT Classic and BLE — AirPods Pro 2 + AirPods 4", blackHoleRequired)
+    @MainActor func sameRateClassicAndBLE() async throws {
         try await runDevicePairTest(profileA: .airPodsPro2, profileB: .airPods4)
     }
 
@@ -70,8 +73,8 @@ struct AudioRegressionTests {
         let blackHoleDevices = try #require(await BlackHoleHelper.discoverDevices())
 
         // 2. Configure BlackHole devices to match profile sample rates
-        let rateSetA = BlackHoleHelper.setSampleRate(on: blackHoleDevices.device2ch.id, to: profileA.nominalSampleRate)
-        let rateSetB = BlackHoleHelper.setSampleRate(on: blackHoleDevices.device16ch.id, to: profileB.nominalSampleRate)
+        let rateSetA = await BlackHoleHelper.setSampleRate(on: blackHoleDevices.device2ch.id, to: profileA.nominalSampleRate)
+        let rateSetB = await BlackHoleHelper.setSampleRate(on: blackHoleDevices.device16ch.id, to: profileB.nominalSampleRate)
         #expect(rateSetA, "Failed to set BlackHole 2ch sample rate to \(profileA.nominalSampleRate)")
         #expect(rateSetB, "Failed to set BlackHole 16ch sample rate to \(profileB.nominalSampleRate)")
 
@@ -103,18 +106,24 @@ struct AudioRegressionTests {
             return
         }
 
-        // 6. REGRESSION CHECK: No setSampleRate calls should have been made
-        //    The v0.5.1 fix removed all setSampleRate forcing. If this fires,
-        //    someone re-introduced the regression.
+        // 6. REGRESSION CHECK: rate alignment may write to a device, but only ever a rate
+        //    that device advertises. v0.4 forced unsupported rates and silenced AirPods 4
+        //    (#39); v0.5.1 banned writes outright. The invariant that actually matters is
+        //    this one, so it replaces the blanket ban rather than sitting next to it.
         #expect(
-            simulatedSystem.setSampleRateCalls.isEmpty,
-            "Code called setSampleRate \(simulatedSystem.setSampleRateCalls.count) time(s) — this is the v0.5.1 regression"
+            !simulatedSystem.attemptedRateChangeOnIntolerantDevice,
+            "Forced an unadvertised sample rate, this is the v0.4 regression"
         )
+        for violation in simulatedSystem.rateChangeViolations {
+            Issue.record(Comment(rawValue: violation))
+        }
 
-        if simulatedSystem.attemptedRateChangeOnIntolerantDevice {
-            for violation in simulatedSystem.rateChangeViolations {
-                Issue.record(Comment(rawValue: violation))
-            }
+        // Devices that already agree must never be written to at all.
+        if profileA.nominalSampleRate == profileB.nominalSampleRate {
+            #expect(
+                simulatedSystem.setSampleRateCalls.isEmpty,
+                "Devices already share \(profileA.nominalSampleRate)Hz, nothing should have been written"
+            )
         }
 
         // 7. Verify aggregate was created with correct sub-device UIDs
