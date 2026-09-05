@@ -12,6 +12,9 @@ struct AudioSharingManagerReconnectTests {
     /// Private bus: NotificationCenter.default is process-wide, so a notification posted
     /// by another suite running in parallel would drive this manager too.
     private let center = NotificationCenter()
+    // These managers also disable real CoreAudio monitoring: the integration suites
+    // create/destroy hardware devices in parallel, which would otherwise add unrelated
+    // refresh calls to the reconnect polling counts below.
 
     private static let timeoutKey = "PairPods.ReconnectTimeout"
 
@@ -45,7 +48,7 @@ struct AudioSharingManagerReconnectTests {
         defer { defaults.removeObject(forKey: Self.timeoutKey) }
         defaults.set(1.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults, notificationCenter: center)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
 
         mock.devicesToReturn = [
@@ -72,10 +75,10 @@ struct AudioSharingManagerReconnectTests {
     @Test("Reconnection gives up after the timeout when devices do not reappear")
     @MainActor func reconnectionGivesUpAfterTimeout() async {
         defer { defaults.removeObject(forKey: Self.timeoutKey) }
-        let reconnectTimeout = Duration.milliseconds(300)
-        defaults.set(0.3, forKey: Self.timeoutKey)
+        let reconnectTimeout = Duration.seconds(2)
+        defaults.set(2.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults, notificationCenter: center)
         let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
 
         mock.devicesToReturn = [
@@ -89,18 +92,29 @@ struct AudioSharingManagerReconnectTests {
         #expect(mock.createAggregateCalls.count == 1)
 
         mock.devicesToReturn = []
-        let disconnectedAt = ContinuousClock.now
         center.postDeviceConfigurationChanged()
 
-        // .inactive on its own is not evidence of giving up: production passes through it
-        // during stopSharing(), before the reconnect watch even starts. The watch has only
-        // genuinely expired once the timeout has elapsed and nothing was rebuilt.
-        let expired = await waitUntil {
-            ContinuousClock.now - disconnectedAt > reconnectTimeout + .milliseconds(500)
+        // Wait for shutdown to finish before measuring reconnect polling. The restore
+        // path also fetches devices, so its calls must not count as reconnect attempts.
+        let stopped = await waitUntil { sharingManager.state == .inactive }
+        #expect(stopped)
+        let callsAfterStop = mock.fetchAllDevicesCalls
+        let polledRepeatedly = await waitUntil {
+            mock.fetchAllDevicesCalls >= callsAfterStop + 3
         }
-        #expect(expired)
-        #expect(sharingManager.state == .inactive, "Ended in \(sharingManager.state) rather than giving up")
-        #expect(mock.createAggregateCalls.count == 1,
-                "Rebuilt the aggregate \(mock.createAggregateCalls.count - 1) time(s) despite no devices being available")
+        #expect(polledRepeatedly, "Reconnect watch never polled repeatedly")
+
+        // Give the watch its full timeout from the last observed poll, then prove it
+        // stops fetching. This fails both if the watch is absent and if it never expires.
+        try? await Task.sleep(for: reconnectTimeout + .milliseconds(500))
+        let callsAfterTimeout = mock.fetchAllDevicesCalls
+        try? await Task.sleep(for: .seconds(1))
+        #expect(mock.fetchAllDevicesCalls == callsAfterTimeout,
+                "Reconnect polling continued after the timeout")
+        #expect(sharingManager.state == .inactive)
+        #expect(mock.createAggregateCalls.count == 1)
+
+        await sharingManager.cleanup()
+        await deviceManager.cleanup()
     }
 }
