@@ -2,12 +2,18 @@
 
 All notable changes to PairPods will be documented in this file.
 
-## [Unreleased]
+## [0.7.1] - 2026-09-05
 
 ### Fixed
 - Show a readable error in the menu when audio sharing cannot start; clear it on retry
 - Keep Stop Sharing available when a device disconnects and prevent duplicate requests during transitions
 - Fall back to automatic clock selection when saved device preferences are all disconnected, keeping the crown indicator consistent with the actual master
+
+### Changed
+- Adopt Swift 6 checks, sanitizer coverage, strict linting, and dead-code analysis
+- Isolate tests from shared preferences, notifications, and hardware events; verify that reconnect polling starts, expires, and completes reliably
+- Avoid duplicate CI runs for feature branches and cancel superseded checks
+- Clarify that PairPods opens in the menu bar without a Dock icon or main window
 
 ## [0.7.0] - 2026-03-22
 
