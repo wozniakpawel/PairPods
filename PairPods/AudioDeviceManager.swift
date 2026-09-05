@@ -148,6 +148,8 @@ final class AudioDeviceManager: ObservableObject {
         initTask?.cancel()
         volumeListenerTask?.cancel()
         await removeMultiOutputDevice()
+        await restoreSampleRates(appliedSampleRateChanges)
+        appliedSampleRateChanges = []
         removePropertyListener()
     }
 

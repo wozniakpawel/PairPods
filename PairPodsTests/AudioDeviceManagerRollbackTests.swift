@@ -33,20 +33,35 @@ struct AudioDeviceManagerRollbackTests {
     @Test("A failed write rolls back the writes that already succeeded")
     @MainActor func partialWriteIsRolledBack() async {
         let devices = [
-            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "a", sampleRate: 44100, availableSampleRates: [44100, 48000]),
-            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "b", sampleRate: 44100, availableSampleRates: [44100, 48000]),
-            AudioDeviceFixtures.bluetoothDevice(id: 3, uid: "c", sampleRate: 48000, availableSampleRates: [44100, 48000]),
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "a", sampleRate: 32000, availableSampleRates: [32000, 48000]),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "b", sampleRate: 48000, availableSampleRates: [48000]),
+            AudioDeviceFixtures.bluetoothDevice(id: 3, uid: "c", sampleRate: 44100, availableSampleRates: [44100, 48000]),
         ]
         let (mock, manager) = makeMockAndManager(devices)
-        // Target is 44100 (two devices already there); device 3 has to move and refuses.
+        // Only 48000 is common. Device 1 moves successfully before device 3 refuses.
         mock.rateWriteFailures = [3]
 
         let outcome = await manager.alignSampleRates(devices)
 
         #expect(outcome.isDegraded)
-        #expect(mock.nominalRates[3] == 48000, "The device that refused must keep its own rate")
+        #expect(mock.setSampleRateCalls.map(\.deviceID) == [1, 3, 1])
+        #expect(mock.setSampleRateCalls.map(\.sampleRate) == [48000, 48000, 32000])
+        #expect(mock.nominalRates[1] == 32000, "The successful first write must be rolled back")
+        #expect(mock.nominalRates[2] == 48000)
+        #expect(mock.nominalRates[3] == 44100, "The device that refused must keep its own rate")
+    }
+
+    @Test("Async cleanup restores applied rates and does not restore twice")
+    @MainActor func cleanupRestoresOriginalRates() async throws {
+        let (mock, manager) = makeMockAndManager(mixedRatePair())
+        try await manager.setupMultiOutputDevice()
+        #expect(mock.nominalRates[1] == 48000)
+
+        await manager.cleanup()
         #expect(mock.nominalRates[1] == 44100)
-        #expect(mock.nominalRates[2] == 44100)
+        let writeCount = mock.setSampleRateCalls.count
+        await manager.cleanup()
+        #expect(mock.setSampleRateCalls.count == writeCount)
     }
 
     @Test("A device moved by alignment is put back when sharing stops")
