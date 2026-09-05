@@ -146,44 +146,6 @@ final class AudioDeviceManager: ObservableObject {
 
     // MARK: - Public Methods
 
-    func cleanup() async {
-        logInfo("Cleaning up AudioDeviceManager")
-        initTask?.cancel()
-        volumeListenerTask?.cancel()
-        await removeMultiOutputDevice()
-        await restoreSampleRates(appliedSampleRateChanges)
-        appliedSampleRateChanges = []
-        removePropertyListener()
-    }
-
-    /// Synchronous cleanup for use during app termination where async work
-    /// cannot be guaranteed to complete before the process exits.
-    nonisolated func cleanupSync() {
-        logInfo("Performing synchronous cleanup of multi-output device")
-        let systemObject = AudioObjectID(kAudioObjectSystemObject)
-        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
-        var propertySize: UInt32 = 0
-
-        guard AudioObjectGetPropertyDataSize(systemObject, &propertyAddress, 0, nil, &propertySize) == noErr else {
-            return
-        }
-
-        let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
-        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
-        guard AudioObjectGetPropertyData(systemObject, &propertyAddress, 0, nil, &propertySize, &deviceIDs) == noErr else {
-            return
-        }
-
-        for deviceID in deviceIDs {
-            guard let uid = deviceID.getStringProperty(selector: kAudioDevicePropertyDeviceUID),
-                  uid == multiOutputDeviceUID
-            else { continue }
-            AudioHardwareDestroyAggregateDevice(deviceID)
-            logInfo("Synchronously destroyed aggregate device \(deviceID)")
-            break
-        }
-    }
-
     func setupMultiOutputDevice() async throws {
         logInfo("Starting setup of multi-output device")
         let (defaultDevice, originalID) = await audioSystem.fetchDefaultOutputDevice()
@@ -548,6 +510,48 @@ final class AudioDeviceManager: ObservableObject {
             } catch {
                 logError("Failed to set up volume listeners", error: .systemError(error))
             }
+        }
+    }
+}
+
+// MARK: - Cleanup
+
+extension AudioDeviceManager {
+    func cleanup() async {
+        logInfo("Cleaning up AudioDeviceManager")
+        initTask?.cancel()
+        volumeListenerTask?.cancel()
+        await removeMultiOutputDevice()
+        await restoreSampleRates(appliedSampleRateChanges)
+        appliedSampleRateChanges = []
+        removePropertyListener()
+    }
+
+    /// Synchronous cleanup for use during app termination where async work
+    /// cannot be guaranteed to complete before the process exits.
+    nonisolated func cleanupSync() {
+        logInfo("Performing synchronous cleanup of multi-output device")
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var propertyAddress = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
+        var propertySize: UInt32 = 0
+
+        guard AudioObjectGetPropertyDataSize(systemObject, &propertyAddress, 0, nil, &propertySize) == noErr else {
+            return
+        }
+
+        let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
+        guard AudioObjectGetPropertyData(systemObject, &propertyAddress, 0, nil, &propertySize, &deviceIDs) == noErr else {
+            return
+        }
+
+        for deviceID in deviceIDs {
+            guard let uid = deviceID.getStringProperty(selector: kAudioDevicePropertyDeviceUID),
+                  uid == multiOutputDeviceUID
+            else { continue }
+            AudioHardwareDestroyAggregateDevice(deviceID)
+            logInfo("Synchronously destroyed aggregate device \(deviceID)")
+            break
         }
     }
 }
