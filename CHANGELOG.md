@@ -2,6 +2,13 @@
 
 All notable changes to PairPods will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Show a readable error in the menu when audio sharing cannot start; clear it on retry
+- Keep Stop Sharing available when a device disconnects and prevent duplicate requests during transitions
+- Fall back to automatic clock selection when saved device preferences are all disconnected, keeping the crown indicator consistent with the actual master
+
 ## [0.7.0] - 2026-03-22
 
 ### Fixed

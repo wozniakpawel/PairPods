@@ -142,7 +142,7 @@ extension AudioDeviceManager {
     func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
         // If user has defined a preferred order, use it (first device = master clock)
         let userOrder = loadDeviceOrder()
-        if !userOrder.isEmpty {
+        if devices.contains(where: { userOrder.contains($0.uid) }) {
             let sorted = devices.sorted { a, b in
                 let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
                 let bi = userOrder.firstIndex(of: b.uid) ?? Int.max

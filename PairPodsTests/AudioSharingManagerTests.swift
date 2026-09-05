@@ -153,4 +153,27 @@ struct AudioSharingManagerTests {
         // restoreOutputDevice should have called setDefaultOutput
         #expect(mock.setDefaultOutputCalls.count > callsBefore)
     }
+
+    @Test("A failed start exposes its reason and a successful retry clears it")
+    @MainActor func failureMessageClearsOnRetry() async {
+        let (sharingManager, mock, deviceManager) = makeManagerAndMock()
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1"),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2"),
+        ]
+        mock.createAggregateResult = .failure(AppError.operationError("Audio device unavailable"))
+
+        await sharingManager.startSharing()
+        #expect(sharingManager.lastErrorMessage == "Audio device unavailable")
+        #expect(sharingManager.state == .inactive)
+
+        mock.createAggregateResult = .success(999)
+        await sharingManager.startSharing()
+        #expect(sharingManager.lastErrorMessage == nil)
+        #expect(sharingManager.state == .active)
+
+        await sharingManager.stopSharing()
+        await sharingManager.cleanup()
+        await deviceManager.cleanup()
+    }
 }
