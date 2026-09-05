@@ -39,7 +39,7 @@ final class AudioVolumeManager: ObservableObject {
             .store(in: &cancellables)
 
         // Listen for device volume changes (from device buttons)
-        NotificationCenter.default.publisher(for: .audioDeviceVolumeChanged)
+        audioDeviceManager.notificationCenter.publisher(for: .audioDeviceVolumeChanged)
             .receive(on: RunLoop.main)
             .sink { [weak self] notification in
                 logDebug("AudioVolumeManager received volume change notification")

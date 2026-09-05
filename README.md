@@ -75,6 +75,7 @@ Please note that PairPods uses Sparkle to check for and notify you of new update
 2. Double click on the .zip file to unzip it.
 3. Move PairPods.app to your Applications folder
 4. Launch PairPods from your Applications folder
+5. Look for the AirPods case icon in the menu bar at the top of your screen. PairPods runs without a Dock icon or a main window.
 
 ## Usage
 

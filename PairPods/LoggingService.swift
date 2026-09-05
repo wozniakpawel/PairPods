@@ -15,12 +15,21 @@ enum LogLevel: String {
     case error = "ERROR"
 }
 
-enum AppError: Error {
+enum AppError: LocalizedError {
     case operationError(String)
     case systemError(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case let .operationError(message): message
+        case let .systemError(error): error.localizedDescription
+        }
+    }
 }
 
-final class LoggingService {
+/// Safe to share: the only stored state is an `OSLog`, and `os_log` is documented
+/// as thread-safe. The free `logDebug`/`logInfo`/… helpers call this from every actor.
+final class LoggingService: Sendable {
     static let shared = LoggingService()
     private let osLog: OSLog
 

@@ -9,11 +9,13 @@ import Testing
 
 @Suite("AudioDeviceManager Exclusion & N-Device")
 struct AudioDeviceManagerExclusionTests {
+    private let defaults = TestDefaults.make()
+
     @MainActor private func makeMockAndManager() -> (MockAudioSystem, AudioDeviceManager) {
         // Clear any persisted exclusions from previous test runs
-        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
+        defaults.removeObject(forKey: "excludedDeviceUIDs")
         let mock = MockAudioSystem()
-        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
         return (mock, manager)
     }
 
@@ -73,26 +75,26 @@ struct AudioDeviceManagerExclusionTests {
         manager.setDeviceExcluded("bt1", excluded: true)
         manager.setDeviceExcluded("bt3", excluded: true)
 
-        let stored = UserDefaults.standard.stringArray(forKey: "excludedDeviceUIDs") ?? []
+        let stored = defaults.stringArray(forKey: "excludedDeviceUIDs") ?? []
         #expect(Set(stored) == Set(["bt1", "bt3"]))
 
         // Clean up
-        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
+        defaults.removeObject(forKey: "excludedDeviceUIDs")
     }
 
     @Test("Exclusion loads from UserDefaults on init")
     @MainActor func exclusionLoadsFromUserDefaults() {
-        UserDefaults.standard.set(["bt2", "bt4"], forKey: "excludedDeviceUIDs")
+        defaults.set(["bt2", "bt4"], forKey: "excludedDeviceUIDs")
 
         let mock = MockAudioSystem()
-        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
 
         #expect(manager.excludedDeviceUIDs == Set(["bt2", "bt4"]))
         #expect(!manager.isDeviceSelected("bt2"))
         #expect(manager.isDeviceSelected("bt1"))
 
         // Clean up
-        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
+        defaults.removeObject(forKey: "excludedDeviceUIDs")
     }
 
     // MARK: - N-Device Selection
@@ -154,9 +156,8 @@ struct AudioDeviceManagerExclusionTests {
 
         manager.setDeviceExcluded("bt1", excluded: true)
 
-        await #expect(throws: AppError.self) {
-            try await manager.setupMultiOutputDevice()
-        }
+        let thrown = await errorThrown { try await manager.setupMultiOutputDevice() }
+        #expect(thrown is AppError, "Expected an AppError, got \(String(describing: thrown))")
     }
 
     // MARK: - N-Device Aggregate

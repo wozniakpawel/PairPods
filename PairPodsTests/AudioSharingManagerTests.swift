@@ -8,18 +8,23 @@ import CoreAudio
 import Testing
 
 struct AudioSharingManagerTests {
+    private let defaults = TestDefaults.make()
+    /// Private bus: NotificationCenter.default is process-wide, so a notification posted
+    /// by another suite running in parallel would drive this manager too.
+    private let center = NotificationCenter()
+
     private static let timeoutKey = "PairPods.ReconnectTimeout"
 
     init() {
-        UserDefaults.standard.removeObject(forKey: Self.timeoutKey)
+        defaults.removeObject(forKey: Self.timeoutKey)
     }
 
     @MainActor private func makeManagerAndMock() -> (AudioSharingManager, MockAudioSystem, AudioDeviceManager) {
-        UserDefaults.standard.removeObject(forKey: "excludedDeviceUIDs")
-        UserDefaults.standard.set(0.5, forKey: Self.timeoutKey)
+        defaults.removeObject(forKey: "excludedDeviceUIDs")
+        defaults.set(0.5, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
         return (sharingManager, mock, deviceManager)
     }
 
@@ -147,5 +152,28 @@ struct AudioSharingManagerTests {
 
         // restoreOutputDevice should have called setDefaultOutput
         #expect(mock.setDefaultOutputCalls.count > callsBefore)
+    }
+
+    @Test("A failed start exposes its reason and a successful retry clears it")
+    @MainActor func failureMessageClearsOnRetry() async {
+        let (sharingManager, mock, deviceManager) = makeManagerAndMock()
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1"),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2"),
+        ]
+        mock.createAggregateResult = .failure(AppError.operationError("Audio device unavailable"))
+
+        await sharingManager.startSharing()
+        #expect(sharingManager.lastErrorMessage == "Audio device unavailable")
+        #expect(sharingManager.state == .inactive)
+
+        mock.createAggregateResult = .success(999)
+        await sharingManager.startSharing()
+        #expect(sharingManager.lastErrorMessage == nil)
+        #expect(sharingManager.state == .active)
+
+        await sharingManager.stopSharing()
+        await sharingManager.cleanup()
+        await deviceManager.cleanup()
     }
 }

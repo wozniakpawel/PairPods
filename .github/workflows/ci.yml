@@ -2,7 +2,15 @@ name: CI
 on:
   pull_request:
   push:
+    branches: [main, develop]
   workflow_dispatch:
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build on macOS ${{ matrix.macos }} for ${{ matrix.arch }}
@@ -41,17 +49,38 @@ jobs:
           xcodebuild -resolvePackageDependencies -project PairPods.xcodeproj
           
       - name: Build
+        # Warnings are errors in CI only. Locally they stay warnings so a work in
+        # progress still compiles.
         run: |
-          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO
+          xcodebuild clean build -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO PAIRPODS_WARNINGS_AS_ERRORS=YES
       
-      - name: Install BlackHole audio drivers
-        run: |
-          brew install --cask blackhole-2ch
-          brew install --cask blackhole-16ch
+      - name: Install BlackHole and wait for CoreAudio to publish it
+        run: ./scripts/ci/ensure-blackhole.sh
 
       - name: Run Tests
+        env:
+          PAIRPODS_REQUIRE_BLACKHOLE: "1"
         run: |
-          xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES -destination 'platform=macOS'
+          xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES -destination 'platform=macOS' -enableCodeCoverage YES
+
+      # A ratchet, not an aspiration: the threshold sits just under the current figure so
+      # it fails on a real regression without demanding a coverage push. Raise it when
+      # coverage genuinely improves.
+      - name: Coverage gate
+        run: |
+          THRESHOLD=42
+          xcrun xccov view --report --only-targets ./DerivedData/Logs/Test/*.xcresult
+          pct=$(xcrun xccov view --report --only-targets ./DerivedData/Logs/Test/*.xcresult \
+                | awk '/PairPods\.app/ {gsub(/%/,"",$4); print int($4)}')
+          echo "PairPods.app line coverage: ${pct:-unknown}% (threshold ${THRESHOLD}%)"
+          if [ -z "$pct" ]; then
+            echo "::error::Could not read coverage for PairPods.app"
+            exit 1
+          fi
+          if [ "$pct" -lt "$THRESHOLD" ]; then
+            echo "::error::Coverage ${pct}% is below the ${THRESHOLD}% threshold"
+            exit 1
+          fi
 
       - name: Verify app architectures
         run: |

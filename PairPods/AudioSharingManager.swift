@@ -16,16 +16,22 @@ enum AudioSharingState: String {
 final class AudioSharingManager: ObservableObject {
     private static let reconnectTimeoutKey = "PairPods.ReconnectTimeout"
     private let audioDeviceManager: AudioDeviceManager
+    /// Injected for the same reason as in AudioDeviceManager: parallel tests must not
+    /// share the persisted reconnect timeout.
+    private let userDefaults: UserDefaults
+    private let notificationCenter: NotificationCenter
     private var monitoringTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
 
     var reconnectTimeout: TimeInterval {
-        UserDefaults.standard.object(forKey: Self.reconnectTimeoutKey) as? TimeInterval ?? 10.0
+        userDefaults.object(forKey: Self.reconnectTimeoutKey) as? TimeInterval ?? 10.0
     }
 
     var isSharingAudio: Bool {
         state == .active
     }
+
+    @Published private(set) var lastErrorMessage: String?
 
     var stateDidChange: ((AudioSharingState) -> Void)?
 
@@ -35,9 +41,14 @@ final class AudioSharingManager: ObservableObject {
         }
     }
 
-    init(audioDeviceManager: AudioDeviceManager) {
+    init(audioDeviceManager: AudioDeviceManager,
+         userDefaults: UserDefaults = .standard,
+         notificationCenter: NotificationCenter = .default)
+    {
         logDebug("Initializing AudioSharingManager")
         self.audioDeviceManager = audioDeviceManager
+        self.userDefaults = userDefaults
+        self.notificationCenter = notificationCenter
         setupMonitoring()
     }
 
@@ -73,10 +84,11 @@ final class AudioSharingManager: ObservableObject {
 
     private func setupMonitoring() {
         logDebug("Setting up audio configuration monitoring")
+        let center = notificationCenter
         monitoringTask = Task {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { [weak self] in
-                    for await _ in NotificationCenter.default.notifications(named: .audioDeviceConfigurationChanged) {
+                    for await _ in center.notifications(named: .audioDeviceConfigurationChanged) {
                         logWarning("Audio device configuration changed, handling disconnect")
                         await self?.handleDeviceDisconnect()
                     }
@@ -154,6 +166,7 @@ final class AudioSharingManager: ObservableObject {
 
     private func startAudioSharing() async {
         logInfo("Starting audio sharing process")
+        lastErrorMessage = nil
         state = .starting
 
         do {
@@ -161,6 +174,7 @@ final class AudioSharingManager: ObservableObject {
             await handleStateTransition(to: .active)
             logInfo("Audio sharing started successfully")
         } catch {
+            lastErrorMessage = error.localizedDescription
             logError("Failed to start audio sharing", error: .systemError(error))
             await handleStateTransition(to: .inactive)
         }
