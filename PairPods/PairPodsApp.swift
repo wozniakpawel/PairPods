@@ -111,10 +111,19 @@ struct ContentView: View {
                 .toggleStyle(.switch)
             }
             .disabled(
-                audioDeviceManager.selectedDevices.count < 2
+                audioSharingManager.state == .starting || audioSharingManager.state == .stopping ||
+                    (!audioSharingManager.isSharingAudio && audioDeviceManager.selectedDevices.count < 2)
             )
             .accessibilityIdentifier("shareAudioToggle")
             .keyboardShortcut("s")
+
+            if let errorMessage = audioSharingManager.lastErrorMessage {
+                Text("Could not start sharing: \(errorMessage)")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("sharingErrorMessage")
+            }
 
             MenuSection(audioDeviceManager.compatibleDevices.isEmpty
                 ? "No Connected Devices"

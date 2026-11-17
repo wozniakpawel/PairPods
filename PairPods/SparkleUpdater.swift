@@ -9,6 +9,9 @@ import MacControlCenterUI
 import Sparkle
 import SwiftUI
 
+/// Sparkle's `SPUUpdater` must be driven from the main thread, so the isolation is
+/// stated rather than assumed. Every caller is SwiftUI-side already.
+@MainActor
 final class SparkleUpdater {
     static let shared = SparkleUpdater()
     let updaterController: SPUUpdater?
@@ -40,6 +43,7 @@ final class SparkleUpdater {
     }
 }
 
+@MainActor
 final class UpdaterViewModel: ObservableObject {
     private let updater = SparkleUpdater.shared
 

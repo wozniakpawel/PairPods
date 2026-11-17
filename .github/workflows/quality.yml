@@ -1,0 +1,96 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: brew install swiftlint
+      - run: swiftlint lint --strict
+
+  format:
+    name: SwiftFormat
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - run: brew install swiftformat
+      # --lint reports and fails; it does not rewrite the contributor's branch.
+      - run: swiftformat --lint .
+
+  deadcode:
+    name: Dead code
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: latest-stable
+      # Pinned rather than installed from the tap: the tap lags several majors behind
+      # and its CLI still requires --targets, which this configuration does not pass.
+      # libIndexStore.dylib ships beside the binary and must stay there.
+      - name: Install Periphery 3.8.0
+        run: |
+          curl -sSL -o periphery.zip https://github.com/peripheryapp/periphery/releases/download/3.8.0/periphery-3.8.0.zip
+          mkdir -p "$HOME/periphery"
+          unzip -q periphery.zip -d "$HOME/periphery"
+          echo "$HOME/periphery" >> "$GITHUB_PATH"
+      - run: periphery version
+      # Fails only on dead code that is not already in periphery-baseline.json.
+      - run: periphery scan --baseline periphery-baseline.json --strict
+
+  sanitizers:
+    name: ${{ matrix.sanitizer }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # ASan and TSan instrument incompatibly and cannot share a run.
+        include:
+          - sanitizer: AddressSanitizer
+            flags: -enableAddressSanitizer YES -enableUndefinedBehaviorSanitizer YES
+          - sanitizer: ThreadSanitizer
+            flags: -enableThreadSanitizer YES
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: latest-stable
+
+      - name: Install BlackHole and wait for CoreAudio to publish it
+        run: ./scripts/ci/ensure-blackhole.sh
+
+      - name: Test under ${{ matrix.sanitizer }}
+        # PAIRPODS_REQUIRE_BLACKHOLE turns the integration suite's skip condition into a
+        # failure, so a green run means those cases actually executed.
+        env:
+          PAIRPODS_REQUIRE_BLACKHOLE: "1"
+        run: |
+          xcodebuild test -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES \
+            -destination 'platform=macOS' ${{ matrix.flags }}
+
+  analyze:
+    name: Static analyzer
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: maxim-lobanov/setup-xcode@v1.6.0
+        with:
+          xcode-version: latest-stable
+      - run: |
+          xcodebuild analyze -scheme PairPods -configuration Debug -derivedDataPath ./DerivedData \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=YES

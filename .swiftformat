@@ -1,0 +1,8 @@
+# Shared by `make format`, `make format-check` and the CI format job, so all three
+# agree. Without the excludes, SwiftFormat descends into whatever Xcode generated or
+# checked out under a derived data directory and reformats third-party sources, so the
+# globs cover the generated paths themselves rather than relying on the directory name.
+
+--swiftversion 6.0.3
+
+--exclude **/DerivedData*/**,**/.build/**,Sparkle/**,**/Build/Intermediates.noindex/**,**/DerivedSources/**,**/SourcePackages/**

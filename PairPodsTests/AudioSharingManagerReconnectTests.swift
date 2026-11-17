@@ -8,65 +8,117 @@ import CoreAudio
 import Testing
 
 struct AudioSharingManagerReconnectTests {
+    private let defaults = TestDefaults.make()
+    /// Private bus: NotificationCenter.default is process-wide, so a notification posted
+    /// by another suite running in parallel would drive this manager too.
+    private let center = NotificationCenter()
+    // These managers also disable real CoreAudio monitoring: the integration suites
+    // create/destroy hardware devices in parallel, which would otherwise add unrelated
+    // refresh calls to the reconnect polling counts below.
+
     private static let timeoutKey = "PairPods.ReconnectTimeout"
 
     init() {
-        UserDefaults.standard.removeObject(forKey: Self.timeoutKey)
+        defaults.removeObject(forKey: Self.timeoutKey)
     }
 
-    @Test("Disconnect stops sharing and attempts reconnection")
-    @MainActor func disconnectStopsSharingAndReconnects() async throws {
-        defer { UserDefaults.standard.removeObject(forKey: Self.timeoutKey) }
-        UserDefaults.standard.set(1.0, forKey: Self.timeoutKey)
-        let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
+    /// Polls until `condition` holds or the deadline passes.
+    ///
+    /// These tests used to sleep a fixed wall-clock interval and then assert, which
+    /// raced the reconnect timeout on a loaded machine and failed outright under the
+    /// sanitizers, where everything runs several times slower. Waiting for the state
+    /// instead of for the clock is both faster in the common case and immune to that.
+    @MainActor
+    private func waitUntil(
+        timeout: Duration = .seconds(15),
+        _ condition: @MainActor () -> Bool
+    ) async -> Bool {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if condition() {
+                return true
+            }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return condition()
+    }
 
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
-        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
-        mock.devicesToReturn = [bt1, bt2]
+    @Test("Disconnect with devices still present rebuilds the aggregate")
+    @MainActor func disconnectStopsSharingAndReconnects() async {
+        defer { defaults.removeObject(forKey: Self.timeoutKey) }
+        defaults.set(1.0, forKey: Self.timeoutKey)
+        let mock = MockAudioSystem()
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults, notificationCenter: center)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
+
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
+        ]
         mock.createAggregateResult = .success(999)
 
         await sharingManager.startSharing()
         #expect(sharingManager.state == .active)
+        #expect(mock.createAggregateCalls.count == 1)
 
-        // Simulate device disconnect by posting notification
-        NotificationCenter.default.postDeviceConfigurationChanged()
+        center.postDeviceConfigurationChanged()
 
-        // Give time for the notification to be processed
-        try await Task.sleep(nanoseconds: 200_000_000)
-
-        // After disconnect handling, state should transition
-        // (It may be inactive waiting for reconnection, or active if reconnection succeeded)
-        let currentState = sharingManager.state
-        #expect(currentState == .inactive || currentState == .active)
+        // Asserting on the state alone proves nothing here: it is already .active, so any
+        // predicate accepting .active is satisfied before the notification is even
+        // processed. The observable that distinguishes a real restart is a second
+        // aggregate being built.
+        // Creation is recorded before setup finishes its remaining async operations.
+        // Wait for completion too, or this assertion races the transition to .active.
+        let rebuilt = await waitUntil {
+            mock.createAggregateCalls.count >= 2 && sharingManager.state == .active
+        }
+        #expect(rebuilt, "Aggregate was never rebuilt; createAggregateDevice called \(mock.createAggregateCalls.count) time(s)")
+        #expect(sharingManager.state == .active, "Ended in \(sharingManager.state) after rebuilding")
     }
 
-    @Test("Reconnection gives up after timeout when devices don't reappear")
-    @MainActor func reconnectionGivesUpAfterTimeout() async throws {
-        defer { UserDefaults.standard.removeObject(forKey: Self.timeoutKey) }
-        UserDefaults.standard.set(0.3, forKey: Self.timeoutKey)
+    @Test("Reconnection gives up after the timeout when devices do not reappear")
+    @MainActor func reconnectionGivesUpAfterTimeout() async {
+        defer { defaults.removeObject(forKey: Self.timeoutKey) }
+        let reconnectTimeout = Duration.seconds(2)
+        defaults.set(2.0, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults, notificationCenter: center)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
 
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
-        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
-        mock.devicesToReturn = [bt1, bt2]
+        mock.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000),
+        ]
         mock.createAggregateResult = .success(999)
 
         await sharingManager.startSharing()
         #expect(sharingManager.state == .active)
+        #expect(mock.createAggregateCalls.count == 1)
 
-        // Remove all devices so reconnection will fail
         mock.devicesToReturn = []
+        center.postDeviceConfigurationChanged()
 
-        // Simulate disconnect
-        NotificationCenter.default.postDeviceConfigurationChanged()
+        // Wait for shutdown to finish before measuring reconnect polling. The restore
+        // path also fetches devices, so its calls must not count as reconnect attempts.
+        let stopped = await waitUntil { sharingManager.state == .inactive }
+        #expect(stopped)
+        let callsAfterStop = mock.fetchAllDevicesCalls
+        let polledRepeatedly = await waitUntil {
+            mock.fetchAllDevicesCalls >= callsAfterStop + 3
+        }
+        #expect(polledRepeatedly, "Reconnect watch never polled repeatedly")
 
-        // Wait for disconnect processing + timeout
-        try await Task.sleep(nanoseconds: 800_000_000)
-
+        // Give the watch its full timeout from the last observed poll, then prove it
+        // stops fetching. This fails both if the watch is absent and if it never expires.
+        try? await Task.sleep(for: reconnectTimeout + .milliseconds(500))
+        let callsAfterTimeout = mock.fetchAllDevicesCalls
+        try? await Task.sleep(for: .seconds(1))
+        #expect(mock.fetchAllDevicesCalls == callsAfterTimeout,
+                "Reconnect polling continued after the timeout")
         #expect(sharingManager.state == .inactive)
+        #expect(mock.createAggregateCalls.count == 1)
+
+        await sharingManager.cleanup()
+        await deviceManager.cleanup()
     }
 }

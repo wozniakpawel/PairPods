@@ -1,0 +1,11 @@
+project: PairPods.xcodeproj
+schemes:
+  - PairPods
+
+# Call-tracking structs in the test mocks store fields purely so a test can read them
+# later; Periphery cannot see that through the assertion macros.
+retain_assign_only_properties: true
+
+# The scan runs against a committed baseline (periphery-baseline.json) so CI fails on
+# *new* dead code rather than on the existing backlog. Regenerate after deliberately
+# removing entries: make deadcode-baseline
