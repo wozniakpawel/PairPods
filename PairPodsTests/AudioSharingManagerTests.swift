@@ -3,28 +3,18 @@
 //  PairPodsTests
 //
 
+import Combine
 import CoreAudio
 @testable import PairPods
 import Testing
 
 struct AudioSharingManagerTests {
     private let defaults = TestDefaults.make()
-    /// Private bus: NotificationCenter.default is process-wide, so a notification posted
-    /// by another suite running in parallel would drive this manager too.
-    private let center = NotificationCenter()
-
-    private static let timeoutKey = "PairPods.ReconnectTimeout"
-
-    init() {
-        defaults.removeObject(forKey: Self.timeoutKey)
-    }
 
     @MainActor private func makeManagerAndMock() -> (AudioSharingManager, MockAudioSystem, AudioDeviceManager) {
-        defaults.removeObject(forKey: "excludedDeviceUIDs")
-        defaults.set(0.5, forKey: Self.timeoutKey)
         let mock = MockAudioSystem()
-        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults, notificationCenter: center)
-        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults, notificationCenter: center)
+        let deviceManager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults)
+        let sharingManager = AudioSharingManager(audioDeviceManager: deviceManager, userDefaults: defaults)
         return (sharingManager, mock, deviceManager)
     }
 
@@ -39,15 +29,13 @@ struct AudioSharingManagerTests {
         #expect(sharingManager.state == .inactive)
 
         var observedStates: [AudioSharingState] = []
-        sharingManager.stateDidChange = { state in
-            observedStates.append(state)
-        }
+        let observation = sharingManager.$state.sink { observedStates.append($0) }
+        defer { observation.cancel() }
 
         await sharingManager.startSharing()
 
         #expect(sharingManager.state == .active)
-        #expect(observedStates.contains(.starting))
-        #expect(observedStates.contains(.active))
+        #expect(observedStates == [.inactive, .starting, .active])
     }
 
     @Test("startSharing transitions inactive -> starting -> inactive on failure")
@@ -84,25 +72,6 @@ struct AudioSharingManagerTests {
         #expect(sharingManager.state == .inactive)
     }
 
-    @Test("stateDidChange callback fires on every transition")
-    @MainActor func stateDidChangeCallback() async {
-        let (sharingManager, mock, _) = makeManagerAndMock()
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "bt1", sampleRate: 48000)
-        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "bt2", sampleRate: 48000)
-        mock.devicesToReturn = [bt1, bt2]
-        mock.createAggregateResult = .success(999)
-
-        var callbackCount = 0
-        sharingManager.stateDidChange = { _ in
-            callbackCount += 1
-        }
-
-        await sharingManager.startSharing()
-        await sharingManager.stopSharing()
-
-        #expect(callbackCount >= 3) // starting, active, stopping/inactive
-    }
-
     @Test("isSharingAudio matches state")
     @MainActor func isSharingAudioMatchesState() async {
         let (sharingManager, mock, _) = makeManagerAndMock()
@@ -131,10 +100,43 @@ struct AudioSharingManagerTests {
         await sharingManager.startSharing()
         #expect(sharingManager.state == .active)
 
-        // Second start while active — should be handled without crash
         await sharingManager.startSharing()
-        // State should remain active or transition gracefully
-        #expect(sharingManager.state == .active || sharingManager.state == .inactive)
+        #expect(sharingManager.state == .active)
+        #expect(mock.createAggregateCalls.count == 1)
+    }
+
+    @Test("Stopping during setup releases the aggregate and leaves sharing off")
+    @MainActor func stopDuringSetup() async {
+        let (sharing, audio, _) = makeManagerAndMock()
+        audio.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "stop-a"),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "stop-b"),
+        ]
+        let (created, creation) = AsyncStream<Void>.makeStream()
+        let (resume, continuation) = AsyncStream<Void>.makeStream()
+        audio.beforeReturningAggregate = {
+            creation.yield(())
+            for await _ in resume {
+                break
+            }
+        }
+        let start = Task { await sharing.startSharing() }
+        for await _ in created {
+            break
+        }
+        #expect(sharing.state == .starting)
+
+        let observation = sharing.$state.sink { state in
+            if state == .stopping {
+                continuation.finish()
+            }
+        }
+        defer { observation.cancel() }
+        await sharing.stopSharing()
+        await start.value
+        #expect(sharing.state == .inactive)
+        #expect(audio.destroyAggregateCalls == [999])
+        #expect(audio.setDefaultOutputCalls.isEmpty)
     }
 
     @Test("stopSharing calls restore and remove on AudioDeviceManager")
@@ -150,7 +152,6 @@ struct AudioSharingManagerTests {
 
         await sharingManager.stopSharing()
 
-        // restoreOutputDevice should have called setDefaultOutput
         #expect(mock.setDefaultOutputCalls.count > callsBefore)
     }
 
@@ -173,7 +174,6 @@ struct AudioSharingManagerTests {
         #expect(sharingManager.state == .active)
 
         await sharingManager.stopSharing()
-        await sharingManager.cleanup()
         await deviceManager.cleanup()
     }
 }

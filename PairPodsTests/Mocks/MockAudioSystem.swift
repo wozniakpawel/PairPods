@@ -35,6 +35,7 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
         var defaultDevice: (AudioDevice?, AudioDeviceID?) = (nil, nil)
         var deviceIDToReturn: AudioDeviceID?
         var createAggregateResult: Result<AudioDeviceID, Error> = .success(999)
+        var beforeReturningAggregate: (@Sendable () async -> Void)?
         var destroyAggregateError: Error?
         var setDefaultOutputError: Error?
         var setSampleRateResult = true
@@ -76,6 +77,11 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
     var createAggregateResult: Result<AudioDeviceID, Error> {
         get { withState { $0.createAggregateResult } }
         set { withState { $0.createAggregateResult = newValue } }
+    }
+
+    var beforeReturningAggregate: (@Sendable () async -> Void)? {
+        get { withState { $0.beforeReturningAggregate } }
+        set { withState { $0.beforeReturningAggregate = newValue } }
     }
 
     var destroyAggregateError: Error? {
@@ -155,12 +161,13 @@ final class MockAudioSystem: AudioSystemQuerying, AudioSystemCommanding, @unchec
     func createAggregateDevice(name: String, uid: String,
                                masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID
     {
-        let result = withState {
+        let (result, beforeReturning) = withState {
             $0.createAggregateCalls.append(CreateAggregateCall(
                 name: name, uid: uid, masterUID: masterUID, subDeviceUIDs: subDeviceUIDs
             ))
-            return $0.createAggregateResult
+            return ($0.createAggregateResult, $0.beforeReturningAggregate)
         }
+        await beforeReturning?()
         return try result.get()
     }
 

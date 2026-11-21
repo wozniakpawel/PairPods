@@ -23,11 +23,6 @@ final class AppDependencies: ObservableObject {
         audioVolumeManager = AudioVolumeManager(audioDeviceManager: audioDeviceManager)
     }
 
-    func cleanup() async {
-        await audioDeviceManager.cleanup()
-        await audioSharingManager.cleanup()
-    }
-
     /// Synchronous cleanup for use in applicationWillTerminate where async work
     /// may not complete before the process exits.
     nonisolated func cleanupSync() {

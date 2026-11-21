@@ -9,185 +9,129 @@ import Combine
 import Foundation
 
 enum AudioSharingState: String {
-    case inactive, starting, active, stopping
+    case inactive, starting, active, reconnecting, stopping
 }
 
 @MainActor
 final class AudioSharingManager: ObservableObject {
     private static let reconnectTimeoutKey = "PairPods.ReconnectTimeout"
-    private let audioDeviceManager: AudioDeviceManager
-    /// Injected for the same reason as in AudioDeviceManager: parallel tests must not
-    /// share the persisted reconnect timeout.
+    private let devices: AudioDeviceManager
     private let userDefaults: UserDefaults
-    private let notificationCenter: NotificationCenter
-    private var monitoringTask: Task<Void, Never>?
-    private var reconnectTask: Task<Void, Never>?
+    private var outputTask: Task<Void, Never>?
 
-    var reconnectTimeout: TimeInterval {
-        userDefaults.object(forKey: Self.reconnectTimeoutKey) as? TimeInterval ?? 10.0
-    }
+    @Published private(set) var state: AudioSharingState = .inactive
+    @Published private(set) var lastErrorMessage: String?
 
     var isSharingAudio: Bool {
         state == .active
     }
 
-    @Published private(set) var lastErrorMessage: String?
-
-    var stateDidChange: ((AudioSharingState) -> Void)?
-
-    @Published private(set) var state: AudioSharingState = .inactive {
-        didSet {
-            stateDidChange?(state)
-        }
+    var isSharingEnabled: Bool {
+        state == .active || state == .reconnecting
     }
 
-    init(audioDeviceManager: AudioDeviceManager,
-         userDefaults: UserDefaults = .standard,
-         notificationCenter: NotificationCenter = .default)
-    {
-        logDebug("Initializing AudioSharingManager")
-        self.audioDeviceManager = audioDeviceManager
+    var isTransitioning: Bool {
+        state == .starting || state == .stopping
+    }
+
+    private var reconnectTimeout: TimeInterval {
+        userDefaults.object(forKey: Self.reconnectTimeoutKey) as? TimeInterval ?? 10
+    }
+
+    init(audioDeviceManager: AudioDeviceManager, userDefaults: UserDefaults = .standard) {
+        devices = audioDeviceManager
         self.userDefaults = userDefaults
-        self.notificationCenter = notificationCenter
-        setupMonitoring()
+        devices.configurationDidChange = { [weak self] in
+            self?.reconfigure()
+        }
     }
 
     deinit {
-        logDebug("AudioSharingManager deinitializing")
-        monitoringTask?.cancel()
-        reconnectTask?.cancel()
-    }
-
-    // MARK: - Public Methods
-
-    func cleanup() async {
-        logInfo("Cleaning up AudioSharingManager")
-        reconnectTask?.cancel()
-        reconnectTask = nil
+        outputTask?.cancel()
     }
 
     func startSharing() async {
-        logInfo("Received request to start audio sharing")
-        reconnectTask?.cancel()
-        reconnectTask = nil
-        await handleStateTransition(to: .starting)
+        guard state == .inactive else { return }
+        state = .starting
+        outputTask = Task { [weak self] in
+            await self?.startOutput()
+        }
+        await outputTask?.value
     }
 
     func stopSharing() async {
-        logInfo("Received request to stop audio sharing")
-        reconnectTask?.cancel()
-        reconnectTask = nil
-        await handleStateTransition(to: .stopping)
-    }
-
-    // MARK: - Private Methods
-
-    private func setupMonitoring() {
-        logDebug("Setting up audio configuration monitoring")
-        let center = notificationCenter
-        monitoringTask = Task {
-            await withTaskGroup(of: Void.self) { group in
-                group.addTask { [weak self] in
-                    for await _ in center.notifications(named: .audioDeviceConfigurationChanged) {
-                        logWarning("Audio device configuration changed, handling disconnect")
-                        await self?.handleDeviceDisconnect()
-                    }
-                }
-            }
-        }
-    }
-
-    private func handleDeviceDisconnect() async {
-        guard state == .active else { return }
-
-        await stopSharing()
-
-        // Check if enough selected devices remain to immediately restart
-        await audioDeviceManager.refreshCompatibleDevices()
-        if audioDeviceManager.selectedDevices.count >= 2 {
-            logInfo("2+ selected devices still available, restarting sharing immediately")
-            await startSharing()
+        if state == .stopping {
+            await outputTask?.value
             return
         }
+        guard state != .inactive else { return }
 
-        guard reconnectTimeout > 0 else {
-            logInfo("Reconnect disabled, staying inactive")
-            return
-        }
-
-        logInfo("Watching for reconnection of selected devices")
-        reconnectTask?.cancel()
-        reconnectTask = Task {
-            let deadline = Date().addingTimeInterval(reconnectTimeout)
-            while Date() < deadline {
-                guard !Task.isCancelled else {
-                    logInfo("Reconnect watch cancelled")
-                    return
-                }
-
-                await audioDeviceManager.refreshCompatibleDevices()
-                if audioDeviceManager.selectedDevices.count >= 2 {
-                    logInfo("Enough selected devices reconnected, restarting audio sharing")
-                    await startSharing()
-                    return
-                }
-
-                try? await Task.sleep(nanoseconds: 500_000_000)
-            }
-            logInfo("Reconnect timeout expired, giving up")
-        }
-    }
-
-    private func handleStateTransition(to newState: AudioSharingState) async {
-        logInfo("Processing state transition: \(state) -> \(newState)")
-
-        switch (state, newState) {
-        case (.inactive, .starting):
-            await startAudioSharing()
-
-        case (.active, .stopping):
-            await stopAudioSharing()
-
-        case (.starting, .active), (.stopping, .inactive):
-            logDebug("Completing state transition to \(newState)")
-            state = newState
-
-        case (.starting, .inactive):
-            logWarning("Audio sharing failed to start")
-            state = .inactive
-
-        case (.inactive, .stopping), (.stopping, .stopping):
-            logDebug("Ignoring redundant stop request - already \(state)")
-
-        default:
-            logWarning("Invalid state transition attempted: \(state) -> \(newState)")
-        }
-    }
-
-    private func startAudioSharing() async {
-        logInfo("Starting audio sharing process")
-        lastErrorMessage = nil
-        state = .starting
-
-        do {
-            try await audioDeviceManager.setupMultiOutputDevice()
-            await handleStateTransition(to: .active)
-            logInfo("Audio sharing started successfully")
-        } catch {
-            lastErrorMessage = error.localizedDescription
-            logError("Failed to start audio sharing", error: .systemError(error))
-            await handleStateTransition(to: .inactive)
-        }
-    }
-
-    private func stopAudioSharing() async {
-        logInfo("Stopping audio sharing")
+        let previousTask = outputTask
+        previousTask?.cancel()
         state = .stopping
+        outputTask = Task { [weak self, devices] in
+            await previousTask?.value
+            await devices.stopOutput()
+            self?.outputTask = nil
+            self?.state = .inactive
+        }
+        await outputTask?.value
+    }
 
-        await audioDeviceManager.restoreOutputDevice()
-        await audioDeviceManager.removeMultiOutputDevice()
+    private func startOutput() async {
+        guard !Task.isCancelled else { return }
+        lastErrorMessage = nil
+        do {
+            try await devices.setupMultiOutputDevice()
+            guard !Task.isCancelled else { return }
+            outputTask = nil
+            state = .active
+            if !devices.isOutputConnected {
+                reconfigure()
+            }
+        } catch {
+            guard !Task.isCancelled else { return }
+            outputTask = nil
+            lastErrorMessage = (error as? ChannelRoutingError)?.message ?? error.localizedDescription
+            logError("Failed to start audio sharing", error: .systemError(error))
+            state = .inactive
+        }
+    }
 
-        await handleStateTransition(to: .inactive)
-        logInfo("Audio sharing stopped successfully")
+    private func reconfigure() {
+        guard state == .active else { return }
+        let requiredUIDs = devices.requiredReconnectUIDs
+        state = .reconnecting
+        outputTask = Task { [weak self, devices] in
+            await devices.stopOutput()
+            await self?.reconnect(requiredUIDs: requiredUIDs)
+        }
+    }
+
+    private func reconnect(requiredUIDs: Set<String>) async {
+        let clock = ContinuousClock()
+        let deadline = clock.now + .seconds(reconnectTimeout)
+        repeat {
+            await devices.refreshCompatibleDevices()
+            guard !Task.isCancelled else { return }
+
+            let selected = devices.selectedDevices
+            // Excluding a device while waiting lets the other selected devices resume.
+            let required = requiredUIDs.filter(devices.isDeviceSelected)
+            if selected.count >= 2, required.isSubset(of: selected.map(\.uid)) {
+                state = .starting
+                await startOutput()
+                return
+            }
+            guard clock.now < deadline else { break }
+            try? await clock.sleep(until: min(clock.now + .milliseconds(500), deadline))
+            guard !Task.isCancelled, clock.now < deadline else { break }
+        } while true
+
+        guard !Task.isCancelled else {
+            return
+        }
+        outputTask = nil
+        state = .inactive
     }
 }

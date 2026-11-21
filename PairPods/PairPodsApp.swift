@@ -95,8 +95,8 @@ struct ContentView: View {
             HStack {
                 Text("Share Audio")
                 Spacer()
-                Toggle("", isOn: Binding(
-                    get: { audioSharingManager.isSharingAudio },
+                Toggle("Share Audio", isOn: Binding(
+                    get: { audioSharingManager.isSharingEnabled },
                     set: { newValue in
                         Task {
                             if newValue {
@@ -111,16 +111,19 @@ struct ContentView: View {
                 .toggleStyle(.switch)
             }
             .disabled(
-                audioSharingManager.state == .starting || audioSharingManager.state == .stopping ||
-                    (!audioSharingManager.isSharingAudio && audioDeviceManager.selectedDevices.count < 2)
+                audioSharingManager.isTransitioning || (!audioSharingManager.isSharingEnabled && audioDeviceManager.selectedDevices.count < 2)
             )
             .accessibilityIdentifier("shareAudioToggle")
             .keyboardShortcut("s")
 
-            if let errorMessage = audioSharingManager.lastErrorMessage {
+            if audioSharingManager.state == .reconnecting {
+                Text("Reconnecting…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if let errorMessage = audioSharingManager.lastErrorMessage {
                 Text("Could not start sharing: \(errorMessage)")
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("sharingErrorMessage")
             }
@@ -134,7 +137,7 @@ struct ContentView: View {
             DeviceVolumeView(
                 audioDeviceManager: audioDeviceManager,
                 volumeManager: audioVolumeManager,
-                isSharingActive: audioSharingManager.isSharingAudio
+                isSharingTransitioning: audioSharingManager.isTransitioning
             )
 
             Divider()
@@ -227,9 +230,7 @@ struct ContentView: View {
             }
         }
         .onReceive(audioSharingManager.$state) { newState in
-            guard newState == .active else { return }
-            Task {
-                await audioDeviceManager.refreshCompatibleDevices()
+            if newState == .active {
                 audioVolumeManager.refreshAllVolumes()
             }
         }

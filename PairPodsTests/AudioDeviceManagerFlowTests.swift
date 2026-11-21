@@ -14,7 +14,7 @@ struct AudioDeviceManagerFlowTests {
     @MainActor private func makeMockAndManager() -> (MockAudioSystem, AudioDeviceManager) {
         defaults.removeObject(forKey: "excludedDeviceUIDs")
         let mock = MockAudioSystem()
-        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults)
         return (mock, manager)
     }
 
@@ -90,11 +90,26 @@ struct AudioDeviceManagerFlowTests {
         try await manager.setupMultiOutputDevice()
         mock.clearRecordedCalls()
 
-        await manager.restoreOutputDevice()
+        await manager.stopOutput()
 
-        #expect(mock.setDefaultOutputCalls.count == 1)
-        // Should restore to master (highest rate, sorted first)
-        #expect(mock.setDefaultOutputCalls.first == bt2.id)
+        #expect(mock.setDefaultOutputCalls == [bt2.id])
+        #expect(mock.destroyAggregateCalls == [999])
+    }
+
+    @Test("Stopping leaves a manually selected system output in place")
+    @MainActor func stopPreservesAnotherOutput() async throws {
+        let (audio, manager) = makeMockAndManager()
+        audio.devicesToReturn = [
+            AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "manual-a"),
+            AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "manual-b"),
+        ]
+        try await manager.setupMultiOutputDevice()
+        audio.defaultDevice = (nil, 300)
+
+        await manager.stopOutput()
+
+        #expect(audio.setDefaultOutputCalls == [999])
+        #expect(audio.destroyAggregateCalls == [999])
     }
 
     @Test("Restore falls back to built-in speakers when shared devices gone")
@@ -112,9 +127,8 @@ struct AudioDeviceManagerFlowTests {
         let builtIn = AudioDeviceFixtures.builtInSpeaker(id: 300)
         mock.devicesToReturn = [builtIn]
 
-        await manager.restoreOutputDevice()
+        await manager.stopOutput()
 
-        #expect(mock.setDefaultOutputCalls.count == 1)
-        #expect(mock.setDefaultOutputCalls.first == builtIn.id)
+        #expect(mock.setDefaultOutputCalls == [builtIn.id])
     }
 }

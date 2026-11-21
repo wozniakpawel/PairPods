@@ -23,6 +23,8 @@
     <true/>
     <key>SUEnableInstallerLauncherService</key>
     <true/>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>PairPods routes your Mac’s audio to the left and right channels selected for each Bluetooth device.</string>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>PairPods needs Bluetooth access to read battery levels from your connected audio devices.</string>
 </dict>

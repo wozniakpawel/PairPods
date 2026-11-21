@@ -5,14 +5,13 @@
 //  Created by Pawel Wozniak on 24/02/2025.
 //
 
+import AppKit
+import Combine
 import CoreAudio
-import Foundation
-import SwiftUI
 
 // MARK: - Audio Device Notifications
 
 extension Notification.Name {
-    static let audioDeviceConfigurationChanged = Notification.Name("audioDeviceConfigurationChanged")
     static let audioDeviceVolumeChanged = Notification.Name("audioDeviceVolumeChanged")
 }
 
@@ -24,10 +23,6 @@ extension NotificationCenter {
             userInfo: ["deviceID": deviceID, "volume": volume]
         )
     }
-
-    func postDeviceConfigurationChanged() {
-        post(name: .audioDeviceConfigurationChanged, object: nil)
-    }
 }
 
 @MainActor
@@ -35,30 +30,41 @@ final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
     private static let excludedDeviceUIDsKey = "excludedDeviceUIDs"
     private static let deviceOrderKey = "PairPods.DeviceOrder"
-    private var originalOutputDeviceID: AudioDeviceID?
-    private var sharedDevices: [AudioDevice]?
-    private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
-    private var volumeListenerBlock: AudioObjectPropertyListenerBlock?
-    private var volumeListenerDeviceIDs: [AudioDeviceID] = []
+    private static let deviceChannelsKey = "PairPods.DeviceChannels"
+
+    private enum OutputRoute {
+        case aggregate(AudioDeviceID)
+        case channels(DeviceChannelRouter)
+    }
+
+    private struct Output {
+        let route: OutputRoute
+        let devices: [AudioDevice]
+    }
+
+    private var output: Output?
+    var configurationDidChange: (() -> Void)?
+    private var monitor: AudioDeviceMonitor?
     private var initTask: Task<Void, Never>?
-    private var volumeListenerTask: Task<Void, Never>?
-    private let monitorHardware: Bool
     private let shouldShowAlerts: Bool
-    private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
-    /// Injected for the same reason as userDefaults: NotificationCenter.default is
-    /// process-wide, so a notification posted by one parallel test suite reaches every
-    /// other suite's manager.
-    let notificationCenter: NotificationCenter
-    /// Injected so parallel tests do not share persisted state. Exclusions and device
-    /// order both live here, and a test that wrote either could drop another test's
-    /// selection below two devices, which is what made the reconnect tests flaky.
     private let userDefaults: UserDefaults
+    let notificationCenter: NotificationCenter
+    private let audioSystem: AudioSystemQuerying & AudioSystemCommanding
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
-    @Published var excludedDeviceUIDs: Set<String> = []
+    @Published private(set) var excludedDeviceUIDs: Set<String> = []
+    @Published private var channelSelections: [String: Int] = [:]
 
-    var sharedDeviceUIDs: [String]? {
-        sharedDevices?.map(\.uid)
+    var requiredReconnectUIDs: Set<String> {
+        guard let output, case .channels = output.route else { return [] }
+        return Set(output.devices.map(\.uid)).subtracting(excludedDeviceUIDs)
+    }
+
+    var isOutputConnected: Bool {
+        guard let output else { return true }
+        return output.devices.allSatisfy { device in
+            compatibleDevices.contains { $0.id == device.id && $0.uid == device.uid }
+        }
     }
 
     var selectedDevices: [AudioDevice] {
@@ -77,43 +83,68 @@ final class AudioDeviceManager: ObservableObject {
     {
         self.audioSystem = audioSystem
         self.shouldShowAlerts = shouldShowAlerts
-        self.monitorHardware = monitorHardware
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
-        excludedDeviceUIDs = Self.loadExcludedDeviceUIDs(from: userDefaults)
+        excludedDeviceUIDs = Set(userDefaults.stringArray(forKey: Self.excludedDeviceUIDsKey) ?? [])
+        channelSelections = userDefaults.dictionary(forKey: Self.deviceChannelsKey) as? [String: Int] ?? [:]
         logDebug("Initializing AudioDeviceManager")
-        setupAudioDeviceMonitoring()
+        if monitorHardware {
+            monitor = AudioDeviceMonitor(
+                onDevicesChanged: { [weak self] in await self?.handleAudioDeviceChange() },
+                onVolumeChanged: { [weak self] id in self?.handleVolumeChange(id) }
+            )
+        }
         initTask = Task {
-            await removeMultiOutputDevice()
-            await initializeDevices()
+            guard !Task.isCancelled else { return }
+            await removeStaleAggregate()
+            guard !Task.isCancelled else { return }
+            await refreshCompatibleDevices()
         }
     }
 
     // MARK: - Device Exclusion
 
     func setDeviceExcluded(_ uid: String, excluded: Bool) {
+        guard excluded != excludedDeviceUIDs.contains(uid) else { return }
         if excluded {
             excludedDeviceUIDs.insert(uid)
         } else {
             excludedDeviceUIDs.remove(uid)
         }
         saveExcludedDeviceUIDs()
+        configurationDidChange?()
     }
 
     func isDeviceSelected(_ uid: String) -> Bool {
         !excludedDeviceUIDs.contains(uid)
     }
 
-    private static func loadExcludedDeviceUIDs(from userDefaults: UserDefaults) -> Set<String> {
-        let array = userDefaults.stringArray(forKey: excludedDeviceUIDsKey) ?? []
-        return Set(array)
-    }
-
     private func saveExcludedDeviceUIDs() {
         userDefaults.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
     }
 
+    // MARK: - Device Channels
+
+    func channels(for uid: String) -> AudioChannels {
+        guard #available(macOS 14.2, *) else { return .stereo }
+        return AudioChannels(rawValue: channelSelections[uid] ?? AudioChannels.stereo.rawValue)
+    }
+
+    func setChannels(_ channels: AudioChannels, for uid: String) {
+        guard #available(macOS 14.2, *), channels != self.channels(for: uid) else { return }
+        channelSelections[uid] = channels == .stereo ? nil : channels.rawValue
+        userDefaults.set(channelSelections, forKey: Self.deviceChannelsKey)
+        if output?.devices.contains(where: { $0.uid == uid }) == true {
+            configurationDidChange?()
+        }
+    }
+
     // MARK: - Device Order
+
+    func setMasterDevice(_ uid: String) {
+        saveDeviceOrder([uid] + compatibleDevices.map(\.uid).filter { $0 != uid })
+        configurationDidChange?()
+    }
 
     func saveDeviceOrder(_ uids: [String]) {
         userDefaults.set(uids, forKey: Self.deviceOrderKey)
@@ -125,8 +156,10 @@ final class AudioDeviceManager: ObservableObject {
         userDefaults.stringArray(forKey: Self.deviceOrderKey) ?? []
     }
 
-    /// Returns the UID of the device that would be master clock for the given devices,
-    /// using the same logic as `selectDevicesForSharing`.
+    var masterDeviceUID: String? {
+        masterDeviceUID(for: selectedDevices)
+    }
+
     func masterDeviceUID(for devices: [AudioDevice]) -> String? {
         selectDevicesForSharing(devices).first?.uid
     }
@@ -134,11 +167,10 @@ final class AudioDeviceManager: ObservableObject {
     // MARK: - Public Methods
 
     func cleanup() async {
-        logInfo("Cleaning up AudioDeviceManager")
+        monitor = nil
         initTask?.cancel()
-        volumeListenerTask?.cancel()
-        await removeMultiOutputDevice()
-        removePropertyListener()
+        await initTask?.value
+        await stopOutput()
     }
 
     /// Synchronous cleanup for use during app termination where async work
@@ -170,118 +202,93 @@ final class AudioDeviceManager: ObservableObject {
     }
 
     func setupMultiOutputDevice() async throws {
-        logInfo("Starting setup of multi-output device")
-        let (defaultDevice, originalID) = await audioSystem.fetchDefaultOutputDevice()
-        originalOutputDeviceID = originalID
-        await removeMultiOutputDevice()
-
+        await initTask?.value
+        await stopOutput()
         let devices = try await audioSystem.fetchAllAudioDevices()
-        logDevices(allDevices: devices, defaultDevice: defaultDevice)
-
-        let compatible = devices.filter(\.isCompatibleOutputDevice)
-        let selected = compatible.filter { !excludedDeviceUIDs.contains($0.uid) }
+        try Task.checkCancellation()
+        updateCompatibleDevices(devices)
+        let selected = selectedDevices
         try validateSelectedDevices(selected)
 
         let sorted = selectDevicesForSharing(selected)
-        sharedDevices = sorted
-
-        let masterDevice = sorted[0]
-
-        let deviceID = try await audioSystem.createAggregateDevice(
-            name: "PairPods Output Device",
-            uid: multiOutputDeviceUID,
-            masterUID: masterDevice.uid,
-            subDeviceUIDs: sorted.map(\.uid)
-        )
-        try await audioSystem.setDefaultOutputDevice(deviceID: deviceID)
-        logInfo("Multi-output device setup completed successfully")
+        let routes = sorted.map { (device: $0, channels: channels(for: $0.uid)) }
+        let route: OutputRoute
+        if #available(macOS 14.2, *), routes.contains(where: { $0.channels != .stereo }) {
+            route = try await .channels(Task.detached(priority: .userInitiated) {
+                try DeviceChannelRouter(routes: routes)
+            }.value)
+        } else {
+            let id = try await audioSystem.createAggregateDevice(
+                name: "PairPods Output Device",
+                uid: multiOutputDeviceUID,
+                masterUID: sorted[0].uid,
+                subDeviceUIDs: sorted.map(\.uid)
+            )
+            do {
+                try Task.checkCancellation()
+                try await audioSystem.setDefaultOutputDevice(deviceID: id)
+            } catch {
+                await destroyAggregate(id)
+                throw error
+            }
+            route = .aggregate(id)
+        }
+        output = Output(route: route, devices: sorted)
     }
 
-    func restoreOutputDevice() async {
-        logInfo("Restoring output device to previous state")
+    func stopOutput() async {
+        guard let output else { return }
+        self.output = nil
+        if case let .aggregate(id) = output.route {
+            let (_, defaultID) = await audioSystem.fetchDefaultOutputDevice()
+            if defaultID == nil || defaultID == id {
+                await restoreOutput(from: output.devices)
+            }
+            await destroyAggregate(id)
+        }
+    }
+
+    private func restoreOutput(from sharedDevices: [AudioDevice]) async {
         do {
             let devices = try await audioSystem.fetchAllAudioDevices()
-            var restored = false
-
-            if let shared = sharedDevices {
-                for sharedDevice in shared {
-                    if let current = devices.first(where: { $0.uid == sharedDevice.uid }) {
-                        try await audioSystem.setDefaultOutputDevice(deviceID: current.id)
-                        logInfo("Restored to device: \(sharedDevice.name)")
-                        restored = true
-                        break
-                    }
-                }
+            let fallback = sharedDevices.lazy.compactMap { shared in
+                devices.first { $0.uid == shared.uid }
+            }.first ?? devices.first {
+                $0.transportType == kAudioDeviceTransportTypeBuiltIn && $0.isOutputDevice
             }
-
-            if !restored {
-                try await restoreToBuiltInSpeakers()
-                logInfo("Restored to built-in speakers")
+            if let fallback {
+                try await audioSystem.setDefaultOutputDevice(deviceID: fallback.id)
             }
         } catch {
-            let appError = AppError.systemError(error)
-            logError("Failed to restore output device", error: appError)
-        }
-
-        originalOutputDeviceID = nil
-        sharedDevices = nil
-    }
-
-    func removeMultiOutputDevice() async {
-        logInfo("Attempting to remove existing multi-output device")
-        if let deviceID = await audioSystem.fetchDeviceID(deviceUID: multiOutputDeviceUID) {
-            do {
-                try await audioSystem.destroyAggregateDevice(deviceID: deviceID)
-                logInfo("Successfully removed multi-output device")
-            } catch {
-                let appError = AppError.systemError(error)
-                logError("Failed to remove multi-output device", error: appError)
-            }
-        } else {
-            logDebug("No existing multi-output device found")
+            logError("Failed to restore output device", error: .systemError(error))
         }
     }
 
-    func isMultiOutputDeviceActive() async -> Bool {
-        let (defaultDevice, _) = await audioSystem.fetchDefaultOutputDevice()
-        return defaultDevice?.uid == multiOutputDeviceUID
+    private func removeStaleAggregate() async {
+        if let id = await audioSystem.fetchDeviceID(deviceUID: multiOutputDeviceUID) {
+            await destroyAggregate(id)
+        }
     }
 
-    func isMultiOutputDeviceValid() async -> Bool {
-        guard let shared = sharedDevices, !shared.isEmpty else {
-            return false
-        }
-        let devices: [AudioDevice]
+    private func destroyAggregate(_ id: AudioDeviceID) async {
         do {
-            devices = try await audioSystem.fetchAllAudioDevices()
+            try await audioSystem.destroyAggregateDevice(deviceID: id)
         } catch {
-            logWarning("Failed to fetch audio devices for validation: \(error.localizedDescription)")
-            devices = []
-        }
-        return shared.allSatisfy { sharedDevice in
-            devices.contains(where: { $0.uid == sharedDevice.uid })
+            logError("Failed to remove aggregate device", error: .systemError(error))
         }
     }
 
-    /// Method to refresh the list of compatible devices
     func refreshCompatibleDevices() async {
         do {
-            let devices = try await audioSystem.fetchAllAudioDevices()
-            compatibleDevices = devices.filter(\.isCompatibleOutputDevice)
-            logInfo("Found \(compatibleDevices.count) compatible audio devices")
+            try await updateCompatibleDevices(audioSystem.fetchAllAudioDevices())
         } catch {
             logError("Failed to refresh compatible devices", error: .systemError(error))
         }
     }
 
-    /// Get volume for a specific device
-    func getDeviceVolume(deviceID: AudioDeviceID) -> Float {
-        if let device = compatibleDevices.first(where: { $0.id == deviceID }),
-           let volume = device.getVolume()
-        {
-            return volume
-        }
-        return 0.0
+    private func updateCompatibleDevices(_ devices: [AudioDevice]) {
+        compatibleDevices = devices.filter(\.isCompatibleOutputDevice).sorted(by: Self.deviceNameOrder)
+        monitor?.observeVolume(of: Set(compatibleDevices.map(\.id)))
     }
 
     /// Set volume for a specific device
@@ -302,76 +309,16 @@ final class AudioDeviceManager: ObservableObject {
         }
     }
 
-    /// Initialize devices on startup
-    func initializeDevices() async {
-        await refreshCompatibleDevices()
-        // Setup listener for device property changes
-        setupVolumeChangeListeners()
-    }
-
-    // MARK: - Internal Methods (exposed for testing)
-
-    func validateSelectedDevices(_ devices: [AudioDevice]) throws {
-        logInfo("Found \(devices.count) selected devices")
-        guard devices.count >= 2 else {
-            let error = AppError.operationError("Not enough compatible devices selected")
-            logError("Device validation failed", error: error)
-            showBluetoothSettingsAlert()
-            throw error
-        }
-    }
-
     // MARK: - Private Methods
 
-    private func setupAudioDeviceMonitoring() {
-        guard monitorHardware else { return }
-        logDebug("Setting up audio device monitoring")
-        propertyListenerBlock = { [weak self] _, _ in
-            Task { @MainActor in
-                await self?.handleAudioDeviceChange()
-            }
-        }
-
-        guard let propertyListenerBlock else { return }
-        let status = addPropertyListener(propertyListenerBlock)
-        if status != noErr {
-            let error = AppError.operationError("Status code: \(status)")
-            logError("Failed to add audio device change listener", error: error)
-        }
+    private static func deviceNameOrder(_ a: AudioDevice, _ b: AudioDevice) -> Bool {
+        (a.name, a.uid) < (b.name, b.uid)
     }
 
-    private func handleAudioDeviceChange() async {
-        // Reinitialize devices when configuration changes
-        await initializeDevices()
-
-        let isActive = await isMultiOutputDeviceActive()
-        let isValid = await isMultiOutputDeviceValid()
-
-        if isActive, !isValid {
-            logWarning("Multi-output device configuration is no longer valid")
-            notificationCenter.postDeviceConfigurationChanged()
-        }
-    }
-
-    private func restoreToBuiltInSpeakers() async throws {
-        logInfo("Attempting to restore to built-in speakers")
-        let devices = try await audioSystem.fetchAllAudioDevices()
-        if let builtInSpeakers = devices.first(where: { $0.transportType == kAudioDeviceTransportTypeBuiltIn && $0.isOutputDevice }) {
-            try await audioSystem.setDefaultOutputDevice(deviceID: builtInSpeakers.id)
-            logInfo("Successfully restored to built-in speakers")
-        } else {
-            throw AppError.operationError("No built-in speakers found")
-        }
-    }
-
-    private func logDevices(allDevices: [AudioDevice], defaultDevice: AudioDevice?) {
-        logDebug("Found \(allDevices.count) audio devices")
-        for device in allDevices {
-            logDebug(device.description)
-        }
-
-        if let defaultDevice {
-            logInfo("Current default output device: \(defaultDevice.name)")
+    func handleAudioDeviceChange() async {
+        await refreshCompatibleDevices()
+        if !isOutputConnected {
+            configurationDidChange?()
         }
     }
 
@@ -380,141 +327,47 @@ final class AudioDeviceManager: ObservableObject {
 
         let alert = NSAlert()
         alert.messageText = "Not enough devices connected"
-        alert.informativeText = "Please make sure at least two Bluetooth audio devices are selected and connected to your Mac."
+        alert.informativeText = "Select at least two connected Bluetooth audio devices."
         alert.alertStyle = .warning
 
         alert.addButton(withTitle: "Open Bluetooth Settings")
         alert.addButton(withTitle: "OK")
 
         let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
-            if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
-                NSWorkspace.shared.open(url)
-            }
+        if response == .alertFirstButtonReturn, let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
+            NSWorkspace.shared.open(url)
         }
     }
 
-    private func addPropertyListener(_ listener: @escaping AudioObjectPropertyListenerBlock) -> OSStatus {
-        let systemObject = AudioObjectID(kAudioObjectSystemObject)
-        var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
-        return AudioObjectAddPropertyListenerBlock(
-            systemObject,
-            &address,
-            DispatchQueue.main,
-            listener
-        )
-    }
-
-    private func removePropertyListener() {
-        guard let propertyListenerBlock else { return }
-        let systemObject = AudioObjectID(kAudioObjectSystemObject)
-        var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyDevices)
-        let status = AudioObjectRemovePropertyListenerBlock(
-            systemObject,
-            &address,
-            DispatchQueue.main,
-            propertyListenerBlock
-        )
-        if status != noErr {
-            logError("Failed to remove property listener", error: .operationError("Status: \(status)"))
-        }
-    }
-
-    /// Handle a volume change event for a specific device
-    private func handleVolumeChange(deviceID: AudioDeviceID, propertyAddress: AudioObjectPropertyAddress) {
-        logInfo("Volume change detected for device ID: \(deviceID)")
-        logDebug("Property address: selector=\(propertyAddress.mSelector), scope=\(propertyAddress.mScope), element=\(propertyAddress.mElement)")
-
-        guard let device = compatibleDevices.first(where: { $0.id == deviceID }) else {
-            logWarning("Device with ID \(deviceID) not found in compatible devices")
-            return
-        }
-
-        if let newVolume = device.getVolume() {
-            logInfo("Volume for \(device.name): \(newVolume)")
-            notificationCenter.postDeviceVolumeChanged(deviceID: deviceID, volume: newVolume)
-        } else {
-            logWarning("Failed to get volume for device: \(device.name)")
-        }
-    }
-
-    /// Remove previously registered volume/mute listeners and add them for the given devices.
-    private func registerVolumeListeners(for devices: [AudioDevice], listener: @escaping AudioObjectPropertyListenerBlock) {
-        // Remove old listeners first
-        for oldDeviceID in volumeListenerDeviceIDs {
-            oldDeviceID.removeVolumePropertyListener(listener: listener)
-            oldDeviceID.removeMutePropertyListener(listener: listener)
-        }
-        volumeListenerDeviceIDs.removeAll()
-
-        logDebug("Setting up volume listeners for \(devices.count) compatible devices")
-
-        for device in devices {
-            logDebug("Setting up volume listener for device: \(device.name) (ID: \(device.id))")
-
-            if device.id.addVolumePropertyListener(listener: listener) {
-                logDebug("Successfully added volume listener for device: \(device.name)")
-            } else {
-                logWarning("Device \(device.name) does not support volume control")
-            }
-
-            if device.id.addMutePropertyListener(listener: listener) {
-                logDebug("Successfully added mute listener for device: \(device.name)")
-            }
-
-            volumeListenerDeviceIDs.append(device.id)
-        }
-    }
-
-    /// Setup listeners for volume changes on all compatible devices
-    private func setupVolumeChangeListeners() {
-        guard monitorHardware else { return }
-        logDebug("Setting up volume change listeners")
-
-        if volumeListenerBlock == nil {
-            volumeListenerBlock = { [weak self] inObjectID, propertyAddress in
-                let address = propertyAddress.pointee
-                Task { @MainActor in
-                    self?.handleVolumeChange(deviceID: inObjectID, propertyAddress: address)
-                }
-            }
-        }
-
-        guard let volumeListenerBlock else { return }
-
-        volumeListenerTask?.cancel()
-        volumeListenerTask = Task {
-            do {
-                let devices = try await audioSystem.fetchAllAudioDevices()
-                let compatible = devices.filter(\.isCompatibleOutputDevice)
-                registerVolumeListeners(for: compatible, listener: volumeListenerBlock)
-            } catch {
-                logError("Failed to set up volume listeners", error: .systemError(error))
-            }
+    private func handleVolumeChange(_ id: AudioDeviceID) {
+        if let device = compatibleDevices.first(where: { $0.id == id }), let volume = device.getVolume() {
+            notificationCenter.postDeviceVolumeChanged(deviceID: id, volume: volume)
         }
     }
 }
 
-// MARK: - Device Selection
+// MARK: - Internal Methods (exposed for testing)
 
-/// Kept in an extension so it stays out of the main class body, which is already at
-/// the size the linter accepts.
 extension AudioDeviceManager {
+    func validateSelectedDevices(_ devices: [AudioDevice]) throws {
+        guard devices.count >= 2 else {
+            showBluetoothSettingsAlert()
+            throw AppError.operationError("Select at least two connected Bluetooth audio devices.")
+        }
+    }
+
     func selectDevicesForSharing(_ devices: [AudioDevice]) -> [AudioDevice] {
         // If user has defined a preferred order, use it (first device = master clock)
         let userOrder = loadDeviceOrder()
         if devices.contains(where: { userOrder.contains($0.uid) }) {
-            let sorted = devices.sorted { a, b in
+            return devices.sorted { a, b in
                 let ai = userOrder.firstIndex(of: a.uid) ?? Int.max
                 let bi = userOrder.firstIndex(of: b.uid) ?? Int.max
                 if ai != bi {
                     return ai < bi
                 }
-                return a.name < b.name
+                return Self.deviceNameOrder(a, b)
             }
-            let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
-            logInfo("Selected devices for sharing (user order) - \(names)")
-            return sorted
         }
 
         // Fallback: find the most common sample rate among the devices
@@ -527,7 +380,7 @@ extension AudioDeviceManager {
         let majorityRate = hasClearMajority ? rateCount.first(where: { $0.value == maxCount })?.key : nil
 
         // Sort: when a clear majority exists, those devices go first; otherwise sort descending by rate
-        let sorted = devices.sorted { a, b in
+        return devices.sorted { a, b in
             if let majorityRate {
                 let aMatches = a.sampleRate == majorityRate
                 let bMatches = b.sampleRate == majorityRate
@@ -535,11 +388,10 @@ extension AudioDeviceManager {
                     return aMatches
                 }
             }
-            return a.sampleRate > b.sampleRate
+            if a.sampleRate != b.sampleRate {
+                return a.sampleRate > b.sampleRate
+            }
+            return Self.deviceNameOrder(a, b)
         }
-
-        let names = sorted.map { "\($0.name) (\($0.sampleRate)Hz)" }.joined(separator: ", ")
-        logInfo("Selected devices for sharing - \(names)")
-        return sorted
     }
 }
