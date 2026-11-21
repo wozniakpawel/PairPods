@@ -14,7 +14,7 @@ struct AudioDeviceManagerSelectionTests {
         defaults.removeObject(forKey: "excludedDeviceUIDs")
         defaults.removeObject(forKey: "PairPods.DeviceOrder")
         let mock = MockAudioSystem()
-        return AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
+        return AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults)
     }
 
     @Test("Selects highest sample rate device as master")
@@ -29,14 +29,29 @@ struct AudioDeviceManagerSelectionTests {
         #expect(result[0].sampleRate >= result[1].sampleRate)
     }
 
-    @Test("Equal sample rates returns two distinct devices")
-    @MainActor func equalSampleRatesReturnsTwoDevices() {
-        let manager = makeManager()
-        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "a", sampleRate: 48000)
-        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "b", sampleRate: 48000)
+    @Test("Same-name devices keep their display order across refreshes")
+    @MainActor func sameNameDevicesKeepTheirOrder() async {
+        let mock = MockAudioSystem()
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults)
+        await manager.cleanup()
+        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "a")
+        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "b")
 
-        let result = manager.selectDevicesForSharing([bt1, bt2])
-        #expect(result[0].id != result[1].id)
+        for devices in [[bt1, bt2], [bt2, bt1]] {
+            mock.devicesToReturn = devices
+            await manager.refreshCompatibleDevices()
+            #expect(manager.compatibleDevices.map(\.uid) == ["a", "b"])
+        }
+    }
+
+    @Test("Equal sample rates pick a stable master for same-name devices")
+    @MainActor func equalSampleRatesPickStableMaster() {
+        let manager = makeManager()
+        let bt1 = AudioDeviceFixtures.bluetoothDevice(id: 1, uid: "a")
+        let bt2 = AudioDeviceFixtures.bluetoothDevice(id: 2, uid: "b")
+
+        #expect(manager.selectDevicesForSharing([bt1, bt2]).map(\.uid) == ["a", "b"])
+        #expect(manager.selectDevicesForSharing([bt2, bt1]).map(\.uid) == ["a", "b"])
     }
 
     @Test("Returns devices sorted with master first")
@@ -127,7 +142,7 @@ struct AudioDeviceManagerSelectionTests {
     @MainActor func loadDeviceOrderReturnsSavedOrder() {
         defaults.set(["uid-z", "uid-x"], forKey: "PairPods.DeviceOrder")
         let mock = MockAudioSystem()
-        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, userDefaults: defaults)
+        let manager = AudioDeviceManager(audioSystem: mock, shouldShowAlerts: false, monitorHardware: false, userDefaults: defaults)
         #expect(manager.loadDeviceOrder() == ["uid-z", "uid-x"])
         defaults.removeObject(forKey: "PairPods.DeviceOrder")
     }

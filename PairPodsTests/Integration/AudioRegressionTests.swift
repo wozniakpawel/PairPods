@@ -90,7 +90,7 @@ struct AudioRegressionTests {
         let (_, originalDefaultID) = await CoreAudioSystem().fetchDefaultOutputDevice()
 
         // 5. Create AudioDeviceManager.
-        //    The init launches an async task that calls removeMultiOutputDevice().
+        //    The init launches an async task that calls removeStaleAggregate().
         //    We immediately call cleanup() to cancel that task and remove the
         //    property listener so it cannot race with our test setup.
         let manager = AudioDeviceManager(audioSystem: simulatedSystem, shouldShowAlerts: false, userDefaults: defaults)
@@ -133,7 +133,7 @@ struct AudioRegressionTests {
         }
 
         // 9. Cleanup: destroy aggregate and restore the original default output device.
-        await manager.removeMultiOutputDevice()
+        await manager.stopOutput()
         if let originalID = originalDefaultID {
             try? await CoreAudioSystem().setDefaultOutputDevice(deviceID: originalID)
         }

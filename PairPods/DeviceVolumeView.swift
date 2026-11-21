@@ -11,61 +11,38 @@ import SwiftUI
 struct DeviceVolumeView: View {
     @ObservedObject var audioDeviceManager: AudioDeviceManager
     @ObservedObject var volumeManager: AudioVolumeManager
-    var isSharingActive: Bool = false
-
-    private var sortedDevices: [AudioDevice] {
-        audioDeviceManager.compatibleDevices.sorted { $0.name < $1.name }
-    }
-
-    private var masterUID: String? {
-        audioDeviceManager.masterDeviceUID(for: audioDeviceManager.compatibleDevices)
-    }
+    var isSharingTransitioning: Bool = false
 
     var body: some View {
+        let masterUID = audioDeviceManager.masterDeviceUID
         VStack(spacing: 12) {
-            if audioDeviceManager.compatibleDevices.isEmpty {
-                NoDevicesView()
-            } else {
-                ForEach(sortedDevices) { device in
-                    DeviceVolumeRowView(
-                        device: device,
-                        volume: Binding(
-                            get: { volumeManager.deviceVolumes[device.id] ?? volumeManager.getDefaultVolume(for: device) },
-                            set: { newValue in
-                                Task {
-                                    await volumeManager.setVolume(for: device.id, volume: newValue)
-                                }
-                            }
-                        ),
-                        isSelected: Binding(
-                            get: { audioDeviceManager.isDeviceSelected(device.uid) },
-                            set: { newValue in
-                                audioDeviceManager.setDeviceExcluded(device.uid, excluded: !newValue)
-                                if isSharingActive {
-                                    NotificationCenter.default.postDeviceConfigurationChanged()
-                                }
-                            }
-                        ),
-                        isMaster: device.uid == masterUID,
-                        onSetMaster: {
-                            var order = sortedDevices.map(\.uid)
-                            order.removeAll { $0 == device.uid }
-                            order.insert(device.uid, at: 0)
-                            audioDeviceManager.saveDeviceOrder(order)
-                            if isSharingActive {
-                                NotificationCenter.default.postDeviceConfigurationChanged()
+            ForEach(audioDeviceManager.compatibleDevices, id: \.uid) { device in
+                DeviceVolumeRowView(
+                    device: device,
+                    volume: Binding(
+                        get: { volumeManager.deviceVolumes[device.id] ?? volumeManager.getDefaultVolume(for: device) },
+                        set: { newValue in
+                            Task {
+                                await volumeManager.setVolume(for: device.id, volume: newValue)
                             }
                         }
-                    )
-                }
-                if audioDeviceManager.compatibleDevices.count == 1 {
-                    MenuCommand("Open Bluetooth Settings...") {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
-                            NSWorkspace.shared.open(url)
-                        }
+                    ),
+                    isSelected: Binding(
+                        get: { audioDeviceManager.isDeviceSelected(device.uid) },
+                        set: { audioDeviceManager.setDeviceExcluded(device.uid, excluded: !$0) }
+                    ),
+                    isMaster: device.uid == masterUID,
+                    onSetMaster: { audioDeviceManager.setMasterDevice(device.uid) },
+                    isConfiguring: isSharingTransitioning
+                )
+            }
+            if audioDeviceManager.compatibleDevices.count < 2 {
+                MenuCommand("Open Bluetooth Settings...") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
+                        NSWorkspace.shared.open(url)
                     }
-                    .padding(.horizontal, -14)
                 }
+                .padding(.horizontal, -14)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: audioDeviceManager.compatibleDevices.count)
@@ -74,12 +51,13 @@ struct DeviceVolumeView: View {
 
 // MARK: - Device Row
 
-struct DeviceVolumeRowView: View {
+private struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
     @Binding var isSelected: Bool
-    var isMaster: Bool = false
-    var onSetMaster: (() -> Void)?
+    let isMaster: Bool
+    let onSetMaster: () -> Void
+    let isConfiguring: Bool
 
     private var cgFloatVolume: Binding<CGFloat> {
         Binding(
@@ -91,11 +69,11 @@ struct DeviceVolumeRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Toggle("", isOn: $isSelected)
+                Toggle("Include \(device.name)", isOn: $isSelected)
                     .toggleStyle(.checkbox)
                     .labelsHidden()
 
-                Button(action: { onSetMaster?() }) {
+                Button(action: onSetMaster) {
                     Image(systemName: isMaster ? "crown.fill" : "crown")
                         .font(.system(size: 11))
                         .foregroundColor(isMaster ? .orange : .secondary.opacity(0.4))
@@ -110,6 +88,7 @@ struct DeviceVolumeRowView: View {
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
             }
+            .disabled(isConfiguring)
 
             HStack(spacing: 6) {
                 if let battery = device.batteryInfo?.displayLevel {
@@ -193,25 +172,13 @@ struct BatteryLevelView: View {
     }
 }
 
-struct NoDevicesView: View {
-    var body: some View {
-        MenuCommand("Open Bluetooth Settings...") {
-            if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
-                NSWorkspace.shared.open(url)
-            }
-        }
-        .padding(.horizontal, -14) // avoid unwanted padding
-    }
-}
-
 #Preview {
     let deviceManager = AudioDeviceManager(audioSystem: PreviewAudioSystem(), shouldShowAlerts: false)
     let volumeManager = AudioVolumeManager(audioDeviceManager: deviceManager)
 
     return DeviceVolumeView(
         audioDeviceManager: deviceManager,
-        volumeManager: volumeManager,
-        isSharingActive: false
+        volumeManager: volumeManager
     )
     .frame(width: 270)
     .padding()

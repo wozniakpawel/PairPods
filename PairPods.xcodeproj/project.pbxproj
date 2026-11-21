@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		16B740F1600D4F9391293355 /* AudioDeviceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B740F1600D4F9391293356 /* AudioDeviceMonitor.swift */; };
 		0C3578DE2DB43E7D00354DE5 /* MacControlCenterUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0C3578DD2DB43E7D00354DE5 /* MacControlCenterUI */; };
 		0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */; };
 		0C9788BB2DB3A4F200CC5176 /* AudioVolumeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */; };
@@ -43,6 +44,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		16B740F1600D4F9391293356 /* AudioDeviceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceMonitor.swift; sourceTree = "<group>"; };
+		16B740F1600D4F9391293357 /* CoreAudioListeners.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CoreAudioListeners.h; sourceTree = "<group>"; };
 		0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceVolumeView.swift; sourceTree = "<group>"; };
 		0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioVolumeManager.swift; sourceTree = "<group>"; };
 		0CF7B1D42DB6DD0300EEB3B7 /* MenuToggleItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuToggleItem.swift; sourceTree = "<group>"; };
@@ -128,6 +131,8 @@
 				E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */,
 				E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */,
 				0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */,
+				16B740F1600D4F9391293356 /* AudioDeviceMonitor.swift */,
+				16B740F1600D4F9391293357 /* CoreAudioListeners.h */,
 				0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */,
 				E958DA092CAABF0D00A4FC9C /* AudioDevice.swift */,
 				E985A9C52B95975A005494FA /* AudioSharingManager.swift */,
@@ -290,6 +295,7 @@
 				0C9788BB2DB3A4F200CC5176 /* AudioVolumeManager.swift in Sources */,
 				E985A9C62B95975A005494FA /* AudioSharingManager.swift in Sources */,
 				0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */,
+				16B740F1600D4F9391293355 /* AudioDeviceMonitor.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
 				E99A49FA2D6CAA4900F492A2 /* SparkleUpdater.swift in Sources */,
 				0CF7B1D52DB6DD0300EEB3B7 /* MenuToggleItem.swift in Sources */,
@@ -503,6 +509,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = PairPods/CoreAudioListeners.h;
 				SWIFT_TREAT_WARNINGS_AS_ERRORS = "$(PAIRPODS_WARNINGS_AS_ERRORS)";
 				SWIFT_VERSION = 6.0;
 			};
@@ -538,6 +545,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.wozniakpawel.PairPods;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = PairPods/CoreAudioListeners.h;
 				SWIFT_TREAT_WARNINGS_AS_ERRORS = "$(PAIRPODS_WARNINGS_AS_ERRORS)";
 				SWIFT_VERSION = 6.0;
 				VALIDATE_PRODUCT = YES;
