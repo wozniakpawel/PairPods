@@ -31,6 +31,10 @@ struct DeviceVolumeView: View {
                         get: { audioDeviceManager.isDeviceSelected(device.uid) },
                         set: { audioDeviceManager.setDeviceExcluded(device.uid, excluded: !$0) }
                     ),
+                    channels: Binding(
+                        get: { audioDeviceManager.channels(for: device.uid) },
+                        set: { audioDeviceManager.setChannels($0, for: device.uid) }
+                    ),
                     isMaster: device.uid == masterUID,
                     onSetMaster: { audioDeviceManager.setMasterDevice(device.uid) },
                     isConfiguring: isSharingTransitioning
@@ -55,6 +59,7 @@ private struct DeviceVolumeRowView: View {
     let device: AudioDevice
     @Binding var volume: Float
     @Binding var isSelected: Bool
+    @Binding var channels: AudioChannels
     let isMaster: Bool
     let onSetMaster: () -> Void
     let isConfiguring: Bool
@@ -87,6 +92,10 @@ private struct DeviceVolumeRowView: View {
                 Text(device.name)
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
+
+                Spacer(minLength: 4)
+
+                channelControls
             }
             .disabled(isConfiguring)
 
@@ -116,6 +125,40 @@ private struct DeviceVolumeRowView: View {
             MenuVolumeSlider(value: cgFloatVolume)
         }
         .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private var channelControls: some View {
+        let group = HStack(spacing: 4) {
+            channelToggle("L", label: "Left channel", channel: .left)
+            channelToggle("R", label: "Right channel", channel: .right)
+        }
+        .toggleStyle(.button)
+        .controlSize(.small)
+        .fixedSize()
+
+        if #available(macOS 14.2, *) {
+            group
+        } else {
+            group
+                .disabled(true)
+                .help("Channel selection requires macOS 14.2 or later.")
+        }
+    }
+
+    private func channelToggle(_ title: String, label: String, channel: AudioChannels) -> some View {
+        Toggle(title, isOn: Binding(
+            get: { channels.contains(channel) },
+            set: { isOn in
+                if isOn {
+                    channels.insert(channel)
+                } else {
+                    channels.remove(channel)
+                }
+            }
+        ))
+        .help(label)
+        .accessibilityLabel(label)
     }
 
     /// Determine icon based on device type

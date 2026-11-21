@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		16B740F1600D4F9391293351 /* DeviceChannelRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B740F1600D4F9391293352 /* DeviceChannelRouter.swift */; };
+		16B740F1600D4F9391293353 /* ChannelRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B740F1600D4F9391293354 /* ChannelRenderer.swift */; };
 		16B740F1600D4F9391293355 /* AudioDeviceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B740F1600D4F9391293356 /* AudioDeviceMonitor.swift */; };
 		0C3578DE2DB43E7D00354DE5 /* MacControlCenterUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0C3578DD2DB43E7D00354DE5 /* MacControlCenterUI */; };
 		0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */; };
@@ -44,6 +46,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		16B740F1600D4F9391293352 /* DeviceChannelRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceChannelRouter.swift; sourceTree = "<group>"; };
+		16B740F1600D4F9391293354 /* ChannelRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelRenderer.swift; sourceTree = "<group>"; };
 		16B740F1600D4F9391293356 /* AudioDeviceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceMonitor.swift; sourceTree = "<group>"; };
 		16B740F1600D4F9391293357 /* CoreAudioListeners.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CoreAudioListeners.h; sourceTree = "<group>"; };
 		0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceVolumeView.swift; sourceTree = "<group>"; };
@@ -131,6 +135,8 @@
 				E958D9FF2CAA93B200A4FC9C /* LoggingService.swift */,
 				E995C7892C9B1E8500DEB230 /* AudioDeviceManager.swift */,
 				0C9788B82DB3A4EB00CC5176 /* DeviceVolumeView.swift */,
+				16B740F1600D4F9391293352 /* DeviceChannelRouter.swift */,
+				16B740F1600D4F9391293354 /* ChannelRenderer.swift */,
 				16B740F1600D4F9391293356 /* AudioDeviceMonitor.swift */,
 				16B740F1600D4F9391293357 /* CoreAudioListeners.h */,
 				0C9788BA2DB3A4F200CC5176 /* AudioVolumeManager.swift */,
@@ -295,6 +301,8 @@
 				0C9788BB2DB3A4F200CC5176 /* AudioVolumeManager.swift in Sources */,
 				E985A9C62B95975A005494FA /* AudioSharingManager.swift in Sources */,
 				0C9788B92DB3A4EB00CC5176 /* DeviceVolumeView.swift in Sources */,
+				16B740F1600D4F9391293351 /* DeviceChannelRouter.swift in Sources */,
+				16B740F1600D4F9391293353 /* ChannelRenderer.swift in Sources */,
 				16B740F1600D4F9391293355 /* AudioDeviceMonitor.swift in Sources */,
 				E985A9982B92F59F005494FA /* PairPodsApp.swift in Sources */,
 				E99A49FA2D6CAA4900F492A2 /* SparkleUpdater.swift in Sources */,

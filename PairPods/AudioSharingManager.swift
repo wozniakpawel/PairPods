@@ -92,7 +92,7 @@ final class AudioSharingManager: ObservableObject {
         } catch {
             guard !Task.isCancelled else { return }
             outputTask = nil
-            lastErrorMessage = error.localizedDescription
+            lastErrorMessage = (error as? ChannelRoutingError)?.message ?? error.localizedDescription
             logError("Failed to start audio sharing", error: .systemError(error))
             state = .inactive
         }
@@ -100,21 +100,25 @@ final class AudioSharingManager: ObservableObject {
 
     private func reconfigure() {
         guard state == .active else { return }
+        let requiredUIDs = devices.requiredReconnectUIDs
         state = .reconnecting
         outputTask = Task { [weak self, devices] in
             await devices.stopOutput()
-            await self?.reconnect()
+            await self?.reconnect(requiredUIDs: requiredUIDs)
         }
     }
 
-    private func reconnect() async {
+    private func reconnect(requiredUIDs: Set<String>) async {
         let clock = ContinuousClock()
         let deadline = clock.now + .seconds(reconnectTimeout)
         repeat {
             await devices.refreshCompatibleDevices()
             guard !Task.isCancelled else { return }
 
-            if devices.selectedDevices.count >= 2 {
+            let selected = devices.selectedDevices
+            // Excluding a device while waiting lets the other selected devices resume.
+            let required = requiredUIDs.filter(devices.isDeviceSelected)
+            if selected.count >= 2, required.isSubset(of: selected.map(\.uid)) {
                 state = .starting
                 await startOutput()
                 return

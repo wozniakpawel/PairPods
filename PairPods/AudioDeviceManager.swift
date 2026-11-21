@@ -30,9 +30,15 @@ final class AudioDeviceManager: ObservableObject {
     private let multiOutputDeviceUID = "PairPodsOutputDevice"
     private static let excludedDeviceUIDsKey = "excludedDeviceUIDs"
     private static let deviceOrderKey = "PairPods.DeviceOrder"
+    private static let deviceChannelsKey = "PairPods.DeviceChannels"
+
+    private enum OutputRoute {
+        case aggregate(AudioDeviceID)
+        case channels(DeviceChannelRouter)
+    }
 
     private struct Output {
-        let id: AudioDeviceID
+        let route: OutputRoute
         let devices: [AudioDevice]
     }
 
@@ -47,6 +53,13 @@ final class AudioDeviceManager: ObservableObject {
 
     @Published private(set) var compatibleDevices: [AudioDevice] = []
     @Published private(set) var excludedDeviceUIDs: Set<String> = []
+    @Published private var channelSelections: [String: Int] = [:]
+
+    var requiredReconnectUIDs: Set<String> {
+        guard let output, case .channels = output.route else { return [] }
+        return Set(output.devices.map(\.uid)).subtracting(excludedDeviceUIDs)
+    }
+
     var isOutputConnected: Bool {
         guard let output else { return true }
         return output.devices.allSatisfy { device in
@@ -73,6 +86,7 @@ final class AudioDeviceManager: ObservableObject {
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
         excludedDeviceUIDs = Set(userDefaults.stringArray(forKey: Self.excludedDeviceUIDsKey) ?? [])
+        channelSelections = userDefaults.dictionary(forKey: Self.deviceChannelsKey) as? [String: Int] ?? [:]
         logDebug("Initializing AudioDeviceManager")
         if monitorHardware {
             monitor = AudioDeviceMonitor(
@@ -107,6 +121,22 @@ final class AudioDeviceManager: ObservableObject {
 
     private func saveExcludedDeviceUIDs() {
         userDefaults.set(Array(excludedDeviceUIDs), forKey: Self.excludedDeviceUIDsKey)
+    }
+
+    // MARK: - Device Channels
+
+    func channels(for uid: String) -> AudioChannels {
+        guard #available(macOS 14.2, *) else { return .stereo }
+        return AudioChannels(rawValue: channelSelections[uid] ?? AudioChannels.stereo.rawValue)
+    }
+
+    func setChannels(_ channels: AudioChannels, for uid: String) {
+        guard #available(macOS 14.2, *), channels != self.channels(for: uid) else { return }
+        channelSelections[uid] = channels == .stereo ? nil : channels.rawValue
+        userDefaults.set(channelSelections, forKey: Self.deviceChannelsKey)
+        if output?.devices.contains(where: { $0.uid == uid }) == true {
+            configurationDidChange?()
+        }
     }
 
     // MARK: - Device Order
@@ -181,30 +211,41 @@ final class AudioDeviceManager: ObservableObject {
         try validateSelectedDevices(selected)
 
         let sorted = selectDevicesForSharing(selected)
-        let id = try await audioSystem.createAggregateDevice(
-            name: "PairPods Output Device",
-            uid: multiOutputDeviceUID,
-            masterUID: sorted[0].uid,
-            subDeviceUIDs: sorted.map(\.uid)
-        )
-        do {
-            try Task.checkCancellation()
-            try await audioSystem.setDefaultOutputDevice(deviceID: id)
-        } catch {
-            await destroyAggregate(id)
-            throw error
+        let routes = sorted.map { (device: $0, channels: channels(for: $0.uid)) }
+        let route: OutputRoute
+        if #available(macOS 14.2, *), routes.contains(where: { $0.channels != .stereo }) {
+            route = try await .channels(Task.detached(priority: .userInitiated) {
+                try DeviceChannelRouter(routes: routes)
+            }.value)
+        } else {
+            let id = try await audioSystem.createAggregateDevice(
+                name: "PairPods Output Device",
+                uid: multiOutputDeviceUID,
+                masterUID: sorted[0].uid,
+                subDeviceUIDs: sorted.map(\.uid)
+            )
+            do {
+                try Task.checkCancellation()
+                try await audioSystem.setDefaultOutputDevice(deviceID: id)
+            } catch {
+                await destroyAggregate(id)
+                throw error
+            }
+            route = .aggregate(id)
         }
-        output = Output(id: id, devices: sorted)
+        output = Output(route: route, devices: sorted)
     }
 
     func stopOutput() async {
         guard let output else { return }
         self.output = nil
-        let (_, defaultID) = await audioSystem.fetchDefaultOutputDevice()
-        if defaultID == nil || defaultID == output.id {
-            await restoreOutput(from: output.devices)
+        if case let .aggregate(id) = output.route {
+            let (_, defaultID) = await audioSystem.fetchDefaultOutputDevice()
+            if defaultID == nil || defaultID == id {
+                await restoreOutput(from: output.devices)
+            }
+            await destroyAggregate(id)
         }
-        await destroyAggregate(output.id)
     }
 
     private func restoreOutput(from sharedDevices: [AudioDevice]) async {
