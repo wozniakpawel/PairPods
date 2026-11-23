@@ -27,8 +27,8 @@ enum BlackHoleHelper {
         return BlackHoleDevices(device2ch: dev2ch, device16ch: dev16ch)
     }
 
-    static func setSampleRate(on deviceID: AudioDeviceID, to rate: Double) -> Bool {
-        deviceID.setSampleRate(rate)
+    static func setSampleRate(on deviceID: AudioDeviceID, to rate: Double) async -> Bool {
+        await deviceID.setSampleRate(rate)
     }
 
     // MARK: - Private

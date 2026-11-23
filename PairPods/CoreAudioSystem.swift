@@ -60,27 +60,45 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
         return deviceID
     }
 
-    func createAggregateDevice(name: String, uid: String,
-                               masterUID: String, subDeviceUIDs: [String]) async throws -> AudioDeviceID
+    /// Builds the aggregate.
+    ///
+    /// When `clockUID` is supplied the aggregate is clocked by a standalone CoreAudio clock
+    /// device, so *every* sub-device gets drift compensation and no Bluetooth radio acts as
+    /// the timing reference. That is the fix for the pitch warble in #35: previously the
+    /// master was always a Bluetooth device, uncorrected by definition, and the other device's
+    /// resampler chased a moving target. Falls back to a master sub-device when no clock
+    /// device exists.
+    func createAggregateDevice(name: String, uid: String, masterUID: String,
+                               subDeviceUIDs: [String], clockUID: String?) async throws -> AudioDeviceID
     {
-        logDebug("Creating aggregate device")
-        let subDeviceList: [[String: Any]] = subDeviceUIDs.map { uid in
-            if uid == masterUID {
-                [kAudioSubDeviceUIDKey: uid]
-            } else {
-                [kAudioSubDeviceUIDKey: uid, kAudioSubDeviceDriftCompensationKey as String: 1]
+        logDebug("Creating aggregate device (clock: \(clockUID ?? "master sub-device \(masterUID)"))")
+        let subDeviceList: [[String: Any]] = subDeviceUIDs.map { subUID in
+            // The master sub-device is the clock reference and must not be resampled.
+            // With an external clock device there is no master, so everything is corrected.
+            guard clockUID != nil || subUID != masterUID else {
+                return [kAudioSubDeviceUIDKey: subUID]
             }
+            return [
+                kAudioSubDeviceUIDKey: subUID,
+                kAudioSubDeviceDriftCompensationKey as String: 1,
+                kAudioSubDeviceDriftCompensationQualityKey as String: kAudioAggregateDriftCompensationMaxQuality,
+            ]
         }
-        let desc: [String: Any] = [
+        var desc: [String: Any] = [
             kAudioAggregateDeviceNameKey: name,
             kAudioAggregateDeviceUIDKey: uid,
             kAudioAggregateDeviceSubDeviceListKey: subDeviceList,
-            kAudioAggregateDeviceMasterSubDeviceKey: masterUID,
             kAudioAggregateDeviceIsStackedKey: 1,
         ]
+        if let clockUID {
+            desc[kAudioAggregateDeviceClockDeviceKey] = clockUID
+        } else {
+            desc[kAudioAggregateDeviceMasterSubDeviceKey] = masterUID
+        }
 
         var aggregateDevice: AudioDeviceID = 0
         let status = AudioHardwareCreateAggregateDevice(desc as CFDictionary, &aggregateDevice)
+
         guard status == noErr else {
             throw AppError.operationError("Failed to create aggregate device. Status: \(status)")
         }
@@ -114,8 +132,37 @@ struct CoreAudioSystem: AudioSystemQuerying, AudioSystemCommanding {
         }
     }
 
-    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) -> Bool {
-        deviceID.setSampleRate(sampleRate)
+    func setSampleRate(on deviceID: AudioDeviceID, to sampleRate: Double) async -> Bool {
+        await deviceID.setSampleRate(sampleRate)
+    }
+
+    func fetchNominalSampleRate(on deviceID: AudioDeviceID) async -> Double? {
+        deviceID.getFloat64Property(selector: kAudioDevicePropertyNominalSampleRate)
+    }
+
+    /// Standalone clock devices that can drive the aggregate. Apple Silicon and T2 Macs
+    /// publish `ATSAC:…` clocks; older hardware may publish none.
+    func fetchClockDeviceUIDs() async -> [String] {
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        var address = systemObject.getPropertyAddress(selector: kAudioHardwarePropertyClockDeviceList)
+
+        var propertySize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(systemObject, &address, 0, nil, &propertySize) == noErr,
+              propertySize > 0
+        else {
+            logDebug("No CoreAudio clock devices available")
+            return []
+        }
+
+        var clockIDs = [AudioObjectID](repeating: 0, count: Int(propertySize) / MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(systemObject, &address, 0, nil, &propertySize, &clockIDs) == noErr else {
+            logDebug("Failed to read the clock device list")
+            return []
+        }
+
+        let uids = clockIDs.compactMap { $0.getStringProperty(selector: kAudioClockDevicePropertyDeviceUID) }
+        logDebug("Clock device candidates for aggregate: \(uids)")
+        return uids
     }
 
     // MARK: - Private Helpers
